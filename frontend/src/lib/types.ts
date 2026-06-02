@@ -7,6 +7,14 @@ export interface ProductVariant {
   stock: number;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  createdAt: string;
+}
+
 export interface Product {
   id: string;
   handle: string;
@@ -14,8 +22,11 @@ export interface Product {
   description: string;
   category: string;
   status: "draft" | "published";
+  image?: string;
   variants: ProductVariant[];
   metadata?: Record<string, string>;
+  rating?: number;
+  reviewsCount?: number;
 }
 
 export interface CartItem {
@@ -24,6 +35,11 @@ export interface CartItem {
   variantId: string;
   quantity: number;
   unitPriceInCents: number;
+  /** Client-enriched display fields (not from API) */
+  title?: string;
+  image?: string;
+  size?: string;
+  color?: string;
 }
 
 export interface Cart {
@@ -31,8 +47,18 @@ export interface Cart {
   customerId?: string;
   currencyCode: "usd" | "inr";
   items: CartItem[];
+  promoCode?: string;
+  discountInCents?: number;
   subtotalInCents: number;
   totalInCents: number;
+}
+
+export interface OrderItem {
+  id: string;
+  productId: string;
+  variantId: string;
+  quantity: number;
+  unitPriceInCents: number;
 }
 
 export interface Order {
@@ -41,7 +67,9 @@ export interface Order {
   customerId?: string;
   status: "pending" | "confirmed" | "fulfilled" | "cancelled";
   currencyCode: "usd" | "inr";
+  items: OrderItem[];
   totalInCents: number;
+  createdAt: string;
 }
 
 export interface Payment {
@@ -52,4 +80,3 @@ export interface Payment {
   status: "requires_action" | "authorized" | "captured" | "failed";
   providerReference: string;
 }
-

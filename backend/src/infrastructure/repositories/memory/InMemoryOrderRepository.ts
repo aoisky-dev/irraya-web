@@ -8,6 +8,11 @@ export class InMemoryOrderRepository implements OrderRepository {
     return this.orders.get(id) ?? null;
   }
 
+  async findAll(): Promise<Order[]> {
+    // Return all orders, newest first
+    return Array.from(this.orders.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
   async save(order: Order): Promise<void> {
     this.orders.set(order.id, order);
   }

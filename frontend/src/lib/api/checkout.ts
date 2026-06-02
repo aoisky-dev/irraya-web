@@ -14,3 +14,6 @@ export async function authorizeOrderPayment(orderId: string, amountInCents: numb
   });
 }
 
+export async function getOrderById(orderId: string): Promise<Order> {
+  return apiRequest<Order>(`/orders/${orderId}`);
+}

@@ -16,12 +16,21 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "prisma": "^5.22.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "^22.15.21",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
     "vitest": "^2.1.9"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

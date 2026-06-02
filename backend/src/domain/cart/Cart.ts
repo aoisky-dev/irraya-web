@@ -11,6 +11,8 @@ export interface Cart {
   customerId?: string;
   currencyCode: "usd" | "inr";
   items: CartItem[];
+  promoCode?: string;
+  discountInCents?: number;
   subtotalInCents: number;
   totalInCents: number;
   updatedAt: Date;

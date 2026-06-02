@@ -1,4 +1,4 @@
-export type ProductStatus = "draft" | "published";
+ export type ProductStatus = "draft" | "published";
 
 export interface ProductVariant {
   id: string;
@@ -16,7 +16,10 @@ export interface Product {
   description: string;
   category: string;
   status: ProductStatus;
+  image?: string;
   variants: ProductVariant[];
   metadata?: Record<string, string>;
+  rating?: number;
+  reviewsCount?: number;
 }
 

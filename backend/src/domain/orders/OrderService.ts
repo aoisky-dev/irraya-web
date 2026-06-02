@@ -9,6 +9,20 @@ export class OrderService {
     private readonly cartService: CartService
   ) {}
 
+  async getOrderById(orderId: string): Promise<Order> {
+    const order = await this.orderRepository.findById(orderId);
+
+    if (!order) {
+      throw new AppError("Order not found", "ORDER_NOT_FOUND", 404);
+    }
+
+    return order;
+  }
+
+  async listAllOrders(): Promise<Order[]> {
+    return this.orderRepository.findAll();
+  }
+
   async createFromCart(cartId: string): Promise<Order> {
     const cart = await this.cartService.getCart(cartId);
 
@@ -17,7 +31,7 @@ export class OrderService {
     }
 
     const order: Order = {
-      id: `ord_${cart.id}`,
+      id: `ord_${Date.now()}`,
       cartId: cart.id,
       customerId: cart.customerId,
       status: "pending",
@@ -37,4 +51,3 @@ export class OrderService {
     return order;
   }
 }
-

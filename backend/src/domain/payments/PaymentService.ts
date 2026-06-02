@@ -8,7 +8,7 @@ export class PaymentService {
     const auth = await this.paymentGateway.authorizePayment({
       orderId,
       amountInCents,
-      currencyCode: "usd"
+      currencyCode: "inr"
     });
 
     return {
@@ -16,7 +16,7 @@ export class PaymentService {
       orderId,
       provider: "mock",
       amountInCents,
-      currencyCode: "usd",
+      currencyCode: "inr",
       status: auth.status,
       providerReference: auth.providerReference,
       createdAt: new Date()
