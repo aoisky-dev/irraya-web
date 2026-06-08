@@ -12,6 +12,18 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  role: "admin" | "customer";
+  createdAt: string;
+}
+
+export type ProductStatus = "draft" | "published" | "archived";
+
+export interface Review {
+  id: string;
+  productId: string;
+  authorName: string;
+  rating: number;
+  text: string;
   createdAt: string;
 }
 
@@ -21,12 +33,13 @@ export interface Product {
   title: string;
   description: string;
   category: string;
-  status: "draft" | "published";
+  status: ProductStatus;
   image?: string;
-  variants: ProductVariant[];
-  metadata?: Record<string, string>;
+  videoUrl?: string;
   rating?: number;
   reviewsCount?: number;
+  variants: ProductVariant[];
+  metadata?: Record<string, string>;
 }
 
 export interface CartItem {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useCart } from "./CartProvider";
+import { useToast } from "./ToastProvider";
 
 interface AddToCartButtonProps {
   productId: string;
@@ -21,6 +22,7 @@ export function AddToCartButton({
   color
 }: AddToCartButtonProps) {
   const { addItem } = useCart();
+  const { addToast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
 
@@ -29,9 +31,10 @@ export function AddToCartButton({
     try {
       await addItem(productId, variantId, 1, { title, image, size, color });
       setIsAdded(true);
+      addToast(`Added ${title} to cart`, "success");
       setTimeout(() => setIsAdded(false), 2000);
     } catch {
-      alert("Failed to add item. Please try again.");
+      addToast("Failed to add item. Please try again.", "error");
     } finally {
       setIsAdding(false);
     }

@@ -1,42 +1,26 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const { user, isLoading } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === "admin123") {
-      setIsAuthenticated(true);
-      setError("");
-    } else {
-      setError("Incorrect password");
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="admin-layout" style={{ alignItems: "center", justifyContent: "center", padding: "var(--space-2xl)" }}>
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
-  if (!isAuthenticated) {
+  if (!user || user.role !== "admin") {
     return (
       <div className="admin-layout" style={{ alignItems: "center", justifyContent: "center", padding: "var(--space-2xl)" }}>
         <div className="admin-stat-card" style={{ maxWidth: 400, width: "100%", textAlign: "center" }}>
-          <h2 className="admin-title" style={{ fontSize: "1.5rem", marginBottom: "var(--space-sm)" }}>Admin Login</h2>
-          <p className="admin-subtitle" style={{ marginBottom: "var(--space-xl)" }}>Please sign in to access the dashboard.</p>
-          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
-            <input 
-              type="password" 
-              placeholder="Password (hint: admin123)" 
-              className="input" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoFocus
-            />
-            {error && <p style={{ color: "var(--error)", fontSize: "0.85rem", textAlign: "left" }}>{error}</p>}
-            <button type="submit" className="btn btn-primary btn-full" style={{ marginTop: "8px" }}>Login</button>
-            <Link href="/" className="btn btn-outline btn-full">Return to Store</Link>
-          </form>
+          <h2 className="admin-title" style={{ fontSize: "1.5rem", marginBottom: "var(--space-sm)" }}>Access Denied</h2>
+          <p className="admin-subtitle" style={{ marginBottom: "var(--space-xl)" }}>You must be an administrator to access this page.</p>
+          <Link href="/" className="btn btn-primary btn-full">Return to Store</Link>
         </div>
       </div>
     );

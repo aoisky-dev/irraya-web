@@ -4,6 +4,7 @@ export interface User {
   passwordHash: string;
   firstName: string;
   lastName: string;
+  role: "admin" | "customer";
   createdAt: Date;
 }
 

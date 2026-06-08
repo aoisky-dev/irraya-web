@@ -116,5 +116,13 @@ export class CartService {
     await this.cartRepository.save(cart);
     return this.recalculate(cartId);
   }
+  async clearCart(cartId: string): Promise<Cart> {
+    const cart = await this.getCart(cartId);
+    cart.items = [];
+    cart.promoCode = undefined;
+    cart.discountInCents = undefined;
+    await this.cartRepository.save(cart);
+    return this.recalculate(cartId);
+  }
 }
 

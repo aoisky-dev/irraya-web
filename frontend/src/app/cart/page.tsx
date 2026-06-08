@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/components/CartProvider";
 import { formatMoney } from "@/lib/format";
 
@@ -42,9 +43,9 @@ export default function CartPage() {
             const meta = itemMeta.get(item.variantId);
             return (
               <div key={item.id} className="cart-item">
-                <div className="cart-item-image">
+                <div className="cart-item-image" style={{ position: "relative" }}>
                   {meta?.image ? (
-                    <img src={meta.image} alt={meta.title || "Product"} />
+                    <Image src={meta.image} alt={meta.title || "Product"} fill style={{ objectFit: "cover" }} sizes="120px" />
                   ) : (
                     <div className="card-image-placeholder" style={{ height: "100%", fontSize: "1rem" }}>✦</div>
                   )}

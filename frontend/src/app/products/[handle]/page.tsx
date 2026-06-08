@@ -2,13 +2,19 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { formatMoney } from "@/lib/format";
 import { sampleProducts } from "@/lib/mock-data";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductCard } from "@/components/ProductCard";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import { Carousel } from "@/components/Carousel";
+import { FAQAccordion } from "@/components/FAQAccordion";
+import { ReviewList } from "@/components/ReviewList";
 import { useWishlist } from "@/components/WishlistProvider";
 import { config } from "@/lib/config";
+import { sampleReviews } from "@/lib/mock-data";
 import type { Product, ProductVariant } from "@/lib/types";
 
 export default function ProductDetailPage() {
@@ -122,18 +128,24 @@ export default function ProductDetailPage() {
   return (
     <>
       {/* Breadcrumb */}
-      <nav className="breadcrumb" aria-label="Breadcrumb">
-        <Link href="/">Home</Link>
-        <span className="breadcrumb-sep">/</span>
-        <Link href="/products">Shop</Link>
-        <span className="breadcrumb-sep">/</span>
-        <span className="breadcrumb-current">{product.title}</span>
-      </nav>
+      {/* Breadcrumb */}
+      <Breadcrumb items={[
+        { label: "Home", href: "/" },
+        { label: "Shop", href: "/products" },
+        { label: product.category, href: `/products?category=${product.category}` },
+        { label: product.title }
+      ]} />
 
       <section className="pdp">
-        <div className="pdp-image">
-          {product.image ? (
-            <img src={product.image} alt={product.title} />
+        <div className="pdp-image" style={{ aspectRatio: "3/4" }}>
+          {product.image || product.videoUrl ? (
+            <Carousel 
+              items={[
+                ...(product.image ? [<div key="img" style={{ position: "relative", width: "100%", height: "100%" }}><Image src={product.image} alt={product.title} fill style={{ objectFit: "cover" }} priority sizes="(max-width: 768px) 100vw, 50vw" /></div>] : []),
+                ...(product.videoUrl ? [<video key="vid" src={product.videoUrl} autoPlay loop muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />] : []),
+                <div key="2" className="card-image-placeholder" style={{ height: "100%" }}>✦ Alternate View 1</div>
+              ]} 
+            />
           ) : (
             <div className="card-image-placeholder" style={{ height: "100%" }}>✦</div>
           )}
@@ -263,6 +275,15 @@ export default function ProductDetailPage() {
               <span>Ethically Made</span>
             </div>
           </div>
+          
+          {/* Product FAQ */}
+          <FAQAccordion 
+            items={[
+              { question: "What is the sizing like?", answer: "Our products run true to size. If you are between sizes, we recommend sizing up for a more relaxed fit." },
+              { question: "How do I care for this item?", answer: "Machine wash cold with like colors. Tumble dry low or hang dry to preserve the fabric quality and longevity." },
+              { question: "What is your return policy?", answer: "We offer a 30-day generous return policy. If you are not satisfied, you can return unworn items for a full refund." }
+            ]}
+          />
         </div>
       </section>
 
@@ -273,36 +294,13 @@ export default function ProductDetailPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)" }}>
             <span style={{ fontSize: "1.5rem", fontWeight: "bold" }}>{product.rating || 4.8}</span>
             {renderStars(Math.round(product.rating || 5))}
-            <span className="text-muted">({product.reviewsCount || 42} Reviews)</span>
           </div>
         </div>
         
-        <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: "var(--space-xl)", marginTop: "var(--space-2xl)" }}>
-          <div className="review-card" style={{ padding: "var(--space-lg)", background: "var(--bg-primary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-light)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "var(--space-sm)" }}>
-              <strong>Sarah M.</strong>
-              <span className="text-muted" style={{ fontSize: "0.85rem" }}>2 days ago</span>
-            </div>
-            {renderStars(5)}
-            <p style={{ marginTop: "var(--space-sm)", fontSize: "0.95rem", lineHeight: 1.5 }}>
-              "Absolutely love the quality and fit. The material feels premium and it drapes beautifully. Will definitely buy in another color!"
-            </p>
-          </div>
-          <div className="review-card" style={{ padding: "var(--space-lg)", background: "var(--bg-primary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-light)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "var(--space-sm)" }}>
-              <strong>Michael T.</strong>
-              <span className="text-muted" style={{ fontSize: "0.85rem" }}>1 week ago</span>
-            </div>
-            {renderStars(4)}
-            <p style={{ marginTop: "var(--space-sm)", fontSize: "0.95rem", lineHeight: 1.5 }}>
-              "Great piece overall. Shipping was fast and the packaging was excellent. Runs slightly large but still looks great."
-            </p>
-          </div>
-        </div>
-        
-        <div style={{ marginTop: "var(--space-xl)", textAlign: "center" }}>
-          <button className="btn btn-outline">Write a Review</button>
-        </div>
+        <ReviewList 
+          productId={product.id} 
+          initialReviews={sampleReviews.filter(r => r.productId === product.id)} 
+        />
       </section>
 
       {/* Related Products */}

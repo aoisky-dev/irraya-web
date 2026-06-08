@@ -6,8 +6,9 @@ const envSchema = z.object({
   DATABASE_URL: z.string().optional(),
   REDIS_URL: z.string().default("redis://localhost:6379"),
   PAYMENT_PROVIDER: z.enum(["mock", "stripe"]).default("mock"),
-  STORAGE_MODE: z.enum(["memory", "postgres"]).default("memory"),
-  CORS_ORIGIN: z.string().default("http://localhost:3000")
+  STORAGE_MODE: z.enum(["memory", "postgres"]).default("postgres"),
+  CORS_ORIGIN: z.string().default("http://localhost:3000"),
+  JWT_SECRET: z.string().default("development_secret_key_change_in_production")
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

@@ -1,4 +1,10 @@
-import type { Product } from "./types";
+import type { Product, Review } from "./types";
+
+export const sampleReviews: Review[] = [
+  { id: "rev_1", productId: "prod_1", authorName: "Sarah M.", rating: 5, text: "Absolutely love the quality and fit. The material feels premium and it drapes beautifully. Will definitely buy in another color!", createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
+  { id: "rev_2", productId: "prod_1", authorName: "Michael T.", rating: 4, text: "Great piece overall. Shipping was fast and the packaging was excellent. Runs slightly large but still looks great.", createdAt: new Date(Date.now() - 86400000 * 7).toISOString() },
+  { id: "rev_3", productId: "prod_tshirt_001", authorName: "Emma W.", rating: 5, text: "The perfect essential! So soft.", createdAt: new Date(Date.now() - 86400000 * 4).toISOString() },
+];
 
 /**
  * Frontend fallback catalog — mirrors backend seed-data.ts.
@@ -22,13 +28,16 @@ export const sampleProducts: Product[] = [
     metadata: { material: "French Terry Cotton", fit: "Regular" }
   },
   {
-    id: "prod_tshirt_001",
-    handle: "classic-white-tee",
-    title: "Classic White T-Shirt",
-    description: "A wardrobe essential crafted from organic Pima cotton with a relaxed silhouette. Pre-shrunk and garment-dyed for a perfect fit.",
+    id: "prod_1",
+    handle: "essential-cotton-tee",
+    title: "Essential Cotton Tee",
+    description: "Our signature heavyweight cotton tee. Cut for a relaxed fit that drapes perfectly.",
     category: "t-shirts",
     status: "published",
     image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80",
+    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+    rating: 4.8,
+    reviewsCount: 42,
     variants: [
       { id: "var_tshirt_wht_s", sku: "TS-WHT-S", size: "S", color: "White", priceInCents: 200000, stock: 30 },
       { id: "var_tshirt_wht_m", sku: "TS-WHT-M", size: "M", color: "White", priceInCents: 200000, stock: 45 },

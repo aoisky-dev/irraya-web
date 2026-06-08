@@ -23,6 +23,10 @@ export class OrderService {
     return this.orderRepository.findAll();
   }
 
+  async listOrdersByCustomer(customerId: string): Promise<Order[]> {
+    return this.orderRepository.findByCustomerId(customerId);
+  }
+
   async createFromCart(cartId: string): Promise<Order> {
     const cart = await this.cartService.getCart(cartId);
 

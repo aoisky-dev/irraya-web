@@ -4,6 +4,8 @@ import { Header } from "@/components/Header";
 import { CartProvider } from "@/components/CartProvider";
 import { WishlistProvider } from "@/components/WishlistProvider";
 import { AuthProvider } from "@/components/AuthProvider";
+import { CompareProvider } from "@/components/CompareProvider";
+import { ToastProvider } from "@/components/ToastProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -36,15 +38,19 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AuthProvider>
-          <WishlistProvider>
+        <ToastProvider>
+          <AuthProvider>
             <CartProvider>
-              <Header />
-              <main className="container page">{children}</main>
-              <Footer />
+              <WishlistProvider>
+                <CompareProvider>
+                  <Header />
+                  <main className="container page">{children}</main>
+                  <Footer />
+                </CompareProvider>
+              </WishlistProvider>
             </CartProvider>
-          </WishlistProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );

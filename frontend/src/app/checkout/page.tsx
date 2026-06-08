@@ -14,6 +14,7 @@ export default function CheckoutPage() {
   const [promoCode, setPromoCode] = useState("");
   const [promoError, setPromoError] = useState("");
   const [error, setError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "paypal" | "applepay">("card");
 
   const [form, setForm] = useState({
     firstName: "",
@@ -217,45 +218,94 @@ export default function CheckoutPage() {
 
           {/* Payment Section */}
           <div className="checkout-section">
-            <h2>Payment</h2>
-            <div className="form-grid">
-              <div className="form-group full">
-                <label className="form-label" htmlFor="cardNumber">Card Number</label>
-                <input
-                  id="cardNumber"
-                  className="form-input"
-                  type="text"
-                  placeholder="4242 4242 4242 4242"
-                  value={form.cardNumber}
-                  onChange={(e) => updateField("cardNumber", e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="cardExpiry">Expiry Date</label>
-                <input
-                  id="cardExpiry"
-                  className="form-input"
-                  type="text"
-                  placeholder="MM / YY"
-                  value={form.cardExpiry}
-                  onChange={(e) => updateField("cardExpiry", e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="cardCvc">CVC</label>
-                <input
-                  id="cardCvc"
-                  className="form-input"
-                  type="text"
-                  placeholder="123"
-                  value={form.cardCvc}
-                  onChange={(e) => updateField("cardCvc", e.target.value)}
-                />
-              </div>
+            <h2>Payment Method</h2>
+            
+            <div style={{ display: "flex", gap: "10px", marginBottom: "var(--space-lg)" }}>
+              <button 
+                type="button"
+                className={`btn ${paymentMethod === "card" ? "btn-primary" : "btn-outline"}`}
+                onClick={() => setPaymentMethod("card")}
+                style={{ flex: 1 }}
+              >
+                Credit Card
+              </button>
+              <button 
+                type="button"
+                className={`btn ${paymentMethod === "paypal" ? "btn-primary" : "btn-outline"}`}
+                onClick={() => setPaymentMethod("paypal")}
+                style={{ flex: 1 }}
+              >
+                PayPal
+              </button>
+              <button 
+                type="button"
+                className={`btn ${paymentMethod === "applepay" ? "btn-primary" : "btn-outline"}`}
+                onClick={() => setPaymentMethod("applepay")}
+                style={{ flex: 1 }}
+              >
+                Apple Pay
+              </button>
             </div>
+
+            {paymentMethod === "card" && (
+              <div className="form-grid">
+                <div className="form-group full">
+                  <label className="form-label" htmlFor="cardNumber">Card Number (Stripe Mock)</label>
+                  <input
+                    id="cardNumber"
+                    className="form-input"
+                    type="text"
+                    placeholder="4242 4242 4242 4242"
+                    value={form.cardNumber}
+                    onChange={(e) => updateField("cardNumber", e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="cardExpiry">Expiry Date</label>
+                  <input
+                    id="cardExpiry"
+                    className="form-input"
+                    type="text"
+                    placeholder="MM / YY"
+                    value={form.cardExpiry}
+                    onChange={(e) => updateField("cardExpiry", e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="cardCvc">CVC</label>
+                  <input
+                    id="cardCvc"
+                    className="form-input"
+                    type="text"
+                    placeholder="123"
+                    value={form.cardCvc}
+                    onChange={(e) => updateField("cardCvc", e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {paymentMethod === "paypal" && (
+              <div style={{ padding: "var(--space-xl)", textAlign: "center", background: "#f5f7fa", borderRadius: "8px", border: "1px dashed #c1c8d1" }}>
+                <div style={{ fontSize: "2rem", marginBottom: "var(--space-sm)", color: "#003087" }}>
+                  <strong>PayPal</strong>
+                </div>
+                <p className="text-secondary">You will be redirected to PayPal to complete your purchase securely.</p>
+              </div>
+            )}
+
+            {paymentMethod === "applepay" && (
+              <div style={{ padding: "var(--space-xl)", textAlign: "center", background: "#000", color: "#fff", borderRadius: "8px" }}>
+                <div style={{ fontSize: "1.5rem", marginBottom: "var(--space-sm)" }}>
+                  <strong> Pay</strong>
+                </div>
+                <p style={{ color: "#ccc" }}>Authenticate with Touch ID or Face ID on your Apple device.</p>
+              </div>
+            )}
+
             <p className="text-secondary" style={{ fontSize: "0.8rem", lineHeight: 1.6, marginTop: "var(--space-md)" }}>
-              🔒 This is a demo. No real payment will be charged. Clicking &quot;Place Order&quot; simulates a
-              successful payment.
+              🔒 This is a demo. No real payment will be charged. Clicking "Place Order" simulates a
+              successful payment via {paymentMethod}.
             </p>
           </div>
 

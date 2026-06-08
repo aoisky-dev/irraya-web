@@ -1,7 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ProductCard } from "@/components/ProductCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { getProducts } from "@/lib/api/products";
+import { Carousel } from "@/components/Carousel";
 
 export default async function HomePage() {
   const products = await getProducts();
@@ -62,9 +64,10 @@ export default async function HomePage() {
                 key={cat}
                 href={`/products?category=${cat}`}
                 className="collection-card"
+                style={{ position: "relative" }}
               >
                 {catProduct?.image && (
-                  <img src={catProduct.image} alt={cat} loading="lazy" />
+                  <Image src={catProduct.image} alt={cat} fill style={{ objectFit: "cover" }} sizes="(max-width: 768px) 100vw, 50vw" />
                 )}
                 <div className="collection-card-overlay">
                   <span className="collection-card-title">{cat}</span>
@@ -84,11 +87,22 @@ export default async function HomePage() {
           <h2 className="section-title">Featured Products</h2>
           <Link href="/products" className="section-link">View all →</Link>
         </div>
-        <div className="grid">
-          {products.slice(0, 4).map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        <Carousel 
+          autoPlay 
+          interval={6000}
+          items={[
+            <div className="grid" style={{ padding: "0 var(--space-xs)" }}>
+              {products.slice(0, 4).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>,
+            <div className="grid" style={{ padding: "0 var(--space-xs)" }}>
+              {products.slice(4, 8).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          ]}
+        />
       </section>
 
       {/* Brand Story Preview */}

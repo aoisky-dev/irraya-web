@@ -1,12 +1,12 @@
 import { AppError } from "../../shared/errors/AppError.js";
 import type { Product } from "./Product.js";
-import type { ProductRepository } from "./ProductRepository.js";
+import type { ProductRepository, ProductFilter } from "./ProductRepository.js";
 
 export class ProductService {
   constructor(private readonly productRepository: ProductRepository) {}
 
-  async listPublishedProducts(): Promise<Product[]> {
-    return this.productRepository.findAllPublished();
+  async listPublishedProducts(filter?: ProductFilter): Promise<Product[]> {
+    return this.productRepository.findAllPublished(filter);
   }
 
   async getProductByHandle(handle: string): Promise<Product> {

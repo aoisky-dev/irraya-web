@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { formatMoney } from "@/lib/format";
 import { config } from "@/lib/config";
 import type { Order } from "@/lib/types";
+import { useAuth } from "@/components/AuthProvider";
+import { useRouter } from "next/navigation";
 
 type Stats = {
   totalOrders: number;
@@ -17,13 +19,26 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const { token, user, isLoading: isAuthLoading } = useAuth();
+  const router = useRouter();
+
   useEffect(() => {
+    if (isAuthLoading) return;
+    if (!user || user.role !== "admin") {
+      router.push("/");
+      return;
+    }
+
     Promise.all([
-      fetch(`${config.backendBaseUrl}/admin/orders`).then((res) => res.json()),
-      fetch(`${config.backendBaseUrl}/admin/stats`).then((res) => res.json())
+      fetch(`${config.backendBaseUrl}/admin/orders`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then((res) => res.json()),
+      fetch(`${config.backendBaseUrl}/admin/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then((res) => res.json())
     ])
       .then(([ordersData, statsData]) => {
-        if (ordersData.error || statsData.error) throw new Error("Failed to load admin data");
+        if (ordersData.error || statsData.error) throw new Error(ordersData.error || statsData.error || "Failed to load admin data");
         setOrders(ordersData);
         setStats(statsData);
       })
@@ -31,7 +46,7 @@ export default function AdminDashboardPage() {
         setError(err.message);
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [token, user, isAuthLoading, router]);
 
   if (isLoading) {
     return (

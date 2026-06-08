@@ -1,15 +1,41 @@
 import { PrismaClient } from "@prisma/client";
 import type { Product, ProductStatus } from "../../../domain/products/Product.js";
-import type { ProductRepository } from "../../../domain/products/ProductRepository.js";
+import type { ProductRepository, ProductFilter } from "../../../domain/products/ProductRepository.js";
 
 export class PrismaProductRepository implements ProductRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async findAllPublished(): Promise<Product[]> {
+  async findAllPublished(filter?: ProductFilter): Promise<Product[]> {
+    const where: any = { status: "published" };
+
+    if (filter) {
+      if (filter.q) {
+        where.OR = [
+          { title: { contains: filter.q, mode: "insensitive" } },
+          { description: { contains: filter.q, mode: "insensitive" } },
+        ];
+      }
+      if (filter.category) {
+        where.category = filter.category;
+      }
+
+      const variantFilters: any = {};
+      if (filter.color) variantFilters.color = { equals: filter.color, mode: "insensitive" };
+      if (filter.size) variantFilters.size = { equals: filter.size, mode: "insensitive" };
+      
+      if (filter.minPrice !== undefined || filter.maxPrice !== undefined) {
+        variantFilters.priceInCents = {};
+        if (filter.minPrice !== undefined) variantFilters.priceInCents.gte = filter.minPrice;
+        if (filter.maxPrice !== undefined) variantFilters.priceInCents.lte = filter.maxPrice;
+      }
+
+      if (Object.keys(variantFilters).length > 0) {
+        where.variants = { some: variantFilters };
+      }
+    }
+
     const products = await this.prisma.product.findMany({
-      where: {
-        status: "published",
-      },
+      where,
       include: {
         variants: true,
       },

@@ -1919,7 +1919,7 @@ h1, h2, h3, h4, h5 {
   border: 2px solid var(--border);
   display: flex;
   align-items: center;
-  justifyContent: center;
+  justify-content: center;
   margin-bottom: var(--space-sm);
   font-size: 0.8rem;
   font-weight: bold;
@@ -2121,26 +2121,6 @@ h1, h2, h3, h4, h5 {
 
 .admin-table tr:hover {
   background-color: var(--bg-input);
-}
-
-.badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.badge-success {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.badge-warning {
-  background-color: #fff3cd;
-  color: #856404;
 }
 
 .admin-empty {

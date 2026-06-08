@@ -1,3 +1,6 @@
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { env } from "../../config/env.js";
 import { AppError } from "../../shared/errors/AppError.js";
 import { User, SafeUser } from "./User.js";
 import { UserRepository } from "./UserRepository.js";
@@ -16,12 +19,16 @@ export class AuthService {
       throw new AppError("Email is already registered", "EMAIL_EXISTS", 400);
     }
 
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(data.passwordHash, salt);
+
     const user: User = {
       id: `usr_${Date.now()}`,
       email: data.email,
-      passwordHash: data.passwordHash,
+      passwordHash: hash,
       firstName: data.firstName,
       lastName: data.lastName,
+      role: "customer",
       createdAt: new Date()
     };
 
@@ -31,27 +38,33 @@ export class AuthService {
 
   async login(email: string, passwordHash: string): Promise<{ token: string; user: SafeUser }> {
     const user = await this.userRepository.findByEmail(email);
-    if (!user || user.passwordHash !== passwordHash) {
+    if (!user) {
       throw new AppError("Invalid email or password", "INVALID_CREDENTIALS", 401);
     }
 
-    // Since this is a simple mock, we'll just return the user ID as a token
-    const token = `mock_token_${user.id}`;
+    const isMatch = await bcrypt.compare(passwordHash, user.passwordHash);
+    if (!isMatch) {
+      throw new AppError("Invalid email or password", "INVALID_CREDENTIALS", 401);
+    }
+
+    const payload = { id: user.id, role: user.role };
+    const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: "7d" });
+
     return { token, user: this.sanitizeUser(user) };
   }
 
   async getMe(token: string): Promise<SafeUser> {
-    if (!token.startsWith("mock_token_")) {
+    try {
+      const decoded = jwt.verify(token, env.JWT_SECRET) as { id: string; role: string };
+      const user = await this.userRepository.findById(decoded.id);
+
+      if (!user) {
+        throw new AppError("User not found", "USER_NOT_FOUND", 404);
+      }
+
+      return this.sanitizeUser(user);
+    } catch (err) {
       throw new AppError("Unauthorized", "UNAUTHORIZED", 401);
     }
-
-    const id = token.replace("mock_token_", "");
-    const user = await this.userRepository.findById(id);
-
-    if (!user) {
-      throw new AppError("User not found", "USER_NOT_FOUND", 404);
-    }
-
-    return this.sanitizeUser(user);
   }
 }

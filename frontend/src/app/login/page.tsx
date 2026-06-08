@@ -65,25 +65,26 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        <button type="submit" className="btn btn-full" disabled={isLoading}>
+        <button className="btn btn-full" type="submit" disabled={isLoading}>
           {isLoading ? "Signing in..." : "Sign In"}
         </button>
       </form>
+        <div style={{ marginTop: "var(--space-lg)", display: "flex", alignItems: "center", gap: "var(--space-sm)", color: "var(--text-muted)" }}>
+          <hr style={{ flex: 1, borderTop: "1px solid var(--border)" }} />
+          <span style={{ fontSize: "0.85rem" }}>or continue with</span>
+          <hr style={{ flex: 1, borderTop: "1px solid var(--border)" }} />
+        </div>
 
-      <div style={{ display: "flex", alignItems: "center", margin: "var(--space-xl) 0" }}>
-        <hr style={{ flex: 1, borderColor: "var(--border-light)" }} />
-        <span style={{ padding: "0 var(--space-md)", color: "var(--text-muted)", fontSize: "0.85rem" }}>OR</span>
-        <hr style={{ flex: 1, borderColor: "var(--border-light)" }} />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
-        <button className="btn btn-outline btn-full" type="button" onClick={() => alert("Google Login is a mock UI for this phase.")}>
-          Continue with Google
-        </button>
-        <button className="btn btn-outline btn-full" type="button" onClick={() => alert("OTP Login is a mock UI for this phase.")}>
-          Login with Mobile OTP
-        </button>
-      </div>
+        <div style={{ marginTop: "var(--space-lg)", display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+          <button type="button" className="btn btn-outline" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-sm)" }}>
+            <img src="https://authjs.dev/img/providers/google.svg" alt="Google" style={{ width: "20px", height: "20px" }} />
+            Continue with Google
+          </button>
+          <button type="button" className="btn btn-outline" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-sm)" }}>
+            <img src="https://authjs.dev/img/providers/apple.svg" alt="Apple" style={{ width: "20px", height: "20px" }} />
+            Continue with Apple
+          </button>
+        </div>
 
       <p style={{ textAlign: "center", marginTop: "var(--space-xl)", fontSize: "0.9rem" }}>
         Don&apos;t have an account?{" "}
