@@ -2,17 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { login as apiLogin } from "@/lib/api/auth";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,78 +21,63 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // In this mock, password is just whatever the user enters as the hash
-      const data = await apiLogin(email, password);
+      const data = await apiLogin(identifier, password);
       login(data.token, data.user);
-      router.push("/account");
-    } catch (err: any) {
-      setError(err.message || "Failed to login");
+      const nextPath = searchParams.get("next") || "/account";
+      router.push(nextPath.startsWith("/") ? nextPath : "/account");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to login");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: "400px", margin: "var(--space-4xl) auto" }}>
-      <h1 className="section-title" style={{ textAlign: "center" }}>Welcome Back</h1>
-      <p className="text-muted" style={{ textAlign: "center", marginBottom: "var(--space-2xl)" }}>
-        Sign in to your Irraya account
-      </p>
-
-      {error && (
-        <div style={{ padding: "12px", background: "#fde8e8", color: "var(--error)", borderRadius: "var(--radius-md)", marginBottom: "var(--space-md)" }}>
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
-        <div>
-          <label className="label">Email</label>
-          <input
-            type="email"
-            className="input"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="label">Password</label>
-          <input
-            type="password"
-            className="input"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <button className="btn btn-full" type="submit" disabled={isLoading}>
-          {isLoading ? "Signing in..." : "Sign In"}
-        </button>
-      </form>
-        <div style={{ marginTop: "var(--space-lg)", display: "flex", alignItems: "center", gap: "var(--space-sm)", color: "var(--text-muted)" }}>
-          <hr style={{ flex: 1, borderTop: "1px solid var(--border)" }} />
-          <span style={{ fontSize: "0.85rem" }}>or continue with</span>
-          <hr style={{ flex: 1, borderTop: "1px solid var(--border)" }} />
+    <section className="auth-shell">
+      <div className="auth-panel">
+        <div className="auth-head">
+          <span className="hero-tag">Account Access</span>
+          <h1 className="section-title">Welcome Back</h1>
+          <p className="auth-subtitle">Sign in to manage your orders, wishlist, and profile details.</p>
         </div>
 
-        <div style={{ marginTop: "var(--space-lg)", display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
-          <button type="button" className="btn btn-outline" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-sm)" }}>
-            <img src="https://authjs.dev/img/providers/google.svg" alt="Google" style={{ width: "20px", height: "20px" }} />
-            Continue with Google
+        {error && <div className="auth-error">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div>
+            <label className="label" htmlFor="login-identifier">Email</label>
+            <input
+              id="login-identifier"
+              type="text"
+              className="input"
+              required
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="you@example.com"
+            />
+          </div>
+          <div>
+            <label className="label" htmlFor="login-password">Password</label>
+            <input
+              id="login-password"
+              type="password"
+              className="input"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+            />
+          </div>
+          <button className="btn btn-full" type="submit" disabled={isLoading}>
+            {isLoading ? "Signing in..." : "Sign In"}
           </button>
-          <button type="button" className="btn btn-outline" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-sm)" }}>
-            <img src="https://authjs.dev/img/providers/apple.svg" alt="Apple" style={{ width: "20px", height: "20px" }} />
-            Continue with Apple
-          </button>
-        </div>
+        </form>
 
-      <p style={{ textAlign: "center", marginTop: "var(--space-xl)", fontSize: "0.9rem" }}>
-        Don&apos;t have an account?{" "}
-        <Link href="/register" style={{ color: "var(--accent)", fontWeight: 500 }}>
-          Sign up
-        </Link>
-      </p>
-    </div>
+
+        <div className="auth-footer-note">
+          Don&apos;t have an account? <Link href="/register">Sign up</Link>
+        </div>
+      </div>
+    </section>
   );
 }

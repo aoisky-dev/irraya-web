@@ -47,7 +47,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={toast.id}
             style={{
-              background: toast.type === "error" ? "var(--error)" : toast.type === "success" ? "#10b981" : "var(--bg-card)",
+              background: toast.type === "error" ? "var(--error)" : toast.type === "success" ? "var(--success)" : "var(--bg-card)",
               color: toast.type === "info" ? "var(--text-primary)" : "white",
               padding: "var(--space-sm) var(--space-md)",
               borderRadius: "var(--radius-sm)",

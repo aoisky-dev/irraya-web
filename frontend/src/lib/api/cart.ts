@@ -1,14 +1,18 @@
 import type { Cart } from "../types";
-import { apiRequest } from "./client";
+import { medusaRequest } from "./client";
+import { mapMedusaCart } from "./medusa-mappers";
 
 export async function getCart(cartId: string): Promise<Cart> {
-  return await apiRequest<Cart>(`/carts/${cartId}`);
+  const response = await medusaRequest<{ cart?: unknown }>(`/store/carts/${cartId}`);
+  return mapMedusaCart(response.cart);
 }
 
 export async function createCart(): Promise<Cart> {
-  return await apiRequest<Cart>('/carts', {
-    method: 'POST'
+  const response = await medusaRequest<{ cart?: unknown }>("/store/carts", {
+    method: "POST",
+    body: JSON.stringify({ currency_code: "inr" })
   });
+  return mapMedusaCart(response.cart);
 }
 
 export async function addItemToCart(
@@ -17,16 +21,18 @@ export async function addItemToCart(
   variantId: string,
   quantity: number
 ): Promise<Cart> {
-  return await apiRequest<Cart>(`/carts/${cartId}/items`, {
-    method: 'POST',
-    body: JSON.stringify({ productId, variantId, quantity })
+  const response = await medusaRequest<{ cart?: unknown }>(`/store/carts/${cartId}/line-items`, {
+    method: "POST",
+    body: JSON.stringify({ variant_id: variantId, quantity })
   });
+  return mapMedusaCart(response.cart);
 }
 
 export async function removeItemFromCart(cartId: string, itemId: string): Promise<Cart> {
-  return await apiRequest<Cart>(`/carts/${cartId}/items/${itemId}`, {
-    method: 'DELETE'
+  const response = await medusaRequest<{ cart?: unknown }>(`/store/carts/${cartId}/line-items/${itemId}`, {
+    method: "DELETE"
   });
+  return mapMedusaCart(response.cart);
 }
 
 export async function updateItemQuantity(
@@ -34,15 +40,17 @@ export async function updateItemQuantity(
   itemId: string,
   quantity: number
 ): Promise<Cart> {
-  return await apiRequest<Cart>(`/carts/${cartId}/items/${itemId}`, {
-    method: 'PATCH',
+  const response = await medusaRequest<{ cart?: unknown }>(`/store/carts/${cartId}/line-items/${itemId}`, {
+    method: "POST",
     body: JSON.stringify({ quantity })
   });
+  return mapMedusaCart(response.cart);
 }
 
 export async function applyPromoCode(cartId: string, code: string): Promise<Cart> {
-  return await apiRequest<Cart>(`/carts/${cartId}/promo`, {
-    method: 'POST',
+  const response = await medusaRequest<{ cart?: unknown }>(`/store/carts/${cartId}/promotions`, {
+    method: "POST",
     body: JSON.stringify({ code })
   });
+  return mapMedusaCart(response.cart);
 }

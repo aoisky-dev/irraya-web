@@ -1,6 +1,23 @@
 import Link from "next/link";
+import { getProducts } from "@/lib/api/products";
 
-export function Footer() {
+const formatCategoryLabel = (value: string): string =>
+  value
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+export async function Footer() {
+  let categories: string[] = [];
+
+  try {
+    const products = await getProducts();
+    categories = [...new Set(products.map((product) => product.category).filter(Boolean))];
+  } catch {
+    categories = [];
+  }
+
   return (
     <footer className="footer">
       <div className="container">
@@ -14,9 +31,11 @@ export function Footer() {
           <div className="footer-col">
             <h4>Shop</h4>
             <Link href="/products">All Products</Link>
-            <Link href="/products">T-Shirts</Link>
-            <Link href="/products">Dresses</Link>
-            <Link href="/products">Hoodies</Link>
+            {categories.slice(0, 3).map((category) => (
+              <Link key={category} href={`/products?category=${encodeURIComponent(category)}`}>
+                {formatCategoryLabel(category)}
+              </Link>
+            ))}
           </div>
           <div className="footer-col">
             <h4>Company</h4>

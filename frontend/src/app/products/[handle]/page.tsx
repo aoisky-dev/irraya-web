@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { formatMoney } from "@/lib/format";
-import { sampleProducts } from "@/lib/mock-data";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductCard } from "@/components/ProductCard";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -13,8 +12,8 @@ import { Carousel } from "@/components/Carousel";
 import { FAQAccordion } from "@/components/FAQAccordion";
 import { ReviewList } from "@/components/ReviewList";
 import { useWishlist } from "@/components/WishlistProvider";
-import { config } from "@/lib/config";
 import { sampleReviews } from "@/lib/mock-data";
+import { getProductByHandle, getProducts } from "@/lib/api/products";
 import type { Product, ProductVariant } from "@/lib/types";
 
 export default function ProductDetailPage() {
@@ -30,21 +29,8 @@ export default function ProductDetailPage() {
   useEffect(() => {
     const handle = params.handle;
 
-    // Fetch this product
-    const fetchProduct = fetch(`${config.backendBaseUrl}/products/${handle}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Not found");
-        return res.json();
-      })
-      .catch(() => sampleProducts.find((p) => p.handle === handle) ?? null);
-
-    // Fetch all products for related section
-    const fetchAll = fetch(`${config.backendBaseUrl}/products`)
-      .then((res) => {
-        if (!res.ok) throw new Error("API error");
-        return res.json();
-      })
-      .catch(() => sampleProducts);
+    const fetchProduct = getProductByHandle(handle);
+    const fetchAll = getProducts();
 
     Promise.all([fetchProduct, fetchAll])
       .then(([prod, all]) => {

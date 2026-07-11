@@ -1,15 +1,26 @@
 services:
-  db:
-    image: postgres:15
-    container_name: irraya-postgres-new
+  postgres:
+    image: postgres:16-alpine
+    container_name: irraya_medusa_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: irraya
+      POSTGRES_DB: medusa
     ports:
       - "5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - medusa_postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: irraya_medusa_redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - medusa_redis_data:/data
 
 volumes:
-  pgdata:
+  medusa_postgres_data:
+  medusa_redis_data:

@@ -1,18 +1,19 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import type { Product } from "@/lib/types";
-import { sampleProducts } from "@/lib/mock-data";
-import { config } from "@/lib/config";
+import { getProducts } from "@/lib/api/products";
 
 type SortOption = "newest" | "price-asc" | "price-desc";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const searchParams = useSearchParams();
+
   // Filter states
   const [activeCategory, setActiveCategory] = useState("all");
   const [activeColor, setActiveColor] = useState("");
@@ -23,37 +24,62 @@ export default function ProductsPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    // Build query params
-    const params = new URLSearchParams();
-    if (activeCategory !== "all") params.append("category", activeCategory);
-    if (activeColor) params.append("color", activeColor);
-    if (activeSize) params.append("size", activeSize);
-    if (maxPrice) params.append("maxPrice", (maxPrice * 100).toString()); // convert dollars to cents
-
-    fetch(`${config.backendBaseUrl}/products?${params.toString()}`, { cache: "no-store" })
-      .then((res) => {
-        if (!res.ok) throw new Error("API error");
-        return res.json();
-      })
+    getProducts()
       .then(setProducts)
-      .catch(() => {
-        // Simple client-side fallback if backend fails
-        let fallback = [...sampleProducts];
-        if (activeCategory !== "all") fallback = fallback.filter(p => p.category === activeCategory);
-        if (activeColor) fallback = fallback.filter(p => p.variants.some(v => v.color.toLowerCase() === activeColor.toLowerCase()));
-        if (activeSize) fallback = fallback.filter(p => p.variants.some(v => v.size.toLowerCase() === activeSize.toLowerCase()));
-        if (maxPrice) fallback = fallback.filter(p => p.variants.some(v => v.priceInCents <= Number(maxPrice) * 100));
-        setProducts(fallback);
-      })
+      .catch(() => setProducts([]))
       .finally(() => setIsLoading(false));
-  }, [activeCategory, activeColor, activeSize, maxPrice]);
+  }, []);
 
-  const categories = useMemo(() => ["all", "t-shirts", "hoodies", "dresses", "pants", "outerwear"], []);
-  const colors = useMemo(() => ["", "Black", "White", "Navy", "Charcoal", "Beige", "Tan", "Olive", "Burgundy"], []);
-  const sizes = useMemo(() => ["", "S", "M", "L", "XL", "30", "32", "34"], []);
+  useEffect(() => {
+    const categoryFromQuery = searchParams.get("category")?.trim().toLowerCase();
+    if (!categoryFromQuery) {
+      setActiveCategory("all");
+      return;
+    }
+
+    setActiveCategory(categoryFromQuery);
+  }, [searchParams]);
+
+  const categories = useMemo(() => {
+    const dynamic = [...new Set(products.map((product) => product.category).filter(Boolean))]
+      .map((category) => category.toLowerCase())
+      .sort((a, b) => a.localeCompare(b));
+    return ["all", ...dynamic];
+  }, [products]);
+
+  const colors = useMemo(() => {
+    const dynamic = [...new Set(products.flatMap((product) => product.variants.map((variant) => variant.color)).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b));
+    return ["", ...dynamic];
+  }, [products]);
+
+  const sizes = useMemo(() => {
+    const dynamic = [...new Set(products.flatMap((product) => product.variants.map((variant) => variant.size)).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    return ["", ...dynamic];
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const categoryMatch = activeCategory === "all" || product.category.toLowerCase() === activeCategory;
+
+      const colorMatch =
+        !activeColor || product.variants.some((variant) => variant.color.toLowerCase() === activeColor.toLowerCase());
+
+      const sizeMatch =
+        !activeSize || product.variants.some((variant) => variant.size.toLowerCase() === activeSize.toLowerCase());
+
+      const maxPriceInCents = typeof maxPrice === "number" ? maxPrice * 100 : null;
+      const priceMatch =
+        maxPriceInCents === null ||
+        product.variants.some((variant) => variant.priceInCents <= maxPriceInCents);
+
+      return categoryMatch && colorMatch && sizeMatch && priceMatch;
+    });
+  }, [products, activeCategory, activeColor, activeSize, maxPrice]);
 
   const sortedProducts = useMemo(() => {
-    let result = [...products];
+    const result = [...filteredProducts];
     switch (sortBy) {
       case "price-asc":
         result.sort((a, b) => (a.variants[0]?.priceInCents ?? 0) - (b.variants[0]?.priceInCents ?? 0));
@@ -63,7 +89,7 @@ export default function ProductsPage() {
         break;
     }
     return result;
-  }, [products, sortBy]);
+  }, [filteredProducts, sortBy]);
 
   return (
     <section>

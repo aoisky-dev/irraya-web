@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { formatMoney } from "@/lib/format";
 import type { Order } from "@/lib/types";
-import { config } from "@/lib/config";
+import { getOrderById } from "@/lib/api/orders";
 
 export default function OrderConfirmationPage() {
   const params = useParams<{ id: string }>();
@@ -13,11 +13,7 @@ export default function OrderConfirmationPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${config.backendBaseUrl}/orders/${params.id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Not found");
-        return res.json();
-      })
+    getOrderById(params.id)
       .then(setOrder)
       .catch(() => {
         // If we can't fetch, create a minimal display from URL

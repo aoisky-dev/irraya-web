@@ -1,26 +1,24 @@
-import { sampleProducts } from "../mock-data";
 import type { Product } from "../types";
-import { apiRequest } from "./client";
+import { medusaRequest } from "./client";
+import { mapMedusaProduct } from "./medusa-mappers";
+
+const defaultProductFields = "*metadata,*categories,*variants.prices";
 
 export async function getProducts(params?: Record<string, string | number>): Promise<Product[]> {
-  try {
-    const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
-    return await apiRequest<Product[]>(`/products${qs}`);
-  } catch {
-    // Temporary fallback until backend HTTP layer is wired.
-    if (params && params.q) {
-      const q = (params.q as string).toLowerCase();
-      return sampleProducts.filter(p => p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
-    }
-    return sampleProducts;
-  }
+  const queryParams = new URLSearchParams({
+    fields: defaultProductFields,
+    ...(params as Record<string, string>)
+  });
+  const qs = `?${queryParams.toString()}`;
+  const response = await medusaRequest<{ products?: unknown[] }>(`/store/products${qs}`);
+  return (response.products ?? []).map(mapMedusaProduct);
 }
 
 export async function getProductByHandle(handle: string): Promise<Product | null> {
-  try {
-    return await apiRequest<Product>(`/products/${handle}`);
-  } catch {
-    return sampleProducts.find((product) => product.handle === handle) ?? null;
-  }
+  const response = await medusaRequest<{ products?: unknown[] }>(
+    `/store/products?${new URLSearchParams({ handle, limit: "1", fields: defaultProductFields }).toString()}`
+  );
+  const raw = (response.products ?? [])[0];
+  return raw ? mapMedusaProduct(raw) : null;
 }
 

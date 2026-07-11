@@ -286,8 +286,8 @@ export default function CheckoutPage() {
             )}
 
             {paymentMethod === "paypal" && (
-              <div style={{ padding: "var(--space-xl)", textAlign: "center", background: "#f5f7fa", borderRadius: "8px", border: "1px dashed #c1c8d1" }}>
-                <div style={{ fontSize: "2rem", marginBottom: "var(--space-sm)", color: "#003087" }}>
+              <div style={{ padding: "var(--space-xl)", textAlign: "center", background: "var(--bg-input)", borderRadius: "8px", border: "1px dashed var(--border)" }}>
+                <div style={{ fontSize: "2rem", marginBottom: "var(--space-sm)", color: "var(--accent)" }}>
                   <strong>PayPal</strong>
                 </div>
                 <p className="text-secondary">You will be redirected to PayPal to complete your purchase securely.</p>
@@ -295,11 +295,11 @@ export default function CheckoutPage() {
             )}
 
             {paymentMethod === "applepay" && (
-              <div style={{ padding: "var(--space-xl)", textAlign: "center", background: "#000", color: "#fff", borderRadius: "8px" }}>
+              <div style={{ padding: "var(--space-xl)", textAlign: "center", background: "var(--text-primary)", color: "var(--text-inverse)", borderRadius: "8px" }}>
                 <div style={{ fontSize: "1.5rem", marginBottom: "var(--space-sm)" }}>
                   <strong> Pay</strong>
                 </div>
-                <p style={{ color: "#ccc" }}>Authenticate with Touch ID or Face ID on your Apple device.</p>
+                <p style={{ color: "rgba(255, 255, 255, 0.8)" }}>Authenticate with Touch ID or Face ID on your Apple device.</p>
               </div>
             )}
 

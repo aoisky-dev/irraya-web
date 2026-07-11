@@ -15,6 +15,17 @@ export default async function SearchPage({
     <div className="container" style={{ padding: "var(--space-2xl) 0" }}>
       <div style={{ marginBottom: "var(--space-xl)" }}>
         <h1 className="section-title" style={{ marginBottom: "var(--space-md)", fontSize: "2.5rem" }}>Search Results</h1>
+        <form action="/search" method="GET" style={{ display: "flex", gap: "var(--space-sm)", marginBottom: "var(--space-lg)", maxWidth: 560 }}>
+          <input
+            type="search"
+            name="q"
+            defaultValue={query}
+            className="input"
+            placeholder="Search products, categories, styles..."
+            aria-label="Search products"
+          />
+          <button type="submit" className="btn">Search</button>
+        </form>
         {query ? (
           <p style={{ color: "var(--text-secondary)" }}>Showing results for "{query}"</p>
         ) : (
@@ -31,7 +42,7 @@ export default async function SearchPage({
           </Link>
         </div>
       ) : (
-        <div className="product-grid">
+        <div className="grid">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

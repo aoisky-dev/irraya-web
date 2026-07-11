@@ -6,10 +6,24 @@ import { getProducts } from "@/lib/api/products";
 import { Carousel } from "@/components/Carousel";
 
 export default async function HomePage() {
-  const products = await getProducts();
+  let products = [] as Awaited<ReturnType<typeof getProducts>>;
+  let catalogLoadFailed = false;
+
+  try {
+    products = await getProducts();
+  } catch (error) {
+    catalogLoadFailed = true;
+    console.error("Failed to load homepage catalog from Medusa", error);
+  }
 
   // Get unique categories for collection cards
   const categories = [...new Set(products.map((p) => p.category))];
+  const trendingProducts = [...products]
+    .sort(
+      (a, b) =>
+        (b.variants[0]?.priceInCents ?? 0) - (a.variants[0]?.priceInCents ?? 0)
+    )
+    .slice(0, 4);
 
   return (
     <>
@@ -36,12 +50,12 @@ export default async function HomePage() {
         <div className="feature-item">
           <div className="feature-icon">◇</div>
           <h4>Free Shipping</h4>
-          <p>On orders over ₹5,000</p>
+          <p>On orders over ₹1,000</p>
         </div>
         <div className="feature-item">
           <div className="feature-icon">↻</div>
           <h4>Easy Returns</h4>
-          <p>30-day return policy</p>
+          <p>7-day return policy</p>
         </div>
         <div className="feature-item">
           <div className="feature-icon">♡</div>
@@ -51,11 +65,18 @@ export default async function HomePage() {
       </div>
 
       {/* Collections */}
-      <section>
+      <section id="categories">
         <div className="section-header">
           <h2 className="section-title">Shop by Category</h2>
-          <Link href="/products" className="section-link">View all →</Link>
+          <Link href="/categories" className="section-link">View all →</Link>
         </div>
+        {catalogLoadFailed && (
+          <div className="card" style={{ marginBottom: "var(--space-lg)", textAlign: "center" }}>
+            <p style={{ margin: 0, color: "var(--text-secondary)" }}>
+              We could not load the catalog from backend right now. Please verify Medusa publishable key configuration and try again.
+            </p>
+          </div>
+        )}
         <div className="collections-grid">
           {categories.slice(0, 4).map((cat) => {
             const catProduct = products.find((p) => p.category === cat);
@@ -103,6 +124,26 @@ export default async function HomePage() {
             </div>
           ]}
         />
+      </section>
+
+      {/* Trending Collection */}
+      <section style={{ marginTop: "var(--space-3xl)" }}>
+        <div className="section-header">
+          <h2 className="section-title">Trending Collection</h2>
+          <Link href="/products" className="section-link">View all →</Link>
+        </div>
+        {trendingProducts.length > 0 ? (
+          <div className="grid">
+            {trendingProducts.map((product) => (
+              <ProductCard key={`trending-${product.id}`} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="cart-empty" style={{ background: "transparent", border: "1px dashed var(--border)" }}>
+            <h2>No trending products yet</h2>
+            <p>New arrivals will appear here shortly.</p>
+          </div>
+        )}
       </section>
 
       {/* Brand Story Preview */}
