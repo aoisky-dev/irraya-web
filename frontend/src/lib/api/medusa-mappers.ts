@@ -44,6 +44,11 @@ export const mapMedusaProduct = (raw: any): Product => {
   const variants =
     variantsRaw.length > 0 ? variantsRaw.map((v: unknown) => mapVariant(v, id)) : [mapVariant({}, id)];
   const metadata = raw?.metadata && typeof raw.metadata === "object" ? raw.metadata : {};
+  const metadataRecord = Object.fromEntries(
+    Object.entries(metadata as Record<string, unknown>).map(([k, v]) => [k, String(v)])
+  );
+  const rating = toNumber((metadata as Record<string, unknown>).rating, 0);
+  const reviewsCount = toNumber((metadata as Record<string, unknown>).reviews_count ?? (metadata as Record<string, unknown>).reviewsCount, 0);
 
   return {
     id,
@@ -56,10 +61,13 @@ export const mapMedusaProduct = (raw: any): Product => {
       normalizeText((metadata as Record<string, unknown>).category, "general"),
     status: "published",
     image: normalizeText(raw?.thumbnail ?? raw?.images?.[0]?.url, "") || undefined,
+    rating: rating > 0 ? rating : undefined,
+    reviewsCount: reviewsCount > 0 ? Math.round(reviewsCount) : undefined,
     variants,
-    metadata: Object.fromEntries(
-      Object.entries(metadata as Record<string, unknown>).map(([k, v]) => [k, String(v)])
-    )
+    metadata: metadataRecord,
+    tags: Array.isArray(raw?.tags) ? raw.tags.map((tag: any) => normalizeText(tag?.value ?? tag?.name ?? tag, "")).filter(Boolean) : undefined,
+    metaTitle: normalizeText((metadata as Record<string, unknown>).metaTitle ?? (metadata as Record<string, unknown>).meta_title, "") || undefined,
+    metaDescription: normalizeText((metadata as Record<string, unknown>).metaDescription ?? (metadata as Record<string, unknown>).meta_description, "") || undefined
   };
 };
 

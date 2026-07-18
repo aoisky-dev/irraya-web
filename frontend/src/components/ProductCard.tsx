@@ -6,6 +6,8 @@ import { formatMoney } from "@/lib/format";
 import type { Product } from "@/lib/types";
 import { useWishlist } from "@/components/WishlistProvider";
 import { useCompare } from "@/components/CompareProvider";
+import { getStockLabel, getTotalStock } from "@/lib/catalog";
+import { productAltText } from "@/lib/seo";
 
 interface ProductCardProps {
   product: Product;
@@ -36,13 +38,14 @@ export function ProductCard({ product }: ProductCardProps) {
     }
   };
 
-  const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+  const totalStock = getTotalStock(product);
+  const stock = getStockLabel(product);
 
   return (
     <Link href={`/products/${product.handle}`} className="card" id={`product-${product.handle}`}>
       <div className="card-image" style={{ position: "relative" }}>
         {product.image ? (
-          <Image src={product.image} alt={product.title} fill style={{ objectFit: "cover" }} sizes="(max-width: 768px) 100vw, 33vw" />
+          <Image src={product.image} alt={productAltText(product)} fill style={{ objectFit: "cover" }} sizes="(max-width: 768px) 100vw, 33vw" />
         ) : (
           <div className="card-image-placeholder">✦</div>
         )}
@@ -99,6 +102,9 @@ export function ProductCard({ product }: ProductCardProps) {
         {totalStock <= 5 && totalStock > 0 && (
           <span className="card-badge badge-low-stock">Low Stock</span>
         )}
+        {totalStock <= 0 && (
+          <span className="card-badge badge-low-stock">Out of Stock</span>
+        )}
         <div className="card-overlay">
           <span>View Details →</span>
         </div>
@@ -110,6 +116,9 @@ export function ProductCard({ product }: ProductCardProps) {
           {primaryVariant
             ? formatMoney(primaryVariant.priceInCents, "inr")
             : "Price unavailable"}
+        </p>
+        <p className="text-muted" style={{ fontSize: "0.8rem", marginTop: "var(--space-xs)" }}>
+          {stock.label}{product.rating ? ` · ★ ${product.rating} (${product.reviewsCount ?? 0})` : ""}
         </p>
         {product.variants.length > 1 && (
           <span className="card-variant-count">

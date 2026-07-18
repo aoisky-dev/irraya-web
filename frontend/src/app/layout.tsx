@@ -6,9 +6,11 @@ import { WishlistProvider } from "@/components/WishlistProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { CompareProvider } from "@/components/CompareProvider";
 import { ToastProvider } from "@/components/ToastProvider";
+import { config } from "@/lib/config";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(config.siteUrl),
   title: "Irraya Fashion — Modern Style, Timeless Craft",
   description:
     "Discover premium fashion essentials crafted with quality materials and timeless design. Shop hoodies, t-shirts, dresses, and more.",
@@ -19,6 +21,14 @@ export const metadata: Metadata = {
       "Discover premium fashion essentials crafted with quality materials and timeless design.",
     siteName: "Irraya Fashion",
     type: "website"
+  },
+  alternates: {
+    canonical: "/"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Irraya Fashion — Modern Style, Timeless Craft",
+    description: "Discover premium fashion essentials crafted with quality materials and timeless design."
   }
 };
 

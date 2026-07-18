@@ -44,6 +44,9 @@ export interface Product {
   reviewsCount?: number;
   variants: ProductVariant[];
   metadata?: Record<string, string>;
+  tags?: string[];
+  metaTitle?: string;
+  metaDescription?: string;
 }
 
 export interface CartItem {

@@ -21,6 +21,7 @@ const publishableKey = firstNonEmpty(
 
 export const config = {
   storeName: envValue(process.env.NEXT_PUBLIC_STORE_NAME, "Irraya Fashion"),
+  siteUrl: normalizeUrl(envValue(process.env.NEXT_PUBLIC_SITE_URL, "http://localhost:3000")),
   medusaBaseUrl: normalizeUrl(envValue(process.env.NEXT_PUBLIC_MEDUSA_BASE_URL, "http://localhost:9000")),
   medusaPublishableApiKey: publishableKey,
   medusaAdminUrl: envValue(process.env.NEXT_PUBLIC_MEDUSA_ADMIN_URL, "http://localhost:9000/app")

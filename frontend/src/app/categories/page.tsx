@@ -1,7 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
+import type { Metadata } from "next";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { getProducts } from "@/lib/api/products";
+import { breadcrumbJsonLd, categoryMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = categoryMetadata();
 
 const formatCategoryLabel = (value: string): string =>
   value
@@ -40,6 +44,11 @@ export default async function CategoriesPage() {
 
   return (
     <section>
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd([{ label: "Home", href: "/" }, { label: "Categories" }])) }}
+      />
       <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Categories" }]} />
       <h1 className="page-title">All Categories</h1>
       <p className="page-subtitle">Browse every category and jump directly to filtered products.</p>
