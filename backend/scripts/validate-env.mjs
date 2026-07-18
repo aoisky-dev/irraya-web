@@ -29,10 +29,15 @@ const required = [
   "COOKIE_SECRET",
   "STORE_CORS",
   "ADMIN_CORS",
-  "AUTH_CORS"
+  "AUTH_CORS",
+  "RAZORPAY_KEY_ID",
+  "RAZORPAY_KEY_SECRET"
 ]
 
 const missing = required.filter((key) => !values[key])
+if (values.NODE_ENV === "production" && !values.RAZORPAY_WEBHOOK_SECRET) {
+  missing.push("RAZORPAY_WEBHOOK_SECRET")
+}
 
 if (missing.length > 0) {
   console.error("Missing required env vars:")

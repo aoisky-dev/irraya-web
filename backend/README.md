@@ -10,6 +10,7 @@ This folder now contains the Medusa backend setup for the Irraya store.
 - `.env.example` template for DB/auth/CORS configuration
 - `check:env` script to validate required env keys
 - Detached email/phone OTP verification routes for future provider wiring
+- Razorpay payment order creation and signature verification routes
 
 ## Quick start
 
@@ -50,6 +51,9 @@ COOKIE_SECRET=replace_with_strong_random_string
 STORE_CORS=http://localhost:3000
 ADMIN_CORS=http://localhost:7001,http://localhost:3000
 AUTH_CORS=http://localhost:3000,http://localhost:7001
+RAZORPAY_KEY_ID=rzp_test_your_key_id
+RAZORPAY_KEY_SECRET=replace_with_razorpay_key_secret
+RAZORPAY_WEBHOOK_SECRET=replace_with_razorpay_webhook_secret
 PORT=9000
 ```
 
@@ -67,6 +71,43 @@ POST /auth/customer/verify/confirm
 These routes currently use in-memory OTP storage and console-only delivery because no mail/SMS provider is configured yet. They are **not connected to active frontend signup**; users can currently create accounts without verification.
 
 See [`../AUTH_VERIFICATION.md`](../AUTH_VERIFICATION.md) for endpoint examples, env options, and the provider enablement checklist.
+
+### Razorpay payments
+
+Checkout uses Razorpay Checkout with backend-only secret handling:
+
+```text
+POST /store/payments/razorpay/orders
+POST /store/payments/razorpay/verify
+POST /store/payments/razorpay/link-order
+POST /store/payments/razorpay/webhook
+POST /admin/payments/razorpay/reconcile
+POST /admin/payments/razorpay/refunds
+```
+
+Set `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in `backend/.env`. The frontend requests a Razorpay order from the backend, opens Razorpay Checkout in the browser, then posts Razorpay's signed payment response back to `/store/payments/razorpay/verify` before completing the Medusa cart. After Medusa order creation, `/store/payments/razorpay/link-order` stores the Razorpay order/payment ids against a durable `razorpay_payment_references` ledger and attempts to attach them to Medusa order metadata.
+
+For production, configure a Razorpay webhook pointing to:
+
+```text
+https://<your-backend-domain>/store/payments/razorpay/webhook
+```
+
+Enable at least these events in Razorpay Dashboard:
+
+- `payment.captured`
+- `payment.failed`
+- `refund.created`
+- `refund.processed`
+
+Set the dashboard webhook secret as `RAZORPAY_WEBHOOK_SECRET`. The webhook endpoint verifies `x-razorpay-signature` and updates the payment reference ledger for captured, failed, pending-refund, refunded, and partially-refunded states.
+
+Operations/admin flows:
+
+- `POST /admin/payments/razorpay/reconcile` with `razorpay_order_id`, `razorpay_payment_id`, `order_id`, or `cart_id` fetches Razorpay state and updates the local ledger.
+- `POST /admin/payments/razorpay/refunds` with `razorpay_payment_id` and optional `amount` creates a full or partial refund through Razorpay and records the refund id/status.
+
+Use test keys from the Razorpay dashboard for local development. Never expose `RAZORPAY_KEY_SECRET` to the frontend.
 
 ## Optional local services (Postgres + Redis)
 

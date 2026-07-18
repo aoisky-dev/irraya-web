@@ -83,14 +83,17 @@ export interface Order {
   currencyCode: "usd" | "inr";
   items: OrderItem[];
   totalInCents: number;
+  payment?: Payment;
   createdAt: string;
 }
 
 export interface Payment {
   id: string;
   orderId: string;
-  provider: "mock" | "stripe";
+  provider: "mock" | "stripe" | "razorpay";
   amountInCents: number;
   status: "requires_action" | "authorized" | "captured" | "failed";
   providerReference: string;
+  providerOrderId?: string;
+  providerPaymentId?: string;
 }

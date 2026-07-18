@@ -4,8 +4,162 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/components/CartProvider";
 import { formatMoney } from "@/lib/format";
-import { createOrderFromCart, authorizeOrderPayment } from "@/lib/api/checkout";
+import {
+  createOrderFromCart,
+  createRazorpayPaymentOrder,
+  linkRazorpayPaymentToOrder,
+  verifyRazorpayPayment,
+  type RazorpayPaymentOrder
+} from "@/lib/api/checkout";
+import { config } from "@/lib/config";
 import Link from "next/link";
+
+type RazorpayCheckoutResponse = {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayCheckoutOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  prefill?: {
+    name?: string;
+    email?: string;
+  };
+  notes?: Record<string, string>;
+  theme?: {
+    color?: string;
+  };
+  modal?: {
+    ondismiss?: () => void;
+  };
+  handler: (response: RazorpayCheckoutResponse) => void;
+};
+
+type RazorpayCheckoutInstance = {
+  open: () => void;
+  on?: (event: "payment.failed", handler: (response: RazorpayCheckoutFailureResponse) => void) => void;
+};
+
+type RazorpayCheckoutFailureResponse = {
+  error?: {
+    code?: string;
+    description?: string;
+    reason?: string;
+    metadata?: {
+      order_id?: string;
+      payment_id?: string;
+    };
+  };
+};
+
+type RecoverablePayment = {
+  cartId: string;
+  amountInCents: number;
+  currencyCode: "usd" | "inr";
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+};
+
+class RazorpayCheckoutError extends Error {
+  constructor(
+    message: string,
+    readonly razorpayOrderId?: string,
+    readonly razorpayPaymentId?: string
+  ) {
+    super(message);
+    this.name = "RazorpayCheckoutError";
+  }
+}
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayCheckoutOptions) => RazorpayCheckoutInstance;
+  }
+}
+
+const RAZORPAY_CHECKOUT_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
+
+function loadRazorpayCheckout(): Promise<void> {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Razorpay checkout can only run in the browser."));
+  }
+
+  if (window.Razorpay) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = RAZORPAY_CHECKOUT_SCRIPT_URL;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Unable to load Razorpay Checkout. Please check your connection."));
+    document.body.appendChild(script);
+  });
+}
+
+function openRazorpayCheckout(input: {
+  paymentOrder: RazorpayPaymentOrder;
+  cartId: string;
+  customerName: string;
+  customerEmail: string;
+}): Promise<RazorpayCheckoutResponse> {
+  if (!window.Razorpay) {
+    return Promise.reject(new Error("Razorpay Checkout is not available."));
+  }
+
+  const Razorpay = window.Razorpay;
+
+  return new Promise((resolve, reject) => {
+    let completed = false;
+    const checkout = new Razorpay({
+      key: input.paymentOrder.keyId,
+      amount: input.paymentOrder.amountInCents,
+      currency: input.paymentOrder.currencyCode.toUpperCase(),
+      name: config.storeName,
+      description: "Irraya order payment",
+      order_id: input.paymentOrder.razorpayOrderId,
+      prefill: {
+        name: input.customerName,
+        email: input.customerEmail
+      },
+      notes: {
+        cart_id: input.cartId
+      },
+      theme: {
+        color: "#111827"
+      },
+      modal: {
+        ondismiss: () => {
+          if (!completed) {
+            reject(new Error("Payment was cancelled."));
+          }
+        }
+      },
+      handler: (response) => {
+        completed = true;
+        resolve(response);
+      }
+    });
+
+    checkout.on?.("payment.failed", (response) => {
+      completed = true;
+      reject(new RazorpayCheckoutError(
+        response.error?.description || response.error?.reason || "Razorpay payment failed.",
+        response.error?.metadata?.order_id,
+        response.error?.metadata?.payment_id
+      ));
+    });
+
+    checkout.open();
+  });
+}
 
 export default function CheckoutPage() {
   const { cart, isLoading, clearCart, itemMeta, applyPromo } = useCart();
@@ -14,7 +168,8 @@ export default function CheckoutPage() {
   const [promoCode, setPromoCode] = useState("");
   const [promoError, setPromoError] = useState("");
   const [error, setError] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "paypal" | "applepay">("card");
+  const [failureReference, setFailureReference] = useState<{ razorpayOrderId?: string; razorpayPaymentId?: string } | null>(null);
+  const [recoverablePayment, setRecoverablePayment] = useState<RecoverablePayment | null>(null);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -24,10 +179,7 @@ export default function CheckoutPage() {
     city: "",
     state: "",
     zipCode: "",
-    country: "United States",
-    cardNumber: "",
-    cardExpiry: "",
-    cardCvc: ""
+    country: "India"
   });
 
   const updateField = (field: string, value: string) => {
@@ -63,6 +215,44 @@ export default function CheckoutPage() {
     }
   };
 
+  const completePaidCart = async (payment: RecoverablePayment) => {
+    const order = await createOrderFromCart(payment.cartId);
+
+    try {
+      await linkRazorpayPaymentToOrder({
+        cartId: payment.cartId,
+        orderId: order.id,
+        amountInCents: payment.amountInCents,
+        currencyCode: payment.currencyCode,
+        razorpayOrderId: payment.razorpayOrderId,
+        razorpayPaymentId: payment.razorpayPaymentId,
+        status: "authorized"
+      });
+    } catch (linkError) {
+      console.error("Razorpay payment was authorized, but order metadata linking failed.", linkError);
+    }
+
+    clearCart();
+    setRecoverablePayment(null);
+    router.push(`/order/${order.id}`);
+  };
+
+  const handleRetryOrderConfirmation = async () => {
+    if (!recoverablePayment) return;
+
+    setIsSubmitting(true);
+    setError("");
+
+    try {
+      await completePaidCart(recoverablePayment);
+    } catch (err: any) {
+      setError(err?.message || "Payment succeeded, but order confirmation still failed. Please contact support with the payment reference below.");
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     // Basic validation
     if (!form.firstName || !form.lastName || !form.email || !form.address || !form.city || !form.zipCode) {
@@ -72,19 +262,70 @@ export default function CheckoutPage() {
 
     setIsSubmitting(true);
     setError("");
+    setFailureReference(null);
+    setRecoverablePayment(null);
+
+    let verifiedPaymentForRecovery: RecoverablePayment | null = null;
 
     try {
-      // 1. Create order from cart
-      const order = await createOrderFromCart(cart.id);
+      // 1. Create Razorpay order on the backend.
+      const paymentOrder = await createRazorpayPaymentOrder({
+        cartId: cart.id,
+        amountInCents: cart.totalInCents,
+        currencyCode: cart.currencyCode,
+        customer: {
+          name: `${form.firstName} ${form.lastName}`.trim(),
+          email: form.email.trim()
+        }
+      });
 
-      // 2. Authorize payment
-      await authorizeOrderPayment(order.id, order.totalInCents);
+      // 2. Open Razorpay Checkout and collect the signed payment response.
+      await loadRazorpayCheckout();
+      const razorpayResponse = await openRazorpayCheckout({
+        paymentOrder,
+        cartId: cart.id,
+        customerName: `${form.firstName} ${form.lastName}`.trim(),
+        customerEmail: form.email.trim()
+      });
 
-      // 3. Clear cart and redirect
-      clearCart();
-      router.push(`/order/${order.id}`);
+      setFailureReference({
+        razorpayOrderId: razorpayResponse.razorpay_order_id,
+        razorpayPaymentId: razorpayResponse.razorpay_payment_id
+      });
+
+      // 3. Verify the payment signature on the backend.
+      await verifyRazorpayPayment({
+        cartId: cart.id,
+        amountInCents: paymentOrder.amountInCents,
+        razorpayOrderId: razorpayResponse.razorpay_order_id,
+        razorpayPaymentId: razorpayResponse.razorpay_payment_id,
+        razorpaySignature: razorpayResponse.razorpay_signature
+      });
+
+      verifiedPaymentForRecovery = {
+        cartId: cart.id,
+        amountInCents: paymentOrder.amountInCents,
+        currencyCode: paymentOrder.currencyCode,
+        razorpayOrderId: razorpayResponse.razorpay_order_id,
+        razorpayPaymentId: razorpayResponse.razorpay_payment_id
+      };
+      setRecoverablePayment(verifiedPaymentForRecovery);
+
+      // 4. Complete the Medusa cart, link the payment reference, and redirect to confirmation.
+      await completePaidCart(verifiedPaymentForRecovery);
     } catch (err: any) {
-      setError("Checkout failed. Please try again.");
+      if (verifiedPaymentForRecovery) {
+        setRecoverablePayment(verifiedPaymentForRecovery);
+        setError("Payment succeeded, but order confirmation failed. Please retry order confirmation below or contact support with the Razorpay reference.");
+      } else if (err instanceof RazorpayCheckoutError) {
+        setFailureReference({
+          razorpayOrderId: err.razorpayOrderId,
+          razorpayPaymentId: err.razorpayPaymentId
+        });
+        setError(`${err.message} You can retry payment without changing your cart.`);
+      } else {
+        setError(err?.message || "Checkout failed. Please try again.");
+      }
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -219,100 +460,42 @@ export default function CheckoutPage() {
           {/* Payment Section */}
           <div className="checkout-section">
             <h2>Payment Method</h2>
-            
-            <div style={{ display: "flex", gap: "10px", marginBottom: "var(--space-lg)" }}>
-              <button 
-                type="button"
-                className={`btn ${paymentMethod === "card" ? "btn-primary" : "btn-outline"}`}
-                onClick={() => setPaymentMethod("card")}
-                style={{ flex: 1 }}
-              >
-                Credit Card
-              </button>
-              <button 
-                type="button"
-                className={`btn ${paymentMethod === "paypal" ? "btn-primary" : "btn-outline"}`}
-                onClick={() => setPaymentMethod("paypal")}
-                style={{ flex: 1 }}
-              >
-                PayPal
-              </button>
-              <button 
-                type="button"
-                className={`btn ${paymentMethod === "applepay" ? "btn-primary" : "btn-outline"}`}
-                onClick={() => setPaymentMethod("applepay")}
-                style={{ flex: 1 }}
-              >
-                Apple Pay
-              </button>
+
+            <div style={{ padding: "var(--space-xl)", textAlign: "center", background: "var(--bg-input)", borderRadius: "8px", border: "1px dashed var(--border)" }}>
+              <div style={{ fontSize: "2rem", marginBottom: "var(--space-sm)", color: "var(--accent)" }}>
+                <strong>Razorpay</strong>
+              </div>
+              <p className="text-secondary">
+                Pay securely with UPI, cards, net banking, wallets, or other Razorpay-supported methods.
+              </p>
             </div>
 
-            {paymentMethod === "card" && (
-              <div className="form-grid">
-                <div className="form-group full">
-                  <label className="form-label" htmlFor="cardNumber">Card Number (Stripe Mock)</label>
-                  <input
-                    id="cardNumber"
-                    className="form-input"
-                    type="text"
-                    placeholder="4242 4242 4242 4242"
-                    value={form.cardNumber}
-                    onChange={(e) => updateField("cardNumber", e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="cardExpiry">Expiry Date</label>
-                  <input
-                    id="cardExpiry"
-                    className="form-input"
-                    type="text"
-                    placeholder="MM / YY"
-                    value={form.cardExpiry}
-                    onChange={(e) => updateField("cardExpiry", e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="cardCvc">CVC</label>
-                  <input
-                    id="cardCvc"
-                    className="form-input"
-                    type="text"
-                    placeholder="123"
-                    value={form.cardCvc}
-                    onChange={(e) => updateField("cardCvc", e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
-
-            {paymentMethod === "paypal" && (
-              <div style={{ padding: "var(--space-xl)", textAlign: "center", background: "var(--bg-input)", borderRadius: "8px", border: "1px dashed var(--border)" }}>
-                <div style={{ fontSize: "2rem", marginBottom: "var(--space-sm)", color: "var(--accent)" }}>
-                  <strong>PayPal</strong>
-                </div>
-                <p className="text-secondary">You will be redirected to PayPal to complete your purchase securely.</p>
-              </div>
-            )}
-
-            {paymentMethod === "applepay" && (
-              <div style={{ padding: "var(--space-xl)", textAlign: "center", background: "var(--text-primary)", color: "var(--text-inverse)", borderRadius: "8px" }}>
-                <div style={{ fontSize: "1.5rem", marginBottom: "var(--space-sm)" }}>
-                  <strong> Pay</strong>
-                </div>
-                <p style={{ color: "rgba(255, 255, 255, 0.8)" }}>Authenticate with Touch ID or Face ID on your Apple device.</p>
-              </div>
-            )}
-
             <p className="text-secondary" style={{ fontSize: "0.8rem", lineHeight: 1.6, marginTop: "var(--space-md)" }}>
-              🔒 This is a demo. No real payment will be charged. Clicking "Place Order" simulates a
-              successful payment via {paymentMethod}.
+              🔒 You will be redirected to Razorpay Checkout to complete payment securely.
             </p>
           </div>
 
           {error && (
-            <p style={{ color: "var(--error)", marginBottom: "var(--space-md)", fontSize: "0.9rem" }}>
-              {error}
-            </p>
+            <div role="alert" style={{ color: "var(--error)", marginBottom: "var(--space-md)", fontSize: "0.9rem", lineHeight: 1.6, padding: "var(--space-md)", border: "1px solid var(--error)", borderRadius: "8px", background: "rgba(239, 68, 68, 0.08)" }}>
+              <strong>Payment issue</strong>
+              <p style={{ marginTop: "var(--space-xs)" }}>{error}</p>
+              {(failureReference?.razorpayOrderId || failureReference?.razorpayPaymentId) && (
+                <p style={{ marginTop: "var(--space-xs)", color: "var(--text-secondary)" }}>
+                  Reference: {failureReference.razorpayPaymentId || failureReference.razorpayOrderId}
+                </p>
+              )}
+              {recoverablePayment && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ marginTop: "var(--space-sm)" }}
+                  onClick={handleRetryOrderConfirmation}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Retrying confirmation..." : "Retry order confirmation"}
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -379,7 +562,7 @@ export default function CheckoutPage() {
             onClick={handlePlaceOrder}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Processing..." : `Place Order — ${formatMoney(cart.totalInCents, cart.currencyCode)}`}
+            {isSubmitting ? "Processing..." : `Pay with Razorpay — ${formatMoney(cart.totalInCents, cart.currencyCode)}`}
           </button>
         </div>
       </div>

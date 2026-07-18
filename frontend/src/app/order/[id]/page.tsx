@@ -77,8 +77,16 @@ export default function OrderConfirmationPage() {
         </div>
         <div className="order-detail-row">
           <span className="label">Payment</span>
-          <span className="badge badge-success">Authorized</span>
+          <span className="badge badge-success">
+            {order?.payment?.status === "captured" ? "Captured" : order?.payment?.status === "failed" ? "Failed" : "Authorized"}
+          </span>
         </div>
+        {order?.payment?.providerPaymentId && (
+          <div className="order-detail-row">
+            <span className="label">Razorpay Payment ID</span>
+            <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>{order.payment.providerPaymentId}</span>
+          </div>
+        )}
 
         {order && (
           <>

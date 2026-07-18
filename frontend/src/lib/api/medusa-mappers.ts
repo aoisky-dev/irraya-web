@@ -108,6 +108,11 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
         : statusRaw === "confirmed" || statusRaw === "completed"
           ? "confirmed"
           : "pending";
+  const metadata = raw?.metadata && typeof raw.metadata === "object" ? raw.metadata : {};
+  const razorpay = (metadata as Record<string, any>).razorpay && typeof (metadata as Record<string, any>).razorpay === "object"
+    ? (metadata as Record<string, any>).razorpay
+    : null;
+  const paymentStatus = String(razorpay?.status ?? "authorized").toLowerCase();
 
   return {
     id: String(raw?.id ?? ""),
@@ -117,6 +122,16 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
     currencyCode: String(raw?.currency_code ?? "usd").toLowerCase() === "inr" ? "inr" : "usd",
     items: Array.isArray(raw?.items) ? raw.items.map(mapOrderItem) : [],
     totalInCents: Math.max(0, Math.round(toNumber(raw?.total, 0))),
+    payment: razorpay?.order_id || razorpay?.payment_id ? {
+      id: String(razorpay?.payment_id ?? ""),
+      orderId: String(raw?.id ?? ""),
+      provider: "razorpay",
+      amountInCents: Math.max(0, Math.round(toNumber(razorpay?.amount, raw?.total ?? 0))),
+      status: paymentStatus === "captured" ? "captured" : paymentStatus === "failed" ? "failed" : "authorized",
+      providerReference: String(razorpay?.order_id ?? ""),
+      providerOrderId: String(razorpay?.order_id ?? ""),
+      providerPaymentId: String(razorpay?.payment_id ?? "")
+    } : undefined,
     createdAt: raw?.created_at ? new Date(raw.created_at).toISOString() : new Date().toISOString()
   };
 };
