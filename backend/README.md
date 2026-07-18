@@ -12,6 +12,7 @@ This folder now contains the Medusa backend setup for the Irraya store.
 - Detached email/phone OTP verification routes for future provider wiring
 - Razorpay payment order creation and signature verification routes
 - Customer wishlist, compare-list persistence, and product review moderation routes
+- Customer order cancel/return/exchange request routes for Medusa Admin processing
 
 ## Quick start
 
@@ -130,6 +131,23 @@ PATCH  /admin/reviews
 Wishlist and compare lists are persisted in custom Postgres tables with product snapshots so they sync across devices after login while still supporting guest localStorage fallback in the frontend. Guest wishlist/compare data is migrated into the customer account when the user signs in.
 
 Reviews are stored in `product_reviews` with `pending`, `approved`, and `rejected` statuses. Storefront review lists only show approved reviews; submitted reviews remain pending until an admin approves them. Verified-purchase status is best-effort based on matching a customer order line item for the reviewed product.
+
+### Customer order requests and returns
+
+Customer-facing order management uses a request workflow while admin operations stay in Medusa Admin:
+
+```text
+GET  /store/customers/me/order-requests
+POST /store/customers/me/order-requests
+```
+
+Customers can submit `cancel`, `return`, or `exchange` requests. Requests are stored in `customer_order_requests` and summarized onto the Medusa order `metadata.latest_customer_request`, making them visible from the order record in Medusa Admin. Admin approval/rejection, fulfillment updates, return processing, and refund execution should be handled in Medusa Admin and the configured Razorpay refund workflow.
+
+Eligibility rules:
+
+- Cancel requests are allowed before fulfillment/shipment.
+- Return/exchange requests are allowed within 30 days and not for cancelled orders.
+- Duplicate open requests of the same type for the same order are blocked.
 
 ## Optional local services (Postgres + Redis)
 

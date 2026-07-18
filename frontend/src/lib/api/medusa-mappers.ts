@@ -90,13 +90,44 @@ export const mapMedusaCart = (raw: any): Cart => {
   };
 };
 
-const mapOrderItem = (raw: any): OrderItem => ({
-  id: String(raw?.id ?? ""),
-  productId: String(raw?.product_id ?? raw?.product?.id ?? ""),
-  variantId: String(raw?.variant_id ?? raw?.variant?.id ?? ""),
-  quantity: Math.max(0, Math.round(toNumber(raw?.quantity, 0))),
-  unitPriceInCents: Math.max(0, Math.round(toNumber(raw?.unit_price ?? raw?.subtotal, 0)))
-});
+const mapOrderItem = (raw: any): OrderItem => {
+  const variantOptions = (raw?.variant?.options ?? raw?.variant?.option_values ?? []) as Array<any>;
+  const optionValue = (title: string): string | undefined => {
+    const match = variantOptions.find((value) => String(value.option?.title ?? value.option_title ?? "").toLowerCase() === title);
+    return match?.value ? String(match.value) : undefined;
+  };
+
+  return {
+    id: String(raw?.id ?? ""),
+    productId: String(raw?.product_id ?? raw?.product?.id ?? ""),
+    variantId: String(raw?.variant_id ?? raw?.variant?.id ?? ""),
+    quantity: Math.max(0, Math.round(toNumber(raw?.quantity, 0))),
+    unitPriceInCents: Math.max(0, Math.round(toNumber(raw?.unit_price ?? raw?.subtotal, 0))),
+    title: normalizeText(raw?.title ?? raw?.product_title ?? raw?.product?.title, "Product"),
+    image: normalizeText(raw?.thumbnail ?? raw?.product?.thumbnail ?? raw?.variant?.product?.thumbnail, "") || undefined,
+    size: optionValue("size"),
+    color: optionValue("color")
+  };
+};
+
+const getOrderEligibility = (raw: any) => {
+  const status = String(raw?.status ?? "").toLowerCase();
+  const fulfillmentStatus = String(raw?.fulfillment_status ?? raw?.fulfillment_statuses?.[0] ?? "").toLowerCase();
+  const createdAt = raw?.created_at ? new Date(raw.created_at) : null;
+  const returnWindowEndsAt = createdAt && Number.isFinite(createdAt.getTime())
+    ? new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    : undefined;
+  const cancelled = status === "canceled" || status === "cancelled";
+  const fulfilled = status === "fulfilled" || ["fulfilled", "shipped", "delivered"].includes(fulfillmentStatus);
+  const inReturnWindow = returnWindowEndsAt ? Date.now() <= new Date(returnWindowEndsAt).getTime() : false;
+
+  return {
+    canCancel: !cancelled && !fulfilled,
+    canReturn: !cancelled && inReturnWindow,
+    canExchange: !cancelled && inReturnWindow,
+    returnWindowEndsAt
+  };
+};
 
 export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
   const statusRaw = String(raw?.status ?? "pending").toLowerCase();
@@ -112,6 +143,9 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
   const razorpay = (metadata as Record<string, any>).razorpay && typeof (metadata as Record<string, any>).razorpay === "object"
     ? (metadata as Record<string, any>).razorpay
     : null;
+  const shipment = (metadata as Record<string, any>).shipment && typeof (metadata as Record<string, any>).shipment === "object"
+    ? (metadata as Record<string, any>).shipment
+    : {};
   const paymentStatus = String(razorpay?.status ?? "authorized").toLowerCase();
 
   return {
@@ -132,6 +166,14 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
       providerOrderId: String(razorpay?.order_id ?? ""),
       providerPaymentId: String(razorpay?.payment_id ?? "")
     } : undefined,
+    tracking: shipment.tracking_number || shipment.tracking_url || shipment.carrier || shipment.status ? {
+      carrier: normalizeText(shipment.carrier, "") || undefined,
+      trackingNumber: normalizeText(shipment.tracking_number, "") || undefined,
+      trackingUrl: normalizeText(shipment.tracking_url, "") || undefined,
+      status: ["processing", "shipped", "out_for_delivery", "delivered"].includes(String(shipment.status)) ? shipment.status : undefined,
+      estimatedDelivery: normalizeText(shipment.estimated_delivery, "") || undefined
+    } : undefined,
+    eligibility: getOrderEligibility(raw),
     createdAt: raw?.created_at ? new Date(raw.created_at).toISOString() : new Date().toISOString()
   };
 };

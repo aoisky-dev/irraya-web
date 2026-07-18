@@ -116,16 +116,31 @@ export default function AccountPage() {
                     <div>
                       <strong>Order #{order.id.slice(-6).toUpperCase()}</strong>
                       <div className="text-muted account-order-date">{new Date(order.createdAt).toLocaleDateString()}</div>
+                      <div className="text-muted account-order-date">
+                        {order.items.length} {order.items.length === 1 ? "item" : "items"}
+                        {order.tracking?.trackingNumber ? ` · Tracking ${order.tracking.trackingNumber}` : ""}
+                      </div>
                     </div>
                     <div className="account-order-right">
                       <strong>{formatMoney(order.totalInCents, order.currencyCode)}</strong>
                       <span className="badge account-order-badge">{order.status.toUpperCase()}</span>
+                      {order.payment?.status && <span className="badge account-order-badge">PAYMENT {order.payment.status.toUpperCase()}</span>}
                     </div>
                   </div>
                   <div className="account-order-items">
                     {order.items.map((item, i) => (
-                      <div key={i} className="account-order-item-thumb">#</div>
+                      <div key={item.id || i} className="account-order-item-thumb" title={item.title}>{item.title?.[0] ?? "#"}</div>
                     ))}
+                  </div>
+                  <div style={{ display: "flex", gap: "var(--space-sm)", marginTop: "var(--space-md)", flexWrap: "wrap" }}>
+                    <Link href={`/order/${order.id}`} className="btn btn-secondary">
+                      View details
+                    </Link>
+                    {(order.eligibility?.canReturn || order.eligibility?.canExchange) && (
+                      <Link href={`/order/${order.id}`} className="btn btn-outline">
+                        Return or exchange
+                      </Link>
+                    )}
                   </div>
                 </div>
               ))}

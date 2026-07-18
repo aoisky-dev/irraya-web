@@ -76,6 +76,50 @@ export interface OrderItem {
   variantId: string;
   quantity: number;
   unitPriceInCents: number;
+  title?: string;
+  image?: string;
+  size?: string;
+  color?: string;
+}
+
+export interface ShipmentTracking {
+  carrier?: string;
+  trackingNumber?: string;
+  trackingUrl?: string;
+  status?: "processing" | "shipped" | "out_for_delivery" | "delivered";
+  estimatedDelivery?: string;
+}
+
+export interface OrderEligibility {
+  canCancel: boolean;
+  canReturn: boolean;
+  canExchange: boolean;
+  returnWindowEndsAt?: string;
+}
+
+export type OrderRequestType = "cancel" | "return" | "exchange";
+export type OrderRequestStatus = "requested" | "under_review" | "approved" | "rejected" | "refunded" | "completed";
+
+export interface OrderRequestItem {
+  itemId?: string;
+  productId?: string;
+  variantId?: string;
+  quantity?: number;
+}
+
+export interface OrderRequest {
+  id: string;
+  orderId: string;
+  type: OrderRequestType;
+  status: OrderRequestStatus;
+  reason: string;
+  notes?: string;
+  items: OrderRequestItem[];
+  trackingNumber?: string;
+  trackingUrl?: string;
+  refundReference?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Order {
@@ -87,6 +131,8 @@ export interface Order {
   items: OrderItem[];
   totalInCents: number;
   payment?: Payment;
+  tracking?: ShipmentTracking;
+  eligibility?: OrderEligibility;
   createdAt: string;
 }
 
