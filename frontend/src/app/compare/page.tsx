@@ -5,7 +5,30 @@ import { useCompare } from "@/components/CompareProvider";
 import { formatMoney } from "@/lib/format";
 
 export default function ComparePage() {
-  const { compareItems, removeFromCompare, clearCompare } = useCompare();
+  const { compareItems, removeFromCompare, clearCompare, isSyncing, syncError } = useCompare();
+
+  const getPriceRange = (product: typeof compareItems[number]) => {
+    const prices = product.variants.map((variant) => variant.priceInCents).filter((price) => price > 0);
+    if (prices.length === 0) return "Price unavailable";
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    return min === max ? formatMoney(min, "inr") : `${formatMoney(min, "inr")} – ${formatMoney(max, "inr")}`;
+  };
+
+  const getStockLabel = (product: typeof compareItems[number]) => {
+    const totalStock = product.variants.reduce((sum, variant) => sum + Math.max(variant.stock, 0), 0);
+    if (totalStock === 0) return { label: "Out of stock", color: "var(--error)" };
+    if (totalStock <= 5) return { label: `Low stock (${totalStock})`, color: "var(--warning, #b45309)" };
+    return { label: `In stock (${totalStock})`, color: "var(--success, green)" };
+  };
+
+  const formatVariantAvailability = (product: typeof compareItems[number], key: "size" | "color") => {
+    const groups = new Map<string, number>();
+    for (const variant of product.variants) {
+      groups.set(variant[key], (groups.get(variant[key]) ?? 0) + Math.max(variant.stock, 0));
+    }
+    return [...groups.entries()].map(([label, stock]) => `${label}${stock <= 0 ? " (out)" : ""}`).join(", ") || "—";
+  };
 
   if (compareItems.length === 0) {
     return (
@@ -22,10 +45,19 @@ export default function ComparePage() {
   return (
     <div style={{ padding: "var(--space-2xl) 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-xl)" }}>
-        <h1 className="text-3xl font-bold">Compare Products</h1>
-        <button onClick={clearCompare} className="btn btn-outline text-sm">
-          Clear All
-        </button>
+        <div>
+          <h1 className="text-3xl font-bold">Compare Products</h1>
+          <p className="text-muted" style={{ marginTop: "var(--space-xs)" }}>
+            {compareItems.length}/4 products selected {isSyncing ? "· Syncing..." : ""}
+          </p>
+          {syncError && <p style={{ color: "var(--error)", marginTop: "var(--space-xs)" }}>{syncError}</p>}
+        </div>
+        <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+          <Link href="/products" className="btn btn-secondary text-sm">Add Products</Link>
+          <button onClick={clearCompare} className="btn btn-outline text-sm">
+            Clear All
+          </button>
+        </div>
       </div>
 
       <div style={{ overflowX: "auto" }}>
@@ -60,15 +92,17 @@ export default function ComparePage() {
               <td style={{ padding: "var(--space-md)", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>Price</td>
               {compareItems.map((product) => (
                 <td key={product.id} style={{ padding: "var(--space-md)", textAlign: "center", borderBottom: "1px solid var(--border)" }}>
-                  {formatMoney(product.variants[0]?.priceInCents ?? 0, "inr")}
+                  {getPriceRange(product)}
                 </td>
               ))}
             </tr>
             <tr>
               <td style={{ padding: "var(--space-md)", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>Category</td>
-              <td style={{ padding: "var(--space-md)", textAlign: "center", borderBottom: "1px solid var(--border)", textTransform: "capitalize" }} colSpan={compareItems.length}>
-                {compareItems.map(p => p.category).join(" | ")}
-              </td>
+              {compareItems.map((product) => (
+                <td key={product.id} style={{ padding: "var(--space-md)", textAlign: "center", borderBottom: "1px solid var(--border)", textTransform: "capitalize" }}>
+                  {product.category}
+                </td>
+              ))}
             </tr>
             <tr>
               <td style={{ padding: "var(--space-md)", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>Rating</td>
@@ -82,26 +116,69 @@ export default function ComparePage() {
               ))}
             </tr>
             <tr>
-              <td style={{ padding: "var(--space-md)", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>Available Colors</td>
+              <td style={{ padding: "var(--space-md)", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>Availability</td>
               {compareItems.map((product) => {
-                const colors = [...new Set(product.variants.map(v => v.color))];
+                const stock = getStockLabel(product);
                 return (
-                  <td key={product.id} style={{ padding: "var(--space-md)", textAlign: "center", borderBottom: "1px solid var(--border)" }}>
-                    {colors.join(", ")}
+                  <td key={product.id} style={{ padding: "var(--space-md)", textAlign: "center", borderBottom: "1px solid var(--border)", color: stock.color, fontWeight: 600 }}>
+                    {stock.label}
                   </td>
                 );
               })}
             </tr>
             <tr>
-              <td style={{ padding: "var(--space-md)", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>Available Sizes</td>
+              <td style={{ padding: "var(--space-md)", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>Variants</td>
+              {compareItems.map((product) => (
+                <td key={product.id} style={{ padding: "var(--space-md)", textAlign: "center", borderBottom: "1px solid var(--border)" }}>
+                  {product.variants.length} variants
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <td style={{ padding: "var(--space-md)", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>Colors by stock</td>
               {compareItems.map((product) => {
-                const sizes = [...new Set(product.variants.map(v => v.size))];
                 return (
                   <td key={product.id} style={{ padding: "var(--space-md)", textAlign: "center", borderBottom: "1px solid var(--border)" }}>
-                    {sizes.join(", ")}
+                    {formatVariantAvailability(product, "color")}
                   </td>
                 );
               })}
+            </tr>
+            <tr>
+              <td style={{ padding: "var(--space-md)", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>Sizes by stock</td>
+              {compareItems.map((product) => {
+                return (
+                  <td key={product.id} style={{ padding: "var(--space-md)", textAlign: "center", borderBottom: "1px solid var(--border)" }}>
+                    {formatVariantAvailability(product, "size")}
+                  </td>
+                );
+              })}
+            </tr>
+            {["material", "fit", "care"].map((key) => (
+              <tr key={key}>
+                <td style={{ padding: "var(--space-md)", borderBottom: "1px solid var(--border)", fontWeight: 500, textTransform: "capitalize" }}>{key}</td>
+                {compareItems.map((product) => (
+                  <td key={product.id} style={{ padding: "var(--space-md)", textAlign: "center", borderBottom: "1px solid var(--border)" }}>
+                    {product.metadata?.[key] || "—"}
+                  </td>
+                ))}
+              </tr>
+            ))}
+            <tr>
+              <td style={{ padding: "var(--space-md)", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>Description</td>
+              {compareItems.map((product) => (
+                <td key={product.id} style={{ padding: "var(--space-md)", textAlign: "left", borderBottom: "1px solid var(--border)", verticalAlign: "top" }}>
+                  {product.description || "—"}
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <td style={{ padding: "var(--space-md)", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>Action</td>
+              {compareItems.map((product) => (
+                <td key={product.id} style={{ padding: "var(--space-md)", textAlign: "center", borderBottom: "1px solid var(--border)" }}>
+                  <Link href={`/products/${product.handle}`} className="btn btn-primary text-sm">View Product</Link>
+                </td>
+              ))}
             </tr>
           </tbody>
         </table>

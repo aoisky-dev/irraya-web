@@ -11,6 +11,7 @@ This folder now contains the Medusa backend setup for the Irraya store.
 - `check:env` script to validate required env keys
 - Detached email/phone OTP verification routes for future provider wiring
 - Razorpay payment order creation and signature verification routes
+- Customer wishlist, compare-list persistence, and product review moderation routes
 
 ## Quick start
 
@@ -108,6 +109,27 @@ Operations/admin flows:
 - `POST /admin/payments/razorpay/refunds` with `razorpay_payment_id` and optional `amount` creates a full or partial refund through Razorpay and records the refund id/status.
 
 Use test keys from the Razorpay dashboard for local development. Never expose `RAZORPAY_KEY_SECRET` to the frontend.
+
+### Customer wishlist, compare, and reviews
+
+Authenticated customer commerce routes:
+
+```text
+GET    /store/customers/me/wishlist
+POST   /store/customers/me/wishlist
+DELETE /store/customers/me/wishlist
+GET    /store/customers/me/compare
+PUT    /store/customers/me/compare
+DELETE /store/customers/me/compare
+GET    /store/products/:id/reviews
+POST   /store/products/:id/reviews
+GET    /admin/reviews
+PATCH  /admin/reviews
+```
+
+Wishlist and compare lists are persisted in custom Postgres tables with product snapshots so they sync across devices after login while still supporting guest localStorage fallback in the frontend. Guest wishlist/compare data is migrated into the customer account when the user signs in.
+
+Reviews are stored in `product_reviews` with `pending`, `approved`, and `rejected` statuses. Storefront review lists only show approved reviews; submitted reviews remain pending until an admin approves them. Verified-purchase status is best-effort based on matching a customer order line item for the reviewed product.
 
 ## Optional local services (Postgres + Redis)
 

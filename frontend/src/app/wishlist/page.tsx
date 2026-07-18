@@ -5,15 +5,16 @@ import { ProductCard } from "@/components/ProductCard";
 import Link from "next/link";
 
 export default function WishlistPage() {
-  const { wishlist } = useWishlist();
+  const { wishlist, isSyncing, syncError } = useWishlist();
 
   return (
     <main className="container" style={{ padding: "var(--space-4xl) 0" }}>
       <header className="section-header">
         <h1 className="section-title">Your Wishlist</h1>
         <p className="text-muted" style={{ marginTop: "8px" }}>
-          {wishlist.length} {wishlist.length === 1 ? "item" : "items"} saved
+          {wishlist.length} {wishlist.length === 1 ? "item" : "items"} saved {isSyncing ? "· Syncing..." : ""}
         </p>
+        {syncError && <p style={{ color: "var(--error)", marginTop: "8px" }}>{syncError}</p>}
       </header>
 
       {wishlist.length === 0 ? (

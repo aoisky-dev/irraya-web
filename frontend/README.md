@@ -25,6 +25,8 @@ npm run dev
 - Medusa Store URL is read from `NEXT_PUBLIC_MEDUSA_BASE_URL`.
 - Medusa publishable key is read from `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_API_KEY`.
 - Checkout uses Razorpay via backend endpoints at `NEXT_PUBLIC_MEDUSA_BASE_URL`; configure `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and production `RAZORPAY_WEBHOOK_SECRET` in `backend/.env`. The checkout page supports payment retry and order-confirmation recovery after a verified payment.
+- Wishlist and compare use localStorage for guests, then sync/migrate to backend customer APIs after login.
+- Product reviews are loaded from backend review APIs; submitted reviews require login and remain pending until admin moderation.
 - Custom `/admin` dashboard route is deprecated; use Medusa Admin at `NEXT_PUBLIC_MEDUSA_ADMIN_URL`.
 - Current active auth is email/password. Signup creates/logs in customers directly and redirects to `/`; email/phone verification and phone login are intentionally detached until mail/SMS/phone auth providers are configured.
 - `/verify` is a disabled/coming-soon page for the future OTP flow. See [`../AUTH_VERIFICATION.md`](../AUTH_VERIFICATION.md).

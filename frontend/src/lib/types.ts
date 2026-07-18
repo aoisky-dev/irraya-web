@@ -25,6 +25,9 @@ export interface Review {
   authorName: string;
   rating: number;
   text: string;
+  imageUrls?: string[];
+  status?: "pending" | "approved" | "rejected";
+  verifiedPurchase?: boolean;
   createdAt: string;
 }
 
