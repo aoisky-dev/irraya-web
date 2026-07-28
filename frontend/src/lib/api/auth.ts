@@ -77,6 +77,11 @@ export interface RegisterInput {
   verificationChannel?: ContactChannel;
 }
 
+export interface AuthResult {
+  token: string;
+  user: User;
+}
+
 export interface VerificationRequestInput {
   channel: ContactChannel;
   value: string;
@@ -111,6 +116,11 @@ async function createStoreCustomer(token: string, payload: StoreCustomerCreatePa
 }
 
 export async function register(data: RegisterInput): Promise<User> {
+  const auth = await registerWithAuth(data);
+  return auth.user;
+}
+
+export async function registerWithAuth(data: RegisterInput): Promise<AuthResult> {
   assertValidPassword(data.passwordHash);
 
   const email = sanitizeEmail(data.email);
@@ -137,12 +147,18 @@ export async function register(data: RegisterInput): Promise<User> {
   };
 
   if (email) {
+    let token: string | undefined;
+
     try {
-      const token = await authTokenWithCandidates(["/auth/customer/emailpass/register"], {
+      token = await authTokenWithCandidates(["/auth/customer/emailpass/register"], {
         email,
         password: data.passwordHash
       });
+    } catch {
+      // Fall through to compatible/custom registration endpoints below.
+    }
 
+    if (token) {
       const customer = await createStoreCustomer(token, {
         email,
         first_name: firstName,
@@ -154,9 +170,7 @@ export async function register(data: RegisterInput): Promise<User> {
         }
       });
 
-      return mapCustomerToUser(customer);
-    } catch (error: unknown) {
-      // Fall through to compatible/custom registration endpoints below.
+      return { token, user: mapCustomerToUser(customer) };
     }
   }
 
@@ -183,7 +197,8 @@ export async function register(data: RegisterInput): Promise<User> {
 
       const token = response.token ?? response.access_token ?? response.jwt;
       if (token) {
-        return getMe(token);
+        const user = await getMe(token);
+        return { token, user };
       }
       break;
     } catch (error: unknown) {
@@ -198,7 +213,7 @@ export async function register(data: RegisterInput): Promise<User> {
   }
 
   const loginResult = await login(loginIdentifier, data.passwordHash);
-  return loginResult.user;
+  return loginResult;
 }
 
 export async function login(identifier: string, passwordHash: string): Promise<{ token: string; user: User }> {

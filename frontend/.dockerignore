@@ -1,0 +1,15 @@
+node_modules
+.next/*
+!.next/standalone
+!.next/standalone/**
+!.next/static
+!.next/static/**
+.env
+.env.*
+*.log
+npm-debug.log*
+coverage
+.cache
+tsconfig.tsbuildinfo
+.DS_Store
+

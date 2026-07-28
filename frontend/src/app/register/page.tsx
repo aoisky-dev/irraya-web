@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import { login as apiLogin, register } from "@/lib/api/auth";
+import { registerWithAuth } from "@/lib/api/auth";
 import { assertValidPassword, PASSWORD_REQUIREMENTS_MESSAGE, sanitizeDisplayName, sanitizeEmail, sanitizePhoneInput } from "@/lib/auth/validation";
 
 export default function RegisterPage() {
@@ -40,7 +40,7 @@ export default function RegisterPage() {
 
       assertValidPassword(password);
 
-      await register({
+      const auth = await registerWithAuth({
         email: normalizedEmail,
         phone: normalizedPhone,
         firstName: sanitizedFirstName,
@@ -48,7 +48,6 @@ export default function RegisterPage() {
         passwordHash: password
       });
 
-      const auth = await apiLogin(normalizedEmail, password);
       login(auth.token, auth.user);
       router.push("/");
     } catch (err: unknown) {
