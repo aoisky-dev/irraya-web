@@ -1,27 +1,40 @@
 {
-  "name": "irraya-backend",
+  "name": "irraya-medusa-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "Backend skeleton for fashion commerce with Medusa-oriented architecture",
-  "type": "module",
-  "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
+  "description": "Medusa backend for Irraya store",
   "engines": {
     "node": ">=20"
   },
+  "scripts": {
+    "dev": "medusa develop",
+    "build": "medusa build",
+    "start": "medusa start",
+    "check:env": "node ./scripts/validate-env.mjs",
+    "migrate": "medusa db:migrate",
+    "seed:catalog": "node ./scripts/seed-catalog.mjs",
+    "seed:catalog:dry-run": "node ./scripts/seed-catalog.mjs --dry-run",
+    "bootstrap": "node ./scripts/bootstrap.mjs",
+    "bootstrap:no-dev": "node ./scripts/bootstrap.mjs --no-dev"
+  },
   "dependencies": {
-    "zod": "^3.25.76"
+    "@medusajs/admin-sdk": "^2.17.1",
+    "@medusajs/framework": "^2.17.1",
+    "@medusajs/medusa": "^2.17.1",
+    "@mikro-orm/postgresql": "6.6.15",
+    "dotenv": "^16.6.0",
+    "pg": "^8.16.3"
+  },
+  "overrides": {
+    "@mikro-orm/core": "6.6.15",
+    "@mikro-orm/knex": "6.6.15",
+    "@mikro-orm/migrations": "6.6.15",
+    "@mikro-orm/postgresql": "6.6.15"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",
-    "tsx": "^4.19.4",
-    "typescript": "^5.8.3",
-    "vitest": "^2.1.9"
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
   }
 }

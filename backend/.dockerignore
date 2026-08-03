@@ -1,0 +1,10 @@
+node_modules
+.medusa
+.env
+.env.*
+*.log
+npm-debug.log*
+coverage
+.cache
+.DS_Store
+

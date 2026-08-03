@@ -1,0 +1,65 @@
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+
+  backend:
+    build:
+      context: ./backend
+    image: irraya/backend:local
+    restart: unless-stopped
+    env_file:
+      - ./deploy/prod/backend.env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      REDIS_URL: redis://127.0.0.1:6379
+    network_mode: host
+    depends_on:
+      redis:
+        condition: service_healthy
+    init: true
+    security_opt:
+      - no-new-privileges:true
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prebuilt
+    image: irraya/frontend:local
+    restart: unless-stopped
+    env_file:
+      - ./deploy/prod/frontend.env
+    depends_on:
+      - backend
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: --metrics 127.0.0.1:20241 tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN:?CLOUDFLARED_TOKEN is required}
+    network_mode: host
+    depends_on:
+      - backend
+      - frontend
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  redis_data:
+

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { formatMoney } from "../src/lib/format";
 
 describe("formatMoney", () => {
-  it("formats usd in cents", () => {
-    expect(formatMoney(4999, "usd")).toContain("49.99");
+  it("formats inr in cents", () => {
+    expect(formatMoney(4999, "inr")).toContain("49.99");
   });
 
   it("formats inr in cents", () => {

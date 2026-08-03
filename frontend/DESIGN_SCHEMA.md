@@ -17,7 +17,7 @@ Create a Next.js storefront layout that can integrate cleanly with the backend d
 - **Framework:** Next.js App Router
 - **Composition:** server-rendered route pages + reusable UI components
 - **Data access:** API wrapper layer under `src/lib/api/*`
-- **Config:** environment-driven `backendBaseUrl`
+- **Config:** environment-driven `medusaBaseUrl` and Medusa publishable API key
 - **Typing:** shared shape alignment with backend entities (`Product`, `Cart`, `Order`, `Payment`)
 
 ## 4) Folder Structure
@@ -56,14 +56,12 @@ frontend/
 ```
 
 ## 5) Backend Integration Contract
-Frontend API layer assumes these backend endpoints:
-1. `GET /products`
-2. `GET /products/:handle`
-3. `GET /carts/:id`
-4. `POST /checkout/:cartId`
-5. `POST /payments/:orderId/authorize`
-
-This matches backend design intent in `backend/DESIGN_SCHEMA.md`.
+Frontend API layer now targets Medusa Store/Auth endpoints directly:
+1. `GET /store/products`
+2. `GET /store/products?handle=...`
+3. `GET /store/carts/:id`
+4. `POST /store/carts/:id/complete`
+5. `POST /auth/customer/emailpass` and `GET /store/customers/me`
 
 ## 6) State and Data Plan
 - Start with server components for initial fetch.

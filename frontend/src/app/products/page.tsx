@@ -1,19 +1,16 @@
-import { ProductCard } from "@/components/ProductCard";
-import { getProducts } from "@/lib/api/products";
+import type { Metadata } from "next";
+import { ProductCatalogClient } from "@/components/ProductCatalogClient";
+import { categoryMetadata } from "@/lib/seo";
 
-export default async function ProductsPage(): Promise<JSX.Element> {
-  const products = await getProducts();
+type ProductsPageProps = {
+  searchParams: Promise<{ category?: string }>;
+};
 
-  return (
-    <section>
-      <h1>Products</h1>
-      <p className="muted">Browse our catalog. Filters and sorting will be added in next steps.</p>
-      <div className="grid">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
-    </section>
-  );
+export async function generateMetadata({ searchParams }: ProductsPageProps): Promise<Metadata> {
+  const params = await searchParams;
+  return categoryMetadata(params.category);
 }
 
+export default function ProductsPage() {
+  return <ProductCatalogClient />;
+}

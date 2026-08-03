@@ -1,37 +1,53 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { formatMoney } from "@/lib/format";
+import type { Metadata } from "next";
+import { ProductDetailClient } from "@/components/ProductDetailClient";
 import { getProductByHandle } from "@/lib/api/products";
+import { breadcrumbJsonLd, productJsonLd, productMetadata } from "@/lib/seo";
 
-interface ProductDetailPageProps {
+type ProductPageProps = {
   params: Promise<{ handle: string }>;
-}
+};
 
-export default async function ProductDetailPage({
-  params
-}: ProductDetailPageProps): Promise<JSX.Element> {
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { handle } = await params;
-  const product = await getProductByHandle(handle);
+  const product = await getProductByHandle(handle).catch(() => null);
 
   if (!product) {
-    notFound();
+    return {
+      title: "Product not found | Irraya Fashion",
+      robots: { index: false, follow: false }
+    };
   }
 
-  const variant = product.variants[0];
-
-  return (
-    <section>
-      <h1>{product.title}</h1>
-      <p>{product.description}</p>
-      {variant ? (
-        <p>{formatMoney(variant.priceInCents, "usd")}</p>
-      ) : (
-        <p className="muted">No variants available</p>
-      )}
-      <Link href="/cart" className="btn">
-        Go to cart
-      </Link>
-    </section>
-  );
+  return productMetadata(product);
 }
 
+export default async function ProductDetailPage({ params }: ProductPageProps) {
+  const { handle } = await params;
+  const product = await getProductByHandle(handle).catch(() => null);
+  const breadcrumbItems = product
+    ? [
+        { label: "Home", href: "/" },
+        { label: "Shop", href: "/products" },
+        { label: product.category, href: `/products?category=${encodeURIComponent(product.category)}` },
+        { label: product.title }
+      ]
+    : [{ label: "Home", href: "/" }, { label: "Shop", href: "/products" }, { label: "Product" }];
+
+  return (
+    <>
+      {product && (
+        <script
+          type="application/ld+json"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd(product)) }}
+        />
+      )}
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(breadcrumbItems)) }}
+      />
+      <ProductDetailClient handle={handle} />
+    </>
+  );
+}
