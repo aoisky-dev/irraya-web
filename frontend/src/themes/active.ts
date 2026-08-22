@@ -1,15 +1,16 @@
-/*
+/**
  * ╔══════════════════════════════════════════════════════╗
- * ║  CSS THEME SWITCH                                  ║
- * ║  Change the @import below to switch designs.       ║
- * ║  Also edit src/themes/active.ts for components.    ║
+ * ║  THEME SWITCH — edit this file to change designs   ║
  * ╠══════════════════════════════════════════════════════╣
- * ║  "../themes/atelier/theme.css"  →  Atelier (new)  ║
- * ║  "../themes/classic/theme.css"  →  Classic         ║
+ * ║  "atelier"  →  Premium editorial (clean & minimal) ║
+ * ║  "classic"  →  Scarlet Rose (original warm theme)  ║
  * ╠══════════════════════════════════════════════════════╣
- * ║  Restart dev server after changing: npm run dev    ║
+ * ║  Also change the @import in src/app/globals.css    ║
+ * ║  After changing, restart dev server: npm run dev   ║
  * ╚══════════════════════════════════════════════════════╝
  */
 
-/* ─── ACTIVE THEME ─────────────────────────────────────── */
-@import "../themes/atelier/theme.css";
+// ─── CHANGE "atelier" to "classic" on the line below ──────
+export { Header }     from "./atelier/Header";
+export { Footer }     from "./atelier/Footer";
+export { ProductCard } from "./atelier/ProductCard";
