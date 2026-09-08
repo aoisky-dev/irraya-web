@@ -5,8 +5,6 @@ services:
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis_data:/data
-    ports:
-      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -24,8 +22,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-irraya}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-irraya}"]
       interval: 10s
@@ -38,13 +34,19 @@ services:
     build:
       context: ./backend
     image: irraya/backend:local
+    container_name: irraya-web-backend
     restart: unless-stopped
     env_file:
       - ./deploy/prod/backend.env
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@127.0.0.1:5432/${POSTGRES_DB:-irraya}
-      REDIS_URL: redis://127.0.0.1:6379
-    network_mode: host
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-irraya}
+      REDIS_URL: redis://redis:6379
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`api.irraya.com`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend.loadbalancer.server.port=9000"
     depends_on:
       redis:
         condition: service_healthy
@@ -58,19 +60,22 @@ services:
     build:
       context: ./frontend
     image: irraya/frontend:local
+    container_name: irraya-web-frontend
     restart: unless-stopped
     env_file:
       - ./deploy/prod/frontend.env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`irraya.com`) || Host(`www.irraya.com`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
     depends_on:
       - backend
     init: true
     security_opt:
       - no-new-privileges:true
-    ports:
-      - "80:3000"
-
 
 volumes:
   redis_data:
   postgres_data:
-
