@@ -14,5 +14,5 @@ RUN npm run build
 
 EXPOSE 9000
 
-CMD ["sh", "-c", "cd .medusa/server && npx medusa start --host 127.0.0.1 --port ${PORT:-9000}"]
+CMD ["sh", "-c", "cd .medusa/server && npx medusa start --host 0.0.0.0 --port ${PORT:-9000}"]
 
