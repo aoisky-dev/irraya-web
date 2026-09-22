@@ -350,7 +350,7 @@ export default function CheckoutPage() {
                   id="firstName"
                   className="form-input"
                   type="text"
-                  placeholder="John"
+                  placeholder="First Name"
                   value={form.firstName}
                   onChange={(e) => updateField("firstName", e.target.value)}
                 />
@@ -361,7 +361,7 @@ export default function CheckoutPage() {
                   id="lastName"
                   className="form-input"
                   type="text"
-                  placeholder="Doe"
+                  placeholder="Last Name"
                   value={form.lastName}
                   onChange={(e) => updateField("lastName", e.target.value)}
                 />
@@ -372,7 +372,7 @@ export default function CheckoutPage() {
                   id="email"
                   className="form-input"
                   type="email"
-                  placeholder="john@example.com"
+                  placeholder="name@example.com"
                   value={form.email}
                   onChange={(e) => updateField("email", e.target.value)}
                 />
@@ -439,10 +439,12 @@ export default function CheckoutPage() {
             <h2>Shipping Method</h2>
             <div className="shipping-options">
               <label className="shipping-option active">
-                <input type="radio" name="shipping" defaultChecked />
-                <div>
-                  <span className="shipping-option-title">Standard Shipping</span>
-                  <span className="shipping-option-desc">5–7 business days</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-md)" }}>
+                  <input type="radio" name="shipping" defaultChecked />
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span className="shipping-option-title">Standard Shipping</span>
+                    <span className="shipping-option-desc">5–7 business days</span>
+                  </div>
                 </div>
                 <span className="text-accent" style={{ fontWeight: 600 }}>Free</span>
               </label>
@@ -536,7 +538,7 @@ export default function CheckoutPage() {
               </div>
               <div className="summary-row">
                 <span>Shipping</span>
-                <span>Calculated at next step</span>
+                <span className="text-accent" style={{ fontWeight: 600 }}>Free Shipping</span>
               </div>
               {cart.discountInCents ? (
                 <div className="summary-row" style={{ color: "var(--success, green)" }}>
