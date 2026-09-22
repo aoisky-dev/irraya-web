@@ -30,7 +30,76 @@ export interface RazorpayOrderLinkInput {
   status?: "authorized" | "captured";
 }
 
+export async function prepareCartForCheckout(cartId: string, form: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  address: string;
+  city: string;
+  zipCode: string;
+}): Promise<void> {
+  // 1. Update Cart Address
+  await medusaRequest(`/store/carts/${cartId}`, {
+    method: "POST",
+    body: JSON.stringify({
+      email: form.email.trim(),
+      shipping_address: {
+        first_name: form.firstName,
+        last_name: form.lastName,
+        address_1: form.address,
+        city: form.city,
+        country_code: "in",
+        postal_code: form.zipCode,
+      },
+      billing_address: {
+        first_name: form.firstName,
+        last_name: form.lastName,
+        address_1: form.address,
+        city: form.city,
+        country_code: "in",
+        postal_code: form.zipCode,
+      }
+    })
+  });
+
+  // 2. Fetch shipping options
+  const optionsRes = await medusaRequest<{ shipping_options?: { id: string }[] }>(`/store/shipping-options?cart_id=${cartId}`);
+  
+  if (optionsRes.shipping_options && optionsRes.shipping_options.length > 0) {
+    // 3. Add first shipping method to cart
+    await medusaRequest(`/store/carts/${cartId}/shipping-methods`, {
+      method: "POST",
+      body: JSON.stringify({ option_id: optionsRes.shipping_options[0].id })
+    });
+  }
+}
+
 export async function createOrderFromCart(cartId: string): Promise<Order> {
+  // 1. Ensure payment collection & session exists (required for Medusa v2 cart completion)
+  try {
+    const cartRes = await medusaRequest<{ cart?: { payment_collection?: { id: string, payment_sessions?: any[] } } }>(`/store/carts/${cartId}?fields=*payment_collection,*payment_collection.payment_sessions`);
+    let collectionId = cartRes.cart?.payment_collection?.id;
+    
+    if (!collectionId) {
+      const createRes = await medusaRequest<{ payment_collection?: { id: string } }>("/store/payment-collections", {
+        method: "POST",
+        body: JSON.stringify({ cart_id: cartId })
+      });
+      collectionId = createRes.payment_collection?.id;
+    }
+
+    if (collectionId && (!cartRes.cart?.payment_collection?.payment_sessions?.length)) {
+      await medusaRequest(`/store/payment-collections/${collectionId}/payment-sessions`, {
+        method: "POST",
+        body: JSON.stringify({ provider_id: "pp_system_default" })
+      });
+    }
+  } catch (err) {
+    console.error("Failed to setup payment collection for cart", err);
+    // Proceed anyway and let the complete endpoint fail if it has to
+  }
+
+  // 2. Complete the cart
   const response = await medusaRequest<{ order?: unknown }>(`/store/carts/${cartId}/complete`, {
     method: "POST"
   });

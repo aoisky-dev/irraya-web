@@ -160,14 +160,28 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
     : {};
   const paymentStatus = String(razorpay?.status ?? "authorized").toLowerCase();
 
+  const shippingAddr = raw?.shipping_address ?? raw?.shipping_address_id ?? null;
+  const shippingAddress = shippingAddr && typeof shippingAddr === "object" ? {
+    firstName: normalizeText(shippingAddr.first_name, "") || undefined,
+    lastName: normalizeText(shippingAddr.last_name, "") || undefined,
+    address1: normalizeText(shippingAddr.address_1, "") || undefined,
+    city: normalizeText(shippingAddr.city, "") || undefined,
+    province: normalizeText(shippingAddr.province, "") || undefined,
+    postalCode: normalizeText(shippingAddr.postal_code, "") || undefined,
+    countryCode: normalizeText(shippingAddr.country_code, "") || undefined,
+  } : undefined;
+
   return {
     id: String(raw?.id ?? ""),
+    displayId: raw?.display_id ? String(raw.display_id) : undefined,
     cartId: String(raw?.cart_id ?? cartIdFallback ?? ""),
     customerId: raw?.customer_id ? String(raw.customer_id) : undefined,
     status,
     currencyCode: String(raw?.currency_code ?? "usd").toLowerCase() === "inr" ? "inr" : "usd",
     items: Array.isArray(raw?.items) ? raw.items.map(mapOrderItem) : [],
+    subtotalInCents: Math.max(0, Math.round(toNumber(raw?.subtotal, 0))) * 100 || undefined,
     totalInCents: Math.max(0, Math.round(toNumber(raw?.total, 0))) * 100,
+    shippingAddress,
     payment: razorpay?.order_id || razorpay?.payment_id ? {
       id: String(razorpay?.payment_id ?? ""),
       orderId: String(raw?.id ?? ""),

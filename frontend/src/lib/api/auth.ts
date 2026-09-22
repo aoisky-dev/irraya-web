@@ -10,6 +10,7 @@ type MedusaCustomer = {
   last_name?: string | null;
   created_at?: string;
   metadata?: Record<string, unknown>;
+  addresses?: any[];
 };
 
 const mapCustomerToUser = (customer: MedusaCustomer): User => ({
@@ -19,7 +20,8 @@ const mapCustomerToUser = (customer: MedusaCustomer): User => ({
   firstName: customer.first_name ?? "",
   lastName: customer.last_name ?? "",
   role: (customer.metadata?.role as "admin" | "customer" | undefined) ?? "customer",
-  createdAt: customer.created_at ?? new Date().toISOString()
+  createdAt: customer.created_at ?? new Date().toISOString(),
+  addresses: customer.addresses ?? []
 });
 
 const isEmailIdentifier = (value: string): boolean => /.+@.+\..+/.test(value.trim());
@@ -341,6 +343,23 @@ export async function changePassword(input: ChangePasswordInput): Promise<{ mess
   return { message: response.message || "Password changed successfully." };
 }
 
+
+export async function saveCustomerAddress(token: string, address: {
+  first_name: string;
+  last_name: string;
+  address_1: string;
+  city: string;
+  postal_code: string;
+  country_code: string;
+}): Promise<void> {
+  await medusaRequest("/store/customers/me/addresses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(address)
+  });
+}
 
 export async function getMe(token: string): Promise<User> {
   const response = await medusaRequest<{ customer?: MedusaCustomer }>("/store/customers/me", {

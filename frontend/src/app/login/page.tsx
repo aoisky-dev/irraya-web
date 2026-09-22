@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [hideReason, setHideReason] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
@@ -41,7 +42,23 @@ export default function LoginPage() {
           <p className="auth-subtitle">Sign in to manage your orders, wishlist, and profile details.</p>
         </div>
 
-        {error && <div className="auth-error">{error}</div>}
+        {!hideReason && searchParams.get("reason") === "checkout" && (
+          <div className="auth-info" style={{ marginBottom: "var(--space-md)" }}>
+            <span>Please log in to place an order</span>
+            <button type="button" className="auth-dismiss" onClick={() => setHideReason(true)} aria-label="Close">
+              &times;
+            </button>
+          </div>
+        )}
+
+        {error && (
+          <div className="auth-error">
+            <span>{error}</span>
+            <button type="button" className="auth-dismiss" onClick={() => setError("")} aria-label="Close">
+              &times;
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div>

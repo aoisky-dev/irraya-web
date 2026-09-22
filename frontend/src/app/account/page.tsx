@@ -114,7 +114,7 @@ export default function AccountPage() {
                 <div key={order.id} className="account-order-card">
                   <div className="account-order-head">
                     <div>
-                      <strong>Order #{order.id.slice(-6).toUpperCase()}</strong>
+                      <strong>Order #{order.displayId || order.id.slice(-6).toUpperCase()}</strong>
                       <div className="text-muted account-order-date">{new Date(order.createdAt).toLocaleDateString()}</div>
                       <div className="text-muted account-order-date">
                         {order.items.length} {order.items.length === 1 ? "item" : "items"}

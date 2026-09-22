@@ -15,6 +15,14 @@ export interface User {
   lastName: string;
   role: "admin" | "customer";
   createdAt: string;
+  addresses?: Array<{
+    first_name?: string;
+    last_name?: string;
+    address_1?: string;
+    city?: string;
+    postal_code?: string;
+    country_code?: string;
+  }>;
 }
 
 export type ProductStatus = "draft" | "published" | "archived";
@@ -70,6 +78,7 @@ export interface Cart {
   items: CartItem[];
   promoCode?: string;
   discountInCents?: number;
+  taxInCents?: number;
   subtotalInCents: number;
   totalInCents: number;
 }
@@ -126,14 +135,27 @@ export interface OrderRequest {
   updatedAt: string;
 }
 
+export interface ShippingAddress {
+  firstName?: string;
+  lastName?: string;
+  address1?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  countryCode?: string;
+}
+
 export interface Order {
   id: string;
+  displayId?: string;
   cartId: string;
   customerId?: string;
   status: "pending" | "confirmed" | "fulfilled" | "cancelled";
   currencyCode: "usd" | "inr";
   items: OrderItem[];
+  subtotalInCents?: number;
   totalInCents: number;
+  shippingAddress?: ShippingAddress;
   payment?: Payment;
   tracking?: ShipmentTracking;
   eligibility?: OrderEligibility;
