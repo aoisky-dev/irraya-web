@@ -56,6 +56,17 @@ export default function AboutPage() {
           </Link>
         </div>
       </div>
+      <hr className="divider" style={{ marginTop: "var(--space-3xl)", marginBottom: "var(--space-2xl)" }} />
+
+      <div className="about-hero" style={{ paddingTop: 0 }}>
+        <h2 className="section-title" style={{ marginBottom: "var(--space-md)" }}>Contact Us</h2>
+        <p style={{ color: "var(--text-secondary)", lineHeight: 1.8, fontSize: "1rem", maxWidth: "600px", margin: "0 auto" }}>
+          Have a question or need assistance? We're here to help.
+          <br /><br />
+          <strong>Email:</strong> <a href="mailto:info@irraya.com" style={{ textDecoration: "underline" }}>info@irraya.com</a><br />
+          <strong>Phone:</strong> <a href="tel:8500365656" style={{ textDecoration: "underline" }}>8500365656</a>
+        </p>
+      </div>
     </section>
   );
 }

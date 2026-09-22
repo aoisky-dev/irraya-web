@@ -39,6 +39,7 @@ export interface Product {
   category: string;
   status: ProductStatus;
   image?: string;
+  images?: string[];  // all uploaded product images
   videoUrl?: string;
   rating?: number;
   reviewsCount?: number;

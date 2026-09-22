@@ -60,7 +60,11 @@ async function withClient<T>(callback: (client: pg.Client) => Promise<T>): Promi
   }
 }
 
+let tablesEnsured = false;
+
 async function ensureCustomerCommerceTables(client: pg.Client): Promise<void> {
+  if (tablesEnsured) return;
+
   await client.query(`
     create table if not exists customer_wishlist_items (
       id bigserial primary key,
@@ -106,6 +110,8 @@ async function ensureCustomerCommerceTables(client: pg.Client): Promise<void> {
   `)
   await client.query(`create index if not exists idx_product_reviews_product_status on product_reviews(product_id, status)`)
   await client.query(`create index if not exists idx_product_reviews_customer_id on product_reviews(customer_id)`)
+
+  tablesEnsured = true;
 }
 
 function normalizeString(value: unknown): string {

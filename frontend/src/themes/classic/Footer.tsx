@@ -25,7 +25,7 @@ export async function Footer() {
           <div>
             <div className="footer-brand">Irraya</div>
             <p className="footer-desc">
-              Modern fashion for the conscious individual. Quality craftsmanship meets timeless design.
+              Slow fashion for everyday style. Quality craftsmanship meets timeless design.
             </p>
           </div>
           <div className="footer-col">
@@ -42,6 +42,7 @@ export async function Footer() {
             <Link href="/about">About Us</Link>
             <Link href="/about">Sustainability</Link>
             <Link href="/about">Careers</Link>
+            <Link href="https://www.instagram.com/irraya.co" target="_blank" rel="noopener noreferrer">Instagram</Link>
           </div>
           <div className="footer-col">
             <h4>Support</h4>

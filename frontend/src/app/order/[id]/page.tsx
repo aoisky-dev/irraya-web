@@ -222,7 +222,7 @@ export default function OrderConfirmationPage() {
         <div className="order-details" style={{ marginTop: "var(--space-xl)", textAlign: "left" }}>
           <h2 style={{ marginBottom: "var(--space-md)" }}>Manage this order</h2>
           <p className="text-muted" style={{ marginBottom: "var(--space-md)" }}>
-            Cancel requests are reviewed before fulfillment. Returns and exchanges are available within 30 days where eligible. Admin processing happens in Medusa Admin.
+            Cancel requests are reviewed before fulfillment. Exchanges are available within 7 days where eligible. Admin processing happens in Medusa Admin.
           </p>
 
           {requestMessage && <p style={{ color: "var(--success, green)", marginBottom: "var(--space-md)" }}>{requestMessage}</p>}

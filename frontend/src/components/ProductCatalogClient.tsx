@@ -8,9 +8,9 @@ import type { Product } from "@/lib/types";
 import { getProducts } from "@/lib/api/products";
 import { buildCatalogFacets, filterProducts, sortProducts, type CatalogSortOption } from "@/lib/catalog";
 
-export function ProductCatalogClient() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function ProductCatalogClient({ initialProducts = [] }: { initialProducts?: Product[] }) {
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [isLoading, setIsLoading] = useState(initialProducts.length === 0);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -23,8 +23,14 @@ export function ProductCatalogClient() {
   const [inStockOnly, setInStockOnly] = useState(false);
 
   const [sortBy, setSortBy] = useState<CatalogSortOption>("newest");
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
+    // Only re-fetch if we don't have initial server-side data
+    if (initialProducts.length > 0) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     getProducts()
       .then(setProducts)
@@ -79,76 +85,85 @@ export function ProductCatalogClient() {
         Browse our curated collection of premium fashion essentials.
       </p>
 
-      <div style={{ display: "flex", gap: "var(--space-2xl)", marginTop: "var(--space-xl)", alignItems: "flex-start" }}>
+      <div className="catalog-layout">
         
-        {/* Sidebar Filters */}
-        <aside style={{ width: "250px", flexShrink: 0, padding: "var(--space-lg)", background: "var(--surface)", borderRadius: "8px" }}>
-          <h2 style={{ fontSize: "1.25rem", marginBottom: "var(--space-md)" }}>Filters</h2>
-          
-          <div style={{ marginBottom: "var(--space-md)" }}>
-            <h3 style={{ fontSize: "1rem", marginBottom: "var(--space-sm)" }}>Category</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {[{ value: "all", count: products.length }, ...facets.categories].map((cat) => (
-                <label key={cat.value} style={{ display: "flex", gap: "0.5rem", cursor: "pointer", textTransform: "capitalize" }}>
-                  <input type="radio" name="category" checked={activeCategory === cat.value.toLowerCase()} onChange={() => updateQuery({ category: cat.value.toLowerCase() })} />
-                  {cat.value} <span className="text-muted">({cat.count})</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ marginBottom: "var(--space-md)" }}>
-            <h3 style={{ fontSize: "1rem", marginBottom: "var(--space-sm)" }}>Color</h3>
-            <select className="input" value={activeColor} onChange={(e) => updateQuery({ color: e.target.value })} style={{ width: "100%" }}>
-              <option value="">All Colors</option>
-              {facets.colors.map(c => <option key={c.value} value={c.value}>{c.value} ({c.count})</option>)}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: "var(--space-md)" }}>
-            <h3 style={{ fontSize: "1rem", marginBottom: "var(--space-sm)" }}>Size</h3>
-            <select className="input" value={activeSize} onChange={(e) => updateQuery({ size: e.target.value })} style={{ width: "100%" }}>
-              <option value="">All Sizes</option>
-              {facets.sizes.map(s => <option key={s.value} value={s.value}>{s.value} ({s.count})</option>)}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: "var(--space-md)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-sm)" }}>
-            <div>
-              <h3 style={{ fontSize: "1rem", marginBottom: "var(--space-sm)" }}>Min ₹</h3>
-              <input type="number" className="input" value={minPrice} onChange={(e) => updateQuery({ minPrice: e.target.value ? Number(e.target.value) : null })} style={{ width: "100%" }} />
-            </div>
-            <div>
-            <h3 style={{ fontSize: "1rem", marginBottom: "var(--space-sm)" }}>Max ₹</h3>
-            <input
-              type="number" 
-              className="input" 
-              placeholder={String(Math.ceil(facets.priceRange.max / 100))}
-              value={maxPrice}
-              onChange={(e) => updateQuery({ maxPrice: e.target.value ? Number(e.target.value) : null })}
-              style={{ width: "100%" }}
-            />
-            </div>
-          </div>
-
-          <label style={{ display: "flex", gap: "0.5rem", cursor: "pointer", marginBottom: "var(--space-md)" }}>
-            <input type="checkbox" checked={inStockOnly} onChange={(e) => updateQuery({ stock: e.target.checked ? "in" : null })} />
-            In stock only
-          </label>
-
-          <button 
-            className="btn btn-outline btn-full" 
-            onClick={() => router.replace("/products", { scroll: false })}
-          >
-            Clear Filters
-          </button>
-        </aside>
+        {/* Removed Sidebar Filters, moved to Dropdown */}
 
         {/* Main Content Area */}
         <div style={{ flexGrow: 1 }}>
-          <div className="filter-bar" style={{ marginTop: 0 }}>
-            <div className="results-count" style={{ margin: 0 }}>
-              {isLoading ? "Loading..." : `${sortedProducts.length} ${sortedProducts.length === 1 ? "product" : "products"}`}
+          <div className="filter-bar" style={{ marginTop: 0, position: "relative" }}>
+            <div className="results-count" style={{ margin: 0, display: "flex", alignItems: "center", gap: "1rem" }}>
+              <button 
+                className="btn btn-outline filter-toggle-btn" 
+                onClick={() => setShowFilters(!showFilters)}
+                style={{ padding: "0.25rem 0.75rem", fontSize: "0.875rem", display: "inline-flex" }}
+              >
+                {showFilters ? "Hide Filters" : "Filters"}
+              </button>
+              
+              <div className={`filter-dropdown-container ${showFilters ? "open" : ""}`}>
+                <button className="filter-close-btn" onClick={() => setShowFilters(false)} aria-label="Close filters">×</button>
+                <h2 style={{ fontSize: "1.25rem", marginBottom: "var(--space-md)" }}>Filters</h2>
+                
+                <div style={{ marginBottom: "var(--space-md)" }}>
+                  <h3 style={{ fontSize: "1rem", marginBottom: "var(--space-sm)" }}>Category</h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    {[{ value: "all", count: products.length }, ...facets.categories].map((cat) => (
+                      <label key={cat.value} style={{ display: "flex", gap: "0.5rem", cursor: "pointer", textTransform: "capitalize" }}>
+                        <input type="radio" name="category" checked={activeCategory === cat.value.toLowerCase()} onChange={() => updateQuery({ category: cat.value.toLowerCase() })} />
+                        {cat.value} <span className="text-muted">({cat.count})</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: "var(--space-md)" }}>
+                  <h3 style={{ fontSize: "1rem", marginBottom: "var(--space-sm)" }}>Color</h3>
+                  <select className="input" value={activeColor} onChange={(e) => updateQuery({ color: e.target.value })} style={{ width: "100%" }}>
+                    <option value="">All Colors</option>
+                    {facets.colors.map(c => <option key={c.value} value={c.value}>{c.value} ({c.count})</option>)}
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: "var(--space-md)" }}>
+                  <h3 style={{ fontSize: "1rem", marginBottom: "var(--space-sm)" }}>Size</h3>
+                  <select className="input" value={activeSize} onChange={(e) => updateQuery({ size: e.target.value })} style={{ width: "100%" }}>
+                    <option value="">All Sizes</option>
+                    {facets.sizes.map(s => <option key={s.value} value={s.value}>{s.value} ({s.count})</option>)}
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: "var(--space-md)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-sm)" }}>
+                  <div>
+                    <h3 style={{ fontSize: "1rem", marginBottom: "var(--space-sm)" }}>Min ₹</h3>
+                    <input type="number" className="input" value={minPrice} onChange={(e) => updateQuery({ minPrice: e.target.value ? Number(e.target.value) : null })} style={{ width: "100%" }} />
+                  </div>
+                  <div>
+                  <h3 style={{ fontSize: "1rem", marginBottom: "var(--space-sm)" }}>Max ₹</h3>
+                  <input
+                    type="number" 
+                    className="input" 
+                    placeholder={String(Math.ceil(facets.priceRange.max / 100))}
+                    value={maxPrice}
+                    onChange={(e) => updateQuery({ maxPrice: e.target.value ? Number(e.target.value) : null })}
+                    style={{ width: "100%" }}
+                  />
+                  </div>
+                </div>
+
+                <label style={{ display: "flex", gap: "0.5rem", cursor: "pointer", marginBottom: "var(--space-md)" }}>
+                  <input type="checkbox" checked={inStockOnly} onChange={(e) => updateQuery({ stock: e.target.checked ? "in" : null })} />
+                  In stock only
+                </label>
+
+                <button 
+                  className="btn btn-outline btn-full" 
+                  onClick={() => { router.replace("/products", { scroll: false }); setShowFilters(false); }}
+                >
+                  Clear Filters
+                </button>
+              </div>
+              <span>{isLoading ? "Loading..." : `${sortedProducts.length} ${sortedProducts.length === 1 ? "product" : "products"}`}</span>
             </div>
             
             <div className="filter-sort">

@@ -5,17 +5,17 @@ import { Breadcrumb } from "@/components/Breadcrumb";
 import { getProducts } from "@/lib/api/products";
 import { breadcrumbJsonLd, categoryMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = categoryMetadata();
+export const metadata: Metadata = categoryMetadata(); // Alternatively rename to collectionMetadata, but leaving as is to not break seo.ts
 
-const formatCategoryLabel = (value: string): string =>
+const formatCollectionLabel = (value: string): string =>
   value
     .split("-")
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
-export default async function CategoriesPage() {
-  let categoryCards: Array<{ name: string; image?: string; count: number }> = [];
+export default async function CollectionsPage() {
+  let collectionCards: Array<{ name: string; image?: string; count: number }> = [];
   let loadFailed = false;
 
   try {
@@ -23,19 +23,19 @@ export default async function CategoriesPage() {
     const grouped = new Map<string, { image?: string; count: number }>();
 
     for (const product of products) {
-      const category = product.category?.trim();
-      if (!category) continue;
+      const collection = product.category?.trim(); // Assuming product.category is still populated by raw?.collection?.title
+      if (!collection) continue;
 
-      const existing = grouped.get(category);
+      const existing = grouped.get(collection);
       if (existing) {
         existing.count += 1;
         if (!existing.image && product.image) existing.image = product.image;
       } else {
-        grouped.set(category, { image: product.image, count: 1 });
+        grouped.set(collection, { image: product.image, count: 1 });
       }
     }
 
-    categoryCards = [...grouped.entries()]
+    collectionCards = [...grouped.entries()]
       .map(([name, meta]) => ({ name, image: meta.image, count: meta.count }))
       .sort((a, b) => a.name.localeCompare(b.name));
   } catch {
@@ -47,49 +47,49 @@ export default async function CategoriesPage() {
       <script
         type="application/ld+json"
         suppressHydrationWarning
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd([{ label: "Home", href: "/" }, { label: "Categories" }])) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd([{ label: "Home", href: "/" }, { label: "Collections" }])) }}
       />
-      <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Categories" }]} />
-      <h1 className="page-title">All Categories</h1>
-      <p className="page-subtitle">Browse every category and jump directly to filtered products.</p>
+      <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Collections" }]} />
+      <h1 className="page-title">All Collections</h1>
+      <p className="page-subtitle">Browse every collection and jump directly to filtered products.</p>
 
       {loadFailed ? (
         <div className="cart-empty" style={{ background: "transparent", border: "1px dashed var(--border)" }}>
-          <h2>Could not load categories</h2>
+          <h2>Could not load collections</h2>
           <p>Please try again in a moment.</p>
           <Link href="/products" className="btn">
             View Products
           </Link>
         </div>
-      ) : categoryCards.length === 0 ? (
+      ) : collectionCards.length === 0 ? (
         <div className="cart-empty" style={{ background: "transparent", border: "1px dashed var(--border)" }}>
-          <h2>No categories found</h2>
-          <p>Add products in Medusa to populate categories.</p>
+          <h2>No collections found</h2>
+          <p>Add products in Medusa to populate collections.</p>
           <Link href="/products" className="btn">
             View Products
           </Link>
         </div>
       ) : (
         <div className="collections-grid" style={{ marginTop: "var(--space-xl)" }}>
-          {categoryCards.map((category) => (
+          {collectionCards.map((collection) => (
             <Link
-              key={category.name}
-              href={`/products?category=${encodeURIComponent(category.name)}`}
+              key={collection.name}
+              href={`/products?category=${encodeURIComponent(collection.name)}`}
               className="collection-card"
               style={{ position: "relative" }}
             >
-              {category.image && (
+              {collection.image && (
                 <Image
-                  src={category.image}
-                  alt={category.name}
+                  src={collection.image}
+                  alt={collection.name}
                   fill
                   style={{ objectFit: "cover" }}
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
               )}
               <div className="collection-card-overlay">
-                <span className="collection-card-title">{formatCategoryLabel(category.name)}</span>
-                <span className="collection-card-count">{category.count} items</span>
+                <span className="collection-card-title">{formatCollectionLabel(collection.name)}</span>
+                <span className="collection-card-count">{collection.count} items</span>
               </div>
             </Link>
           ))}

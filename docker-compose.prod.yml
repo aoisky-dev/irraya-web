@@ -55,6 +55,8 @@ services:
     init: true
     security_opt:
       - no-new-privileges:true
+    volumes:
+      - backend_uploads:/app/uploads
 
   frontend:
     build:
@@ -79,3 +81,4 @@ services:
 volumes:
   redis_data:
   postgres_data:
+  backend_uploads:

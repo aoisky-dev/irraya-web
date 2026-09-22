@@ -15,6 +15,8 @@ rsync -avz \
     --exclude '.git' \
     --exclude '.medusa' \
     --exclude 'tsconfig.tsbuildinfo' \
+    --exclude '/images' \
+    --exclude '/optimized_images' \
     ./ $SERVER:$REMOTE_DIR
 
 # 2. Rebuild and restart the Docker containers on the server

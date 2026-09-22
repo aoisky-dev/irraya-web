@@ -4,6 +4,8 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "api.irraya.com" },
+      { protocol: "http", hostname: "localhost" },
     ],
   },
 };

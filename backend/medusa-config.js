@@ -17,5 +17,25 @@ module.exports = defineConfig({
       jwtSecret: process.env.JWT_SECRET || "replace_me_in_env",
       cookieSecret: process.env.COOKIE_SECRET || "replace_me_in_env"
     }
-  }
+  },
+  admin: {
+    maxUploadFileSize: 10 * 1024 * 1024,
+  },
+  modules: [
+    {
+      resolve: "@medusajs/file",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/file-local",
+            id: "local",
+            options: {
+              upload_dir: "/app/uploads",
+              backend_url: `${process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"}/uploads`,
+            },
+          },
+        ],
+      },
+    },
+  ]
 })

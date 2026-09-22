@@ -138,7 +138,7 @@ export default function AccountPage() {
                     </Link>
                     {(order.eligibility?.canReturn || order.eligibility?.canExchange) && (
                       <Link href={`/order/${order.id}`} className="btn btn-outline">
-                        Return or exchange
+                        Request an exchange
                       </Link>
                     )}
                   </div>

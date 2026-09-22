@@ -32,9 +32,9 @@ const mapVariant = (raw: any, productId: string): ProductVariant => {
       0,
       Math.round(
         toNumber(raw?.calculated_price?.calculated_amount ?? raw?.prices?.[0]?.amount ?? raw?.amount, 0)
-      )
+      ) * 100
     ),
-    stock: Math.max(0, Math.round(toNumber(raw?.inventory_quantity, 0)))
+    stock: typeof raw?.inventory_quantity !== "undefined" ? Math.max(0, Math.round(toNumber(raw?.inventory_quantity, 0))) : 100
   };
 };
 
@@ -50,6 +50,9 @@ export const mapMedusaProduct = (raw: any): Product => {
   const rating = toNumber((metadata as Record<string, unknown>).rating, 0);
   const reviewsCount = toNumber((metadata as Record<string, unknown>).reviews_count ?? (metadata as Record<string, unknown>).reviewsCount, 0);
 
+  const imagesRaw = Array.isArray(raw?.images) ? raw.images : [];
+  const images = imagesRaw.map((img: any) => normalizeText(img?.url, "")).filter(Boolean);
+
   return {
     id,
     handle: normalizeText(raw?.handle, id),
@@ -61,6 +64,7 @@ export const mapMedusaProduct = (raw: any): Product => {
       normalizeText((metadata as Record<string, unknown>).category, "general"),
     status: "published",
     image: normalizeText(raw?.thumbnail ?? raw?.images?.[0]?.url, "") || undefined,
+    images: images.length > 0 ? images : undefined,
     rating: rating > 0 ? rating : undefined,
     reviewsCount: reviewsCount > 0 ? Math.round(reviewsCount) : undefined,
     variants,
@@ -78,13 +82,13 @@ const mapCartItem = (raw: any): CartItem => ({
   quantity: Math.max(0, Math.round(toNumber(raw?.quantity, 0))),
   unitPriceInCents: Math.max(
     0,
-    Math.round(toNumber(raw?.unit_price ?? raw?.total / Math.max(toNumber(raw?.quantity, 1), 1), 0))
+    Math.round(toNumber(raw?.unit_price ?? raw?.total / Math.max(toNumber(raw?.quantity, 1), 1), 0)) * 100
   )
 });
 
 export const mapMedusaCart = (raw: any): Cart => {
-  const subtotalInCents = Math.max(0, Math.round(toNumber(raw?.subtotal ?? raw?.subtotal_incl_tax, 0)));
-  const totalInCents = Math.max(0, Math.round(toNumber(raw?.total, subtotalInCents)));
+  const subtotalInCents = Math.max(0, Math.round(toNumber(raw?.subtotal ?? raw?.subtotal_incl_tax, 0))) * 100;
+  const totalInCents = Math.max(0, Math.round(toNumber(raw?.total, subtotalInCents / 100))) * 100;
 
   return {
     id: String(raw?.id ?? ""),
@@ -92,7 +96,7 @@ export const mapMedusaCart = (raw: any): Cart => {
     currencyCode: String(raw?.currency_code ?? "usd").toLowerCase() === "inr" ? "inr" : "usd",
     items: Array.isArray(raw?.items) ? raw.items.map(mapCartItem) : [],
     promoCode: Array.isArray(raw?.promotions) ? raw.promotions[0]?.code : undefined,
-    discountInCents: Math.max(0, Math.round(toNumber(raw?.discount_total, Math.max(subtotalInCents - totalInCents, 0)))),
+    discountInCents: Math.max(0, Math.round(toNumber(raw?.discount_total, Math.max((subtotalInCents - totalInCents) / 100, 0)))) * 100,
     subtotalInCents,
     totalInCents
   };
@@ -110,7 +114,7 @@ const mapOrderItem = (raw: any): OrderItem => {
     productId: String(raw?.product_id ?? raw?.product?.id ?? ""),
     variantId: String(raw?.variant_id ?? raw?.variant?.id ?? ""),
     quantity: Math.max(0, Math.round(toNumber(raw?.quantity, 0))),
-    unitPriceInCents: Math.max(0, Math.round(toNumber(raw?.unit_price ?? raw?.subtotal, 0))),
+    unitPriceInCents: Math.max(0, Math.round(toNumber(raw?.unit_price ?? raw?.subtotal, 0))) * 100,
     title: normalizeText(raw?.title ?? raw?.product_title ?? raw?.product?.title, "Product"),
     image: normalizeText(raw?.thumbnail ?? raw?.product?.thumbnail ?? raw?.variant?.product?.thumbnail, "") || undefined,
     size: optionValue("size"),
@@ -163,12 +167,12 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
     status,
     currencyCode: String(raw?.currency_code ?? "usd").toLowerCase() === "inr" ? "inr" : "usd",
     items: Array.isArray(raw?.items) ? raw.items.map(mapOrderItem) : [],
-    totalInCents: Math.max(0, Math.round(toNumber(raw?.total, 0))),
+    totalInCents: Math.max(0, Math.round(toNumber(raw?.total, 0))) * 100,
     payment: razorpay?.order_id || razorpay?.payment_id ? {
       id: String(razorpay?.payment_id ?? ""),
       orderId: String(raw?.id ?? ""),
       provider: "razorpay",
-      amountInCents: Math.max(0, Math.round(toNumber(razorpay?.amount, raw?.total ?? 0))),
+      amountInCents: Math.max(0, Math.round(toNumber(razorpay?.amount, raw?.total ?? 0))) * 100,
       status: paymentStatus === "captured" ? "captured" : paymentStatus === "failed" ? "failed" : "authorized",
       providerReference: String(razorpay?.order_id ?? ""),
       providerOrderId: String(razorpay?.order_id ?? ""),

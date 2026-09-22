@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "./CartProvider";
 import { useToast } from "./ToastProvider";
 
@@ -21,10 +22,12 @@ export function AddToCartButton({
   size,
   color
 }: AddToCartButtonProps) {
+  const router = useRouter();
   const { addItem } = useCart();
   const { addToast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
+  const [isBuying, setIsBuying] = useState(false);
 
   const handleAdd = async () => {
     setIsAdding(true);
@@ -40,14 +43,35 @@ export function AddToCartButton({
     }
   };
 
+  const handleBuyNow = async () => {
+    setIsBuying(true);
+    try {
+      await addItem(productId, variantId, 1, { title, image, size, color });
+      router.push("/checkout");
+    } catch {
+      addToast("Failed to initiate checkout. Please try again.", "error");
+      setIsBuying(false);
+    }
+  };
+
   return (
-    <button
-      onClick={handleAdd}
-      className="btn btn-lg"
-      disabled={isAdding}
-      style={{ flex: 1 }}
-    >
-      {isAdding ? "Adding..." : isAdded ? "✓ Added to Cart" : "Add to Cart"}
-    </button>
+    <>
+      <button
+        onClick={handleAdd}
+        className="btn btn-lg"
+        disabled={isAdding || isBuying}
+        style={{ flex: 1, backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border)", transition: "all 0.2s ease" }}
+      >
+        {isAdding ? "Adding..." : isAdded ? "✓ Added" : "Add to Cart"}
+      </button>
+      <button
+        onClick={handleBuyNow}
+        className="btn btn-lg"
+        disabled={isAdding || isBuying}
+        style={{ flex: 1 }}
+      >
+        {isBuying ? "Processing..." : "Buy Now"}
+      </button>
+    </>
   );
 }

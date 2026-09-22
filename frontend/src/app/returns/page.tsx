@@ -83,7 +83,7 @@ export default function ReturnsPage() {
 
       {!isLoading && !user && (
         <div className="cart-empty" style={{ padding: "var(--space-xl)", marginBottom: "var(--space-xl)" }}>
-          <h2>Sign in to start a return or exchange</h2>
+          <h2>Sign in to start an exchange</h2>
           <p>Your order history is required to check return eligibility.</p>
           <Link href="/login?next=%2Freturns" className="btn btn-primary">Sign In</Link>
         </div>
@@ -91,9 +91,9 @@ export default function ReturnsPage() {
 
       {user && (
         <div className="checkout-section" style={{ marginBottom: "var(--space-xl)" }}>
-          <h2>Start a return or exchange</h2>
+          <h2>Start an exchange</h2>
           <p className="text-muted" style={{ marginBottom: "var(--space-md)" }}>
-            Eligible orders are within 30 days and not cancelled. Admin approval and refund processing happen in Medusa Admin.
+            Eligible orders are within 7 days and not cancelled. Admin approval and refund processing happen in Medusa Admin.
           </p>
           {message && <p style={{ color: "var(--success, green)", marginBottom: "var(--space-md)" }}>{message}</p>}
           {error && <p style={{ color: "var(--error)", marginBottom: "var(--space-md)" }}>{error}</p>}
@@ -133,7 +133,7 @@ export default function ReturnsPage() {
 
       {requests.length > 0 && (
         <div className="checkout-section" style={{ marginBottom: "var(--space-xl)" }}>
-          <h2>Your return/exchange requests</h2>
+          <h2>Your exchange requests</h2>
           {requests.map((request) => (
             <div key={request.id} className="order-detail-row">
               <span>{request.type?.toUpperCase?.() ?? request.request_type?.toUpperCase?.()} · Order #{String(request.orderId ?? request.order_id).slice(-6).toUpperCase()}</span>
@@ -146,20 +146,17 @@ export default function ReturnsPage() {
       <div className="prose" style={{ lineHeight: 1.8 }}>
         <p>At Irraya, we want you to be completely satisfied with your purchase. If for any reason you are not, we offer a generous and hassle-free return policy.</p>
 
-        <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: "var(--space-xl)", marginBottom: "var(--space-md)" }}>30-Day Returns</h2>
-        <p>You have 30 days from the date of delivery to return your items. We accept returns on all unworn, unwashed, and undamaged items with original tags attached.</p>
+        <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: "var(--space-xl)", marginBottom: "var(--space-md)" }}>7-Day Exchange Policy</h2>
+        <p>We do not offer returns. You have 7 days from the date of delivery to request an exchange for your items. We only accept exchanges for items that arrive damaged or defective.</p>
 
-        <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: "var(--space-xl)", marginBottom: "var(--space-md)" }}>Free Return Shipping</h2>
-        <p>We provide free prepaid return labels for all domestic orders. Simply log into your account, select the items you wish to return, and print your label.</p>
-
-        <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: "var(--space-xl)", marginBottom: "var(--space-md)" }}>Instant Refunds</h2>
-        <p>Once your return is dropped off at the carrier, we issue an instant refund to your original payment method. Please allow 3-5 business days for your bank to process the funds.</p>
+        <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: "var(--space-xl)", marginBottom: "var(--space-md)" }}>Damaged Product Proof Required</h2>
+        <p>To accept an exchange, it is mandatory to provide clear images or a video of the damaged product. Please upload this evidence when submitting your exchange request.</p>
 
         <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: "var(--space-xl)", marginBottom: "var(--space-md)" }}>Exchanges</h2>
-        <p>Need a different size or color? You can easily exchange items through our return portal. Your replacement will be shipped out as soon as you drop off the original item.</p>
+        <p>Your replacement will be shipped out as soon as your exchange request is approved and you drop off the original item.</p>
 
         <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: "var(--space-xl)", marginBottom: "var(--space-md)" }}>Exceptions</h2>
-        <p>Final sale items, intimate apparel, and customized products are not eligible for return or exchange.</p>
+        <p>Final sale items, intimate apparel, and customized products are not eligible for exchange.</p>
       </div>
     </div>
   );

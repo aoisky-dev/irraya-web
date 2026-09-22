@@ -18,7 +18,7 @@ export async function Footer() {
       <div className="footer-inner">
         <div className="footer-brand-row">
           <span className="footer-brand-display">Irraya</span>
-          <p className="footer-brand-line">Modern fashion for the conscious individual.</p>
+          <p className="footer-brand-line">Slow fashion for everyday style.</p>
         </div>
 
         <div className="container">
@@ -41,12 +41,12 @@ export async function Footer() {
               <h4>Help</h4>
               <Link href="/account">My Account</Link>
               <Link href="/cart">Shopping Bag</Link>
-              <Link href="/returns">Returns & Exchanges</Link>
+              <Link href="/returns">Exchange Policy</Link>
               <Link href="/about">Contact</Link>
             </div>
             <div className="footer-col">
               <h4>Follow</h4>
-              <Link href="/">Instagram</Link>
+              <Link href="https://www.instagram.com/irraya.co" target="_blank" rel="noopener noreferrer">Instagram</Link>
               <Link href="/">Pinterest</Link>
               <Link href="/">Twitter / X</Link>
             </div>
@@ -56,7 +56,7 @@ export async function Footer() {
             <span>© {new Date().getFullYear()} Irraya Fashion. All rights reserved.</span>
             <div className="footer-legal">
               <Link href="/privacy">Privacy Policy</Link>
-              <Link href="/returns">Shipping & Returns</Link>
+              <Link href="/returns">Shipping & Exchanges</Link>
             </div>
           </div>
         </div>

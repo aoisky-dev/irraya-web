@@ -28,16 +28,27 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="hero">
-        <span className="hero-tag">New Collection 2026</span>
-        <h1>Modern fashion for everyday style</h1>
-        <p>
-          Discover premium essentials crafted with quality materials and designed
-          for the conscious individual.
-        </p>
-        <Link href="/products" className="btn btn-lg">
-          Explore Collection
-        </Link>
+      <section className="hero" style={{ position: "relative", overflow: "hidden", color: "white" }}>
+        <Image 
+          src="/images/banner.jpg" 
+          alt="Irraya Fashion Banner" 
+          fill 
+          style={{ objectFit: "cover", zIndex: 0 }} 
+          priority 
+        />
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0, 0, 0, 0.35)", zIndex: 0 }} />
+        
+        <div style={{ position: "relative", zIndex: 1, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <span className="hero-tag" style={{ color: "white", borderColor: "rgba(255,255,255,0.4)" }}>New Collection 2026</span>
+          <h1 style={{ color: "white", textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>Slow fashion for everyday style</h1>
+          <p style={{ color: "rgba(255,255,255,0.95)", textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}>
+            Discover premium essentials crafted with quality materials and designed
+            for the conscious individual.
+          </p>
+          <Link href="/products" className="btn btn-lg" style={{ background: "white", color: "black", border: "none" }}>
+            Explore Collection
+          </Link>
+        </div>
       </section>
 
       {/* Features Row */}
@@ -50,12 +61,12 @@ export default async function HomePage() {
         <div className="feature-item">
           <div className="feature-icon">◇</div>
           <h4>Free Shipping</h4>
-          <p>On orders over ₹1,000</p>
+          <p>On all orders</p>
         </div>
         <div className="feature-item">
           <div className="feature-icon">↻</div>
-          <h4>Easy Returns</h4>
-          <p>7-day return policy</p>
+          <h4>Easy Exchanges</h4>
+          <p>7 days exchange only. No returns.</p>
         </div>
         <div className="feature-item">
           <div className="feature-icon">♡</div>
@@ -65,10 +76,10 @@ export default async function HomePage() {
       </div>
 
       {/* Collections */}
-      <section id="categories">
+      <section id="collections">
         <div className="section-header">
-          <h2 className="section-title">Shop by Category</h2>
-          <Link href="/categories" className="section-link">View all →</Link>
+          <h2 className="section-title">Shop by Collection</h2>
+          <Link href="/collections" className="section-link">View all →</Link>
         </div>
         {catalogLoadFailed && (
           <div className="card" style={{ marginBottom: "var(--space-lg)", textAlign: "center" }}>
@@ -108,22 +119,24 @@ export default async function HomePage() {
           <h2 className="section-title">Featured Products</h2>
           <Link href="/products" className="section-link">View all →</Link>
         </div>
-        <Carousel 
-          autoPlay 
-          interval={6000}
-          items={[
-            <div className="grid" style={{ padding: "0 var(--space-xs)" }}>
-              {products.slice(0, 4).map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>,
-            <div className="grid" style={{ padding: "0 var(--space-xs)" }}>
-              {products.slice(4, 8).map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          ]}
-        />
+        {products.filter(p => p.tags?.includes("featured")).length > 0 ? (
+          <Carousel 
+            autoPlay 
+            interval={6000}
+            items={Array.from({ length: Math.ceil(products.filter(p => p.tags?.includes("featured")).length / 4) }).map((_, i) => (
+              <div key={i} className="grid" style={{ padding: "0 var(--space-xs)" }}>
+                {products.filter(p => p.tags?.includes("featured")).slice(i * 4, (i + 1) * 4).map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            ))}
+          />
+        ) : (
+          <div className="cart-empty" style={{ background: "transparent", border: "1px dashed var(--border)" }}>
+            <h2>No featured products found</h2>
+            <p>Add the "featured" tag to products in Medusa to show them here.</p>
+          </div>
+        )}
       </section>
 
       {/* Trending Collection */}
@@ -145,7 +158,6 @@ export default async function HomePage() {
           </div>
         )}
       </section>
-
       {/* Brand Story Preview */}
       <section className="brand-story-section">
         <div className="brand-story-content">

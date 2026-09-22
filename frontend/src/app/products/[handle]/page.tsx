@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { ProductDetailClient } from "@/components/ProductDetailClient";
-import { getProductByHandle } from "@/lib/api/products";
+import { getProductByHandle, getProducts } from "@/lib/api/products";
 import { breadcrumbJsonLd, productJsonLd, productMetadata } from "@/lib/seo";
 
 type ProductPageProps = {
@@ -23,31 +24,42 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { handle } = await params;
-  const product = await getProductByHandle(handle).catch(() => null);
-  const breadcrumbItems = product
-    ? [
-        { label: "Home", href: "/" },
-        { label: "Shop", href: "/products" },
-        { label: product.category, href: `/products?category=${encodeURIComponent(product.category)}` },
-        { label: product.title }
-      ]
-    : [{ label: "Home", href: "/" }, { label: "Shop", href: "/products" }, { label: "Product" }];
+
+  // Both fetches happen on the server — no CORS issues, no client-side loading states
+  const [product, allProducts] = await Promise.all([
+    getProductByHandle(handle).catch(() => null),
+    getProducts().catch(() => [])
+  ]);
+
+  if (!product) {
+    notFound();
+  }
+
+  // Related = same category, different product
+  const relatedProducts = allProducts
+    .filter((p) => p.id !== product.id && p.category === product.category)
+    .slice(0, 4);
+
+  const breadcrumbItems = [
+    { label: "Home", href: "/" },
+    { label: "Shop", href: "/products" },
+    { label: product.category, href: `/products?category=${encodeURIComponent(product.category)}` },
+    { label: product.title }
+  ];
 
   return (
     <>
-      {product && (
-        <script
-          type="application/ld+json"
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd(product)) }}
-        />
-      )}
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd(product)) }}
+      />
       <script
         type="application/ld+json"
         suppressHydrationWarning
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(breadcrumbItems)) }}
       />
-      <ProductDetailClient handle={handle} />
+      <ProductDetailClient product={product} relatedProducts={relatedProducts} />
     </>
   );
 }

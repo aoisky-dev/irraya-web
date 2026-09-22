@@ -24,7 +24,7 @@ export function Header() {
     <header className={`header${scrolled ? " header--scrolled" : ""}`}>
       {/* Announcement bar */}
       <div className="header-topbar">
-        <span>Free shipping on orders over ₹1,000 &nbsp;·&nbsp; New collection now live</span>
+        <span>Free shipping on all orders &nbsp;·&nbsp; New collection now live</span>
       </div>
 
       <div className="container">
@@ -32,7 +32,7 @@ export function Header() {
           {/* Left nav */}
           <nav className="header-left" aria-label="Primary navigation">
             <Link href="/products">Shop</Link>
-            <Link href="/#categories">Collections</Link>
+            <Link href="/collections">Collections</Link>
             <Link href="/about">Story</Link>
           </nav>
 
@@ -89,7 +89,7 @@ export function Header() {
         <div className="mobile-nav">
           <nav onClick={() => setMobileOpen(false)}>
             <Link href="/products">Shop</Link>
-            <Link href="/#categories">Collections</Link>
+            <Link href="/collections">Collections</Link>
             <Link href="/about">Story</Link>
             <Link href="/search">Search</Link>
             <Link href="/wishlist">Wishlist</Link>
