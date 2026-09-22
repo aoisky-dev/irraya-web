@@ -438,16 +438,13 @@ export default function CheckoutPage() {
           <div className="checkout-section">
             <h2>Shipping Method</h2>
             <div className="shipping-options">
-              <label className="shipping-option active">
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-md)" }}>
-                  <input type="radio" name="shipping" defaultChecked />
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span className="shipping-option-title">Standard Shipping</span>
-                    <span className="shipping-option-desc">5–7 business days</span>
-                  </div>
+              <div className="shipping-option active" style={{ cursor: "default" }}>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span className="shipping-option-title">Standard Shipping</span>
+                  <span className="shipping-option-desc">5–7 business days</span>
                 </div>
                 <span className="text-accent" style={{ fontWeight: 600 }}>Free</span>
-              </label>
+              </div>
             </div>
           </div>
 
