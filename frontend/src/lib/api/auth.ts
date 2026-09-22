@@ -362,12 +362,10 @@ export async function saveCustomerAddress(token: string, address: {
 }
 
 export async function getMe(token: string): Promise<User> {
-  const response = await medusaRequest<{ customer?: MedusaCustomer }>("/store/customers/me", {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+  const response = await medusaRequest<{ customer?: MedusaCustomer }>(
+    "/store/customers/me?fields=*addresses",
+    { method: "GET", headers: { Authorization: `Bearer ${token}` } }
+  );
 
   if (!response.customer) {
     throw new Error("Failed to load customer profile from Medusa.");

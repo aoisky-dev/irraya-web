@@ -2,22 +2,34 @@ import type { Order, OrderRequest, OrderRequestItem, OrderRequestType } from "..
 import { medusaRequest } from "./client";
 import { mapMedusaOrder } from "./medusa-mappers";
 
-export async function getOrderById(orderId: string): Promise<Order> {
-  const response = await medusaRequest<{ order?: unknown }>(`/store/orders/${orderId}`);
-  if (!response.order) {
-    throw new Error("Order not found");
+export async function getOrderById(orderId: string): Promise<Order | null> {
+  try {
+    const response = await medusaRequest<{ order?: unknown }>(
+      `/store/orders/${orderId}?fields=*items,*shipping_address,*payment_collections,*payment_collections.payment_sessions`
+    );
+    if (!response.order) return null;
+    return mapMedusaOrder(response.order);
+  } catch {
+    return null;
   }
-  return mapMedusaOrder(response.order);
 }
 
-export async function getMyOrders(_token: string): Promise<Order[]> {
-  const response = await medusaRequest<{ customer?: { orders?: unknown[] } }>("/store/customers/me", {
-    headers: {
-      Authorization: `Bearer ${_token}`
-    }
-  });
-
-  return (response.customer?.orders ?? []).map((order) => mapMedusaOrder(order));
+export async function getMyOrders(token: string): Promise<Order[]> {
+  try {
+    const response = await medusaRequest<{ orders?: unknown[]; order?: unknown[] }>(
+      "/store/orders?limit=50&fields=*items,*payment_collections,*payment_collections.payment_sessions",
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const orders = response.orders ?? (Array.isArray(response.order) ? response.order : []);
+    return orders.map((o) => mapMedusaOrder(o));
+  } catch {
+    // Fallback: try fetching via customer profile with expanded orders
+    const response = await medusaRequest<{ customer?: { orders?: unknown[] } }>(
+      "/store/customers/me?fields=*orders",
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return (response.customer?.orders ?? []).map((o) => mapMedusaOrder(o));
+  }
 }
 
 type OrderRequestApiRow = {
