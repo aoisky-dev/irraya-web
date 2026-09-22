@@ -172,7 +172,10 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
 
           {selectedVariant && (
             <div style={{ marginBottom: "var(--space-md)" }}>
-              <p className="pdp-price" style={{ marginBottom: "0.25rem" }}>{formatMoney(selectedVariant.priceInCents, "inr")}</p>
+              <p className="pdp-price" style={{ marginBottom: "0.25rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                {formatMoney(selectedVariant.priceInCents, "inr")}
+                <span style={{ fontSize: "0.9rem", color: "var(--text-muted)", fontWeight: "normal" }}>(incl. GST)</span>
+              </p>
               <span className="text-muted" style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.25rem" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="1" y="3" width="15" height="13"></rect>

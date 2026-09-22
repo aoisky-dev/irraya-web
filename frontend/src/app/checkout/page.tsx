@@ -548,7 +548,10 @@ export default function CheckoutPage() {
               ) : null}
               <hr className="divider" />
               <div className="summary-row summary-total">
-                <span>Total</span>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span>Total</span>
+                  <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: "normal" }}>(incl. GST)</span>
+                </div>
                 <span>{formatMoney(cart.totalInCents, "inr")}</span>
               </div>
           <button
