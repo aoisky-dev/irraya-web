@@ -394,7 +394,7 @@ export default function CheckoutPage() {
                   id="city"
                   className="form-input"
                   type="text"
-                  placeholder="New York"
+                  placeholder="Hyderabad"
                   value={form.city}
                   onChange={(e) => updateField("city", e.target.value)}
                 />
@@ -405,18 +405,18 @@ export default function CheckoutPage() {
                   id="state"
                   className="form-input"
                   type="text"
-                  placeholder="NY"
+                  placeholder="Telangana"
                   value={form.state}
                   onChange={(e) => updateField("state", e.target.value)}
                 />
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="zipCode">ZIP Code *</label>
+                <label className="form-label" htmlFor="zipCode">PIN Code *</label>
                 <input
                   id="zipCode"
                   className="form-input"
                   type="text"
-                  placeholder="10001"
+                  placeholder="500001"
                   value={form.zipCode}
                   onChange={(e) => updateField("zipCode", e.target.value)}
                 />
@@ -445,14 +445,6 @@ export default function CheckoutPage() {
                   <span className="shipping-option-desc">5–7 business days</span>
                 </div>
                 <span className="text-accent" style={{ fontWeight: 600 }}>Free</span>
-              </label>
-              <label className="shipping-option">
-                <input type="radio" name="shipping" />
-                <div>
-                  <span className="shipping-option-title">Express Shipping</span>
-                  <span className="shipping-option-desc">2–3 business days</span>
-                </div>
-                <span style={{ fontWeight: 600 }}>₹500</span>
               </label>
             </div>
           </div>
