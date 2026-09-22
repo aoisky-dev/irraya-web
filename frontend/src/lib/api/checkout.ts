@@ -3,6 +3,9 @@ import { medusaRequest } from "./client";
 import { mapMedusaOrder } from "./medusa-mappers";
 import { getOrderById } from "./orders";
 
+const authHeader = (token?: string): Record<string, string> =>
+  token ? { Authorization: `Bearer ${token}` } : {};
+
 export interface RazorpayPaymentOrder {
   razorpayOrderId: string;
   amountInCents: number;
@@ -37,10 +40,13 @@ export async function prepareCartForCheckout(cartId: string, form: {
   address: string;
   city: string;
   zipCode: string;
-}): Promise<void> {
+}, token?: string): Promise<void> {
+  const authHeaders = authHeader(token);
+
   // 1. Update Cart Address
   await medusaRequest(`/store/carts/${cartId}`, {
     method: "POST",
+    headers: authHeaders,
     body: JSON.stringify({
       email: form.email.trim(),
       shipping_address: {
@@ -63,26 +69,36 @@ export async function prepareCartForCheckout(cartId: string, form: {
   });
 
   // 2. Fetch shipping options
-  const optionsRes = await medusaRequest<{ shipping_options?: { id: string }[] }>(`/store/shipping-options?cart_id=${cartId}`);
-  
+  const optionsRes = await medusaRequest<{ shipping_options?: { id: string }[] }>(
+    `/store/shipping-options?cart_id=${cartId}`,
+    { headers: authHeaders }
+  );
+
   if (optionsRes.shipping_options && optionsRes.shipping_options.length > 0) {
     // 3. Add first shipping method to cart
     await medusaRequest(`/store/carts/${cartId}/shipping-methods`, {
       method: "POST",
+      headers: authHeaders,
       body: JSON.stringify({ option_id: optionsRes.shipping_options[0].id })
     });
   }
 }
 
-export async function createOrderFromCart(cartId: string): Promise<Order> {
+export async function createOrderFromCart(cartId: string, token?: string): Promise<Order> {
+  const authHeaders = authHeader(token);
+
   // 1. Ensure payment collection & session exists (required for Medusa v2 cart completion)
   try {
-    const cartRes = await medusaRequest<{ cart?: { payment_collection?: { id: string, payment_sessions?: any[] } } }>(`/store/carts/${cartId}?fields=*payment_collection,*payment_collection.payment_sessions`);
+    const cartRes = await medusaRequest<{ cart?: { payment_collection?: { id: string, payment_sessions?: any[] } } }>(
+      `/store/carts/${cartId}?fields=*payment_collection,*payment_collection.payment_sessions`,
+      { headers: authHeaders }
+    );
     let collectionId = cartRes.cart?.payment_collection?.id;
-    
+
     if (!collectionId) {
       const createRes = await medusaRequest<{ payment_collection?: { id: string } }>("/store/payment-collections", {
         method: "POST",
+        headers: authHeaders,
         body: JSON.stringify({ cart_id: cartId })
       });
       collectionId = createRes.payment_collection?.id;
@@ -91,6 +107,7 @@ export async function createOrderFromCart(cartId: string): Promise<Order> {
     if (collectionId && (!cartRes.cart?.payment_collection?.payment_sessions?.length)) {
       await medusaRequest(`/store/payment-collections/${collectionId}/payment-sessions`, {
         method: "POST",
+        headers: authHeaders,
         body: JSON.stringify({ provider_id: "pp_system_default" })
       });
     }
@@ -101,7 +118,8 @@ export async function createOrderFromCart(cartId: string): Promise<Order> {
 
   // 2. Complete the cart
   const response = await medusaRequest<{ order?: unknown }>(`/store/carts/${cartId}/complete`, {
-    method: "POST"
+    method: "POST",
+    headers: authHeaders,
   });
 
   if (!response.order) {
@@ -126,12 +144,14 @@ export async function createRazorpayPaymentOrder(input: {
   cartId: string;
   amountInCents: number;
   currencyCode: "usd" | "inr";
+  token?: string;
   customer?: {
     name?: string;
     email?: string;
     contact?: string;
   };
 }): Promise<RazorpayPaymentOrder> {
+  const authHeaders = authHeader(input.token);
   const response = await medusaRequest<{
     razorpay_order_id?: unknown;
     amount?: unknown;
@@ -140,6 +160,7 @@ export async function createRazorpayPaymentOrder(input: {
     status?: unknown;
   }>("/store/payments/razorpay/orders", {
     method: "POST",
+    headers: authHeaders,
     body: JSON.stringify({
       cart_id: input.cartId,
       amount: input.amountInCents,
@@ -164,9 +185,11 @@ export async function createRazorpayPaymentOrder(input: {
   };
 }
 
-export async function verifyRazorpayPayment(input: RazorpayCheckoutVerificationInput): Promise<Payment> {
+export async function verifyRazorpayPayment(input: RazorpayCheckoutVerificationInput & { token?: string }): Promise<Payment> {
+  const authHeaders = authHeader(input.token);
   const response = await medusaRequest<{ payment?: Payment }>("/store/payments/razorpay/verify", {
     method: "POST",
+    headers: authHeaders,
     body: JSON.stringify({
       cart_id: input.cartId,
       order_id: input.orderId,
@@ -184,9 +207,11 @@ export async function verifyRazorpayPayment(input: RazorpayCheckoutVerificationI
   return response.payment;
 }
 
-export async function linkRazorpayPaymentToOrder(input: RazorpayOrderLinkInput): Promise<void> {
+export async function linkRazorpayPaymentToOrder(input: RazorpayOrderLinkInput & { token?: string }): Promise<void> {
+  const authHeaders = authHeader(input.token);
   await medusaRequest<{ linked?: boolean }>("/store/payments/razorpay/link-order", {
     method: "POST",
+    headers: authHeaders,
     body: JSON.stringify({
       cart_id: input.cartId,
       order_id: input.orderId,

@@ -152,7 +152,7 @@ function CheckoutSteps({ current }: { current: number }) {
 export default function CheckoutPage() {
   const searchParams = useSearchParams();
   const { cart, isLoading: isCartLoading, clearCart, itemMeta, applyPromo } = useCart();
-  const { user, token, isLoading: isAuthLoading } = useAuth();
+  const { user, token, isLoading: isAuthLoading, refreshUser } = useAuth();
   const router = useRouter();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -226,13 +226,13 @@ export default function CheckoutPage() {
   };
 
   const completePaidCart = async (payment: RecoverablePayment) => {
-    const order = await createOrderFromCart(payment.cartId);
+    const order = await createOrderFromCart(payment.cartId, token ?? undefined);
     try {
       await linkRazorpayPaymentToOrder({
         cartId: payment.cartId, orderId: order.id,
         amountInCents: payment.amountInCents, currencyCode: payment.currencyCode,
         razorpayOrderId: payment.razorpayOrderId, razorpayPaymentId: payment.razorpayPaymentId,
-        status: "authorized"
+        status: "authorized", token: token ?? undefined
       });
     } catch (linkErr) {
       console.error("Payment link failed (non-fatal):", linkErr);
@@ -269,19 +269,24 @@ export default function CheckoutPage() {
     let verifiedPaymentForRecovery: RecoverablePayment | null = null;
 
     try {
-      await prepareCartForCheckout(cart.id, form);
+      await prepareCartForCheckout(cart.id, form, token ?? undefined);
 
       if (saveAddress && token) {
-        await saveCustomerAddress(token, {
-          first_name: form.firstName, last_name: form.lastName,
-          address_1: form.address, city: form.city,
-          country_code: "in", postal_code: form.zipCode
-        });
+        try {
+          await saveCustomerAddress(token, {
+            first_name: form.firstName, last_name: form.lastName,
+            address_1: form.address, city: form.city,
+            country_code: "in", postal_code: form.zipCode
+          });
+          await refreshUser();
+        } catch {
+          // non-fatal — order still proceeds
+        }
       }
 
       const paymentOrder = await createRazorpayPaymentOrder({
         cartId: cart.id, amountInCents: cart.totalInCents,
-        currencyCode: cart.currencyCode,
+        currencyCode: cart.currencyCode, token: token ?? undefined,
         customer: { name: `${form.firstName} ${form.lastName}`.trim(), email: form.email.trim() }
       });
 
@@ -301,7 +306,8 @@ export default function CheckoutPage() {
         cartId: cart.id, amountInCents: paymentOrder.amountInCents,
         razorpayOrderId: razorpayResponse.razorpay_order_id,
         razorpayPaymentId: razorpayResponse.razorpay_payment_id,
-        razorpaySignature: razorpayResponse.razorpay_signature
+        razorpaySignature: razorpayResponse.razorpay_signature,
+        token: token ?? undefined
       });
 
       verifiedPaymentForRecovery = {
@@ -410,7 +416,7 @@ export default function CheckoutPage() {
               <div className="form-group full">
                 <label className="checkout-save-label">
                   <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />
-                  <span>Save this address for future orders</span>
+                  <span>Save address</span>
                 </label>
               </div>
             </div>
@@ -462,29 +468,6 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Error state */}
-          {error && (
-            <div className="checkout-alert checkout-alert-error">
-              <div className="checkout-alert-icon">⚠️</div>
-              <div className="checkout-alert-body">
-                <p className="checkout-alert-title">
-                  {recoverablePayment ? "Payment received – confirmation pending" : "Something went wrong"}
-                </p>
-                <p className="checkout-alert-message">{error}</p>
-                {(failureReference?.razorpayPaymentId || failureReference?.razorpayOrderId) && (
-                  <p className="checkout-alert-ref">
-                    Reference: <code>{failureReference.razorpayPaymentId || failureReference.razorpayOrderId}</code>
-                  </p>
-                )}
-                {recoverablePayment && (
-                  <button className="btn btn-sm" onClick={handleRetryOrderConfirmation} disabled={isSubmitting}
-                    style={{ marginTop: "12px" }}>
-                    {isSubmitting ? "Retrying…" : "↩ Retry Order Confirmation"}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Right column — Order Summary */}
@@ -571,6 +554,29 @@ export default function CheckoutPage() {
               <span>{formatMoney(cart.totalInCents, "inr")}</span>
             </div>
 
+            {error && (
+              <div className="checkout-alert checkout-alert-error">
+                <div className="checkout-alert-icon">⚠️</div>
+                <div className="checkout-alert-body">
+                  <p className="checkout-alert-title">
+                    {recoverablePayment ? "Payment received – confirmation pending" : "Something went wrong"}
+                  </p>
+                  <p className="checkout-alert-message">{error}</p>
+                  {(failureReference?.razorpayPaymentId || failureReference?.razorpayOrderId) && (
+                    <p className="checkout-alert-ref">
+                      Reference: <code>{failureReference.razorpayPaymentId || failureReference.razorpayOrderId}</code>
+                    </p>
+                  )}
+                  {recoverablePayment && (
+                    <button className="btn btn-sm" onClick={handleRetryOrderConfirmation} disabled={isSubmitting}
+                      style={{ marginTop: "12px" }}>
+                      {isSubmitting ? "Retrying…" : "Retry Order Confirmation"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             <button className="btn btn-full btn-lg checkout-pay-btn"
               onClick={handlePlaceOrder} disabled={isSubmitting} id="pay-now-btn">
               {isSubmitting ? (
@@ -579,9 +585,7 @@ export default function CheckoutPage() {
                   Processing…
                 </span>
               ) : (
-                <span>
-                  🔒 Pay {formatMoney(cart.totalInCents, "inr")}
-                </span>
+                <span>Pay {formatMoney(cart.totalInCents, "inr")}</span>
               )}
             </button>
 

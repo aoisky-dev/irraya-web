@@ -1163,6 +1163,20 @@ input, select, textarea {
   -webkit-appearance: none;
 }
 
+input[type="checkbox"],
+input[type="radio"] {
+  -webkit-appearance: auto;
+  appearance: auto;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--text-primary);
@@ -2167,11 +2181,12 @@ label {
   flex-wrap: wrap;
 }
 
-.account-order-head strong {
+.account-order-id {
   font-family: var(--font-body);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--text-primary);
+  letter-spacing: 0.01em;
 }
 
 .account-order-date {
@@ -2187,27 +2202,121 @@ label {
   gap: 6px;
 }
 
-.account-order-badge { margin-left: 0; }
-
-.account-order-items {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.account-order-total {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.account-order-item-thumb {
-  width: 40px;
-  height: 40px;
+/* Items rows */
+.account-order-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--border-light, var(--border));
+  padding-top: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.account-order-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-order-item-img {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
+  border-radius: 2px;
+}
+
+.account-order-item-initial {
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
-  border-radius: 0;
+}
+
+.account-order-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-order-item-title {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-order-item-meta {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.account-order-item-price {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Tracking row */
+.account-order-tracking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: var(--space-sm) 0;
+  border-top: 1px solid var(--border-light, var(--border));
+  margin-bottom: var(--space-sm);
+}
+
+/* Order actions */
+.account-order-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-light, var(--border));
+}
+
+/* Saved address card */
+.account-address-item {
+  padding: var(--space-md);
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.account-address-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.account-address-line {
+  color: var(--text-secondary);
+}
+
+.account-address-country {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  letter-spacing: 0.05em;
 }
 
 /* ─── ORDER SUCCESS / CONFIRMATION PAGE ─────────────────── */
@@ -3391,22 +3500,26 @@ label {
 
 /* Pay button */
 .checkout-pay-btn {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  background: var(--text-primary);
+  color: var(--text-inverse);
   border: none;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.35);
-  transition: box-shadow 0.2s, transform 0.15s;
-  font-size: 1rem;
+  box-shadow: none;
+  transition: background var(--duration) var(--ease);
+  font-size: 0.78rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 .checkout-pay-btn:hover:not(:disabled) {
-  box-shadow: 0 6px 28px rgba(124, 58, 237, 0.5);
-  transform: translateY(-1px);
+  background: var(--accent-warm);
+  color: var(--text-inverse);
+  box-shadow: none;
+  transform: none;
 }
 
 .checkout-pay-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
