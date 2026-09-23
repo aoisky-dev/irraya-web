@@ -29,10 +29,10 @@ export async function addItemToCart(
 }
 
 export async function removeItemFromCart(cartId: string, itemId: string): Promise<Cart> {
-  const response = await medusaRequest<{ cart?: unknown }>(`/store/carts/${cartId}/line-items/${itemId}`, {
+  const response = await medusaRequest<{ cart?: unknown; parent?: unknown }>(`/store/carts/${cartId}/line-items/${itemId}`, {
     method: "DELETE"
   });
-  return mapMedusaCart(response.cart);
+  return mapMedusaCart(response.cart ?? response.parent);
 }
 
 export async function updateItemQuantity(
@@ -40,17 +40,25 @@ export async function updateItemQuantity(
   itemId: string,
   quantity: number
 ): Promise<Cart> {
-  const response = await medusaRequest<{ cart?: unknown }>(`/store/carts/${cartId}/line-items/${itemId}`, {
+  const response = await medusaRequest<{ cart?: unknown; parent?: unknown }>(`/store/carts/${cartId}/line-items/${itemId}`, {
     method: "POST",
     body: JSON.stringify({ quantity })
   });
-  return mapMedusaCart(response.cart);
+  return mapMedusaCart(response.cart ?? response.parent);
 }
 
 export async function applyPromoCode(cartId: string, code: string): Promise<Cart> {
-  const response = await medusaRequest<{ cart?: unknown }>(`/store/carts/${cartId}/promotions`, {
+  const response = await medusaRequest<{ cart?: unknown; parent?: unknown }>(`/store/carts/${cartId}/promotions`, {
     method: "POST",
-    body: JSON.stringify({ code })
+    body: JSON.stringify({ promo_codes: [code] })
   });
-  return mapMedusaCart(response.cart);
+  return mapMedusaCart(response.cart ?? response.parent);
+}
+
+export async function removePromoCode(cartId: string, code: string): Promise<Cart> {
+  const response = await medusaRequest<{ cart?: unknown; parent?: unknown }>(`/store/carts/${cartId}/promotions`, {
+    method: "DELETE",
+    body: JSON.stringify({ promo_codes: [code] })
+  });
+  return mapMedusaCart(response.cart ?? response.parent);
 }

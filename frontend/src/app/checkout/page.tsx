@@ -151,7 +151,7 @@ function CheckoutSteps({ current }: { current: number }) {
 
 export default function CheckoutPage() {
   const searchParams = useSearchParams();
-  const { cart, isLoading: isCartLoading, clearCart, itemMeta, applyPromo } = useCart();
+  const { cart, isLoading: isCartLoading, clearCart, itemMeta, applyPromo, removePromo } = useCart();
   const { user, token, isLoading: isAuthLoading, refreshUser } = useAuth();
   const router = useRouter();
 
@@ -220,6 +220,19 @@ export default function CheckoutPage() {
       await applyPromo(promoCode.trim());
     } catch {
       setPromoError("Invalid or expired promo code.");
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const handleRemovePromo = async () => {
+    if (!cart?.promoCode) return;
+    setPromoLoading(true);
+    try {
+      await removePromo(cart.promoCode);
+      setPromoCode("");
+    } catch {
+      setPromoError("Failed to remove promo code.");
     } finally {
       setPromoLoading(false);
     }
@@ -524,13 +537,20 @@ export default function CheckoutPage() {
             {/* Promo */}
             <form onSubmit={handleApplyPromo} className="checkout-promo-form">
               <input type="text" className="form-input" placeholder="Gift card or promo code"
-                value={promoCode} onChange={(e) => setPromoCode(e.target.value)} />
+                value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} />
               <button type="submit" className="btn btn-secondary" disabled={promoLoading}>
                 {promoLoading ? "…" : "Apply"}
               </button>
             </form>
             {promoError && <p className="checkout-promo-error">{promoError}</p>}
-            {cart.promoCode && <p className="checkout-promo-success">✓ Code <strong>{cart.promoCode}</strong> applied</p>}
+            {cart.promoCode && (
+              <p className="checkout-promo-success" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span>✓ Code <strong>{cart.promoCode}</strong> applied</span>
+                <button type="button" onClick={handleRemovePromo} disabled={promoLoading} style={{ background: "none", border: "none", color: "var(--error)", cursor: "pointer", fontSize: "0.8rem", padding: 0 }}>
+                  Remove
+                </button>
+              </p>
+            )}
 
             <hr className="checkout-divider" />
 

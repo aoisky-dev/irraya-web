@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import type { Cart, CartItem } from "@/lib/types";
-import { getCart, createCart, addItemToCart, removeItemFromCart, updateItemQuantity, applyPromoCode } from "@/lib/api/cart";
+import { getCart, createCart, addItemToCart, removeItemFromCart, updateItemQuantity, applyPromoCode, removePromoCode } from "@/lib/api/cart";
 
 /** Extra display info stored client-side alongside the API cart */
 interface CartItemMeta {
@@ -25,6 +25,7 @@ interface CartContextType {
   removeItem: (itemId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   applyPromo: (code: string) => Promise<void>;
+  removePromo: (code: string) => Promise<void>;
   clearCart: () => void;
 }
 
@@ -145,6 +146,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [cart]
   );
 
+  const removePromo = useCallback(
+    async (code: string) => {
+      if (!cart) return;
+      try {
+        const updatedCart = await removePromoCode(cart.id, code);
+        setCart(updatedCart);
+      } catch (error) {
+        console.error("Failed to remove promo:", error);
+        throw error;
+      }
+    },
+    [cart]
+  );
+
   const clearCart = useCallback(() => {
     localStorage.removeItem("irraya_cart_id");
     localStorage.removeItem(META_STORAGE_KEY);
@@ -153,7 +168,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <CartContext.Provider value={{ cart, isLoading, itemMeta, addItem, removeItem, updateQuantity, applyPromo, clearCart }}>
+    <CartContext.Provider value={{ cart, isLoading, itemMeta, addItem, removeItem, updateQuantity, applyPromo, removePromo, clearCart }}>
       {children}
     </CartContext.Provider>
   );

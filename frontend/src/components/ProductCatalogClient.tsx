@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -24,6 +24,21 @@ export function ProductCatalogClient({ initialProducts = [] }: { initialProducts
 
   const [sortBy, setSortBy] = useState<CatalogSortOption>("newest");
   const [showFilters, setShowFilters] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setShowFilters(false);
+      }
+    };
+    if (showFilters) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showFilters]);
 
   useEffect(() => {
     // Only re-fetch if we don't have initial server-side data
@@ -87,11 +102,9 @@ export function ProductCatalogClient({ initialProducts = [] }: { initialProducts
 
       <div className="catalog-layout">
         
-        {/* Removed Sidebar Filters, moved to Dropdown */}
-
         {/* Main Content Area */}
         <div style={{ flexGrow: 1 }}>
-          <div className="filter-bar" style={{ marginTop: 0, position: "relative" }}>
+          <div className="filter-bar" ref={filterRef} style={{ marginTop: 0, position: "relative" }}>
             <div className="results-count" style={{ margin: 0, display: "flex", alignItems: "center", gap: "1rem" }}>
               <button 
                 className="btn btn-outline filter-toggle-btn" 
