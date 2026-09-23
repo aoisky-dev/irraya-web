@@ -219,9 +219,9 @@ export default function AccountPage() {
 
                   {/* Actions */}
                   <div className="account-order-actions">
-                    <Link href={`/order/${order.id}`} className="btn btn-secondary">View Order</Link>
-                    {(order.eligibility?.canReturn || order.eligibility?.canExchange) && (
-                      <Link href={`/order/${order.id}`} className="btn btn-outline">Return / Exchange</Link>
+                    <Link href={`/order/${order.id}?view=status`} className="btn btn-secondary">View Order</Link>
+                    {order.eligibility?.canExchange && (
+                      <Link href={`/order/${order.id}?open=exchange`} className="btn btn-outline">Exchange</Link>
                     )}
                   </div>
                 </div>

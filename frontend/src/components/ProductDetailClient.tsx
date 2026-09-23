@@ -296,7 +296,7 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
             </div>
             <div className="pdp-meta-item">
               <span>◇</span>
-              <span>Free Shipping ₹5,000+</span>
+              <span>Free Shipping</span>
             </div>
             <div className="pdp-meta-item">
               <span>♡</span>
@@ -308,7 +308,7 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
           <FAQAccordion
             items={[
               { question: "What is the sizing like?", answer: "Our products run true to size. If you are between sizes, we recommend sizing up for a more relaxed fit." },
-              { question: "How do I care for this item?", answer: "Machine wash cold with like colors. Tumble dry low or hang dry to preserve the fabric quality and longevity." },
+              { question: "How do I care for this item?", answer: "Hand wash gently in cold/normal water with mild detergent.\nDo not machine wash, bleach, soak, or wring.\nDry in shade and iron on low heat, preferably inside out.\nFor delicate garments, professional dry cleaning is recommended." },
               { question: "What is your exchange policy?", answer: "We offer a 7-day exchange policy. No returns are accepted. To process an exchange, you must provide clear images or a video of the damaged product." }
             ]}
           />

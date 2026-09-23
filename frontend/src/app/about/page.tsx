@@ -39,9 +39,9 @@ export default function AboutPage() {
         </div>
       </div>
 
-      <hr className="divider" style={{ marginTop: "var(--space-3xl)" }} />
+      <hr className="divider" style={{ margin: "var(--space-xl) 0" }} />
 
-      <div className="about-hero" style={{ paddingTop: "var(--space-xl)" }}>
+      <div className="about-hero">
         <h2 className="section-title" style={{ marginBottom: "var(--space-lg)" }}>Our Story</h2>
         <p style={{ color: "var(--text-secondary)", lineHeight: 1.8, fontSize: "1rem" }}>
           Founded in 2024, Irraya started with a simple idea: create fashion
@@ -56,7 +56,8 @@ export default function AboutPage() {
           </Link>
         </div>
       </div>
-      <hr className="divider" style={{ marginTop: "var(--space-3xl)", marginBottom: "var(--space-2xl)" }} />
+      
+      <hr className="divider" style={{ margin: "var(--space-xl) 0" }} />
 
       <div className="about-hero" style={{ paddingTop: 0 }}>
         <h2 className="section-title" style={{ marginBottom: "var(--space-md)" }}>Contact Us</h2>

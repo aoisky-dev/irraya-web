@@ -124,7 +124,7 @@ function assertEligible(order: OrderRow, requestType: OrderRequestType): void {
 
 async function getOwnedOrder(client: pg.Client, customerId: string, orderId: string): Promise<OrderRow> {
   const result = await client.query<OrderRow>(
-    `select id, customer_id, status, fulfillment_status, metadata, created_at
+    `select id, customer_id, status, metadata, created_at
      from "order"
      where id = $1
        and customer_id = $2

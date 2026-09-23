@@ -8,7 +8,7 @@ export default function WishlistPage() {
   const { wishlist, isSyncing, syncError } = useWishlist();
 
   return (
-    <main className="container" style={{ padding: "var(--space-4xl) 0" }}>
+    <main className="container" style={{ padding: "var(--space-xl) 0 var(--space-xl)" }}>
       <header className="section-header">
         <h1 className="section-title">Your Wishlist</h1>
         <p className="text-muted" style={{ marginTop: "8px" }}>
@@ -18,7 +18,7 @@ export default function WishlistPage() {
       </header>
 
       {wishlist.length === 0 ? (
-        <div className="cart-empty" style={{ padding: "var(--space-5xl) 0" }}>
+        <div className="cart-empty" style={{ padding: "var(--space-2xl) 0" }}>
           <h2>Your wishlist is empty</h2>
           <p>Save items you love to review them later.</p>
           <Link href="/products" className="btn btn-primary" style={{ marginTop: "var(--space-xl)" }}>

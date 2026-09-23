@@ -3,14 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
-import type { Order, OrderRequestType } from "@/lib/types";
+import type { Order } from "@/lib/types";
 import { createOrderRequest, getMyOrders, getOrderRequests } from "@/lib/api/orders";
 
 const reasons = [
   "Size or fit issue",
   "Damaged or defective item",
   "Wrong item received",
-  "Changed my mind",
   "Other"
 ];
 
@@ -19,7 +18,7 @@ export default function ReturnsPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [orderId, setOrderId] = useState("");
-  const [requestType, setRequestType] = useState<OrderRequestType>("return");
+  const requestType = "exchange" as const;
   const [reason, setReason] = useState(reasons[0]);
   const [notes, setNotes] = useState("");
   const [message, setMessage] = useState("");
@@ -32,20 +31,18 @@ export default function ReturnsPage() {
       .then(([orders, requests]) => {
         setOrders(orders);
         setRequests(requests);
-        const firstEligible = orders.find((order) => order.eligibility?.canReturn || order.eligibility?.canExchange);
+        const firstEligible = orders.find((order) => order.eligibility?.canExchange);
         if (firstEligible) setOrderId(firstEligible.id);
       })
       .catch((error: unknown) => setError(error instanceof Error ? error.message : "Unable to load return data."));
   }, [token]);
 
-  const eligibleOrders = useMemo(() => orders.filter((order) => (
-    requestType === "return" ? order.eligibility?.canReturn : order.eligibility?.canExchange
-  )), [orders, requestType]);
+  const eligibleOrders = useMemo(() => orders.filter((order) => order.eligibility?.canExchange), [orders]);
 
   const submitRequest = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!token) {
-      setError("Please sign in to request a return or exchange.");
+      setError("Please sign in to request an exchange.");
       return;
     }
     if (!orderId) {
@@ -79,12 +76,12 @@ export default function ReturnsPage() {
 
   return (
     <div className="container" style={{ padding: "var(--space-2xl) 0", maxWidth: "800px" }}>
-      <h1 className="section-title" style={{ fontSize: "2.5rem", marginBottom: "var(--space-xl)" }}>Generous Return Policy</h1>
+      <h1 className="section-title" style={{ fontSize: "2.5rem", marginBottom: "var(--space-xl)" }}>Exchange Policy</h1>
 
       {!isLoading && !user && (
         <div className="cart-empty" style={{ padding: "var(--space-xl)", marginBottom: "var(--space-xl)" }}>
           <h2>Sign in to start an exchange</h2>
-          <p>Your order history is required to check return eligibility.</p>
+          <p>Your order history is required to check exchange eligibility.</p>
           <Link href="/login?next=%2Freturns" className="btn btn-primary">Sign In</Link>
         </div>
       )}
@@ -93,18 +90,11 @@ export default function ReturnsPage() {
         <div className="checkout-section" style={{ marginBottom: "var(--space-xl)" }}>
           <h2>Start an exchange</h2>
           <p className="text-muted" style={{ marginBottom: "var(--space-md)" }}>
-            Eligible orders are within 7 days and not cancelled. Admin approval and refund processing happen in Medusa Admin.
+            Eligible orders are within 7 days of delivery and not cancelled.
           </p>
           {message && <p style={{ color: "var(--success, green)", marginBottom: "var(--space-md)" }}>{message}</p>}
           {error && <p style={{ color: "var(--error)", marginBottom: "var(--space-md)" }}>{error}</p>}
           <form onSubmit={submitRequest} className="form-grid">
-            <div className="form-group">
-              <label className="form-label">Request type</label>
-              <select className="form-input" value={requestType} onChange={(event) => setRequestType(event.target.value as OrderRequestType)}>
-                <option value="return">Return</option>
-                <option value="exchange">Exchange</option>
-              </select>
-            </div>
             <div className="form-group">
               <label className="form-label">Eligible order</label>
               <select className="form-input" value={orderId} onChange={(event) => setOrderId(event.target.value)}>
@@ -144,7 +134,7 @@ export default function ReturnsPage() {
       )}
 
       <div className="prose" style={{ lineHeight: 1.8 }}>
-        <p>At Irraya, we want you to be completely satisfied with your purchase. If for any reason you are not, we offer a generous and hassle-free return policy.</p>
+        <p>At Irraya, we only offer exchanges — no returns or refunds.</p>
 
         <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: "var(--space-xl)", marginBottom: "var(--space-md)" }}>7-Day Exchange Policy</h2>
         <p>We do not offer returns. You have 7 days from the date of delivery to request an exchange for your items. We only accept exchanges for items that arrive damaged or defective.</p>

@@ -8,7 +8,7 @@ export default defineMiddlewares({
       matcher: "/admin/uploads",
       method: "POST",
       bodyParser: {
-        sizeLimit: 10 * 1024 * 1024,
+        sizeLimit: 2 * 1024 * 1024,
       },
     },
     {

@@ -110,7 +110,7 @@ export interface OrderEligibility {
   returnWindowEndsAt?: string;
 }
 
-export type OrderRequestType = "cancel" | "return" | "exchange";
+export type OrderRequestType = "cancel" | "exchange";
 export type OrderRequestStatus = "requested" | "under_review" | "approved" | "rejected" | "refunded" | "completed";
 
 export interface OrderRequestItem {

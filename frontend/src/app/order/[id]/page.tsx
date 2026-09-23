@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { formatMoney } from "@/lib/format";
 import type { Order, OrderRequest, OrderRequestItem, OrderRequestType } from "@/lib/types";
 import { buildInvoiceText, createOrderRequest, getOrderById, getOrderRequests } from "@/lib/api/orders";
 import { useAuth } from "@/components/AuthProvider";
 
-const returnReasons = [
+const exchangeReasons = [
   "Size or fit issue",
   "Damaged or defective item",
   "Wrong item received",
-  "Changed my mind",
   "Other"
 ];
 
@@ -58,19 +57,22 @@ function OrderNotFound() {
 
 export default function OrderConfirmationPage() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const openParam = searchParams.get("open");   // "exchange" | "manage" | null
+  const viewStatus = searchParams.get("view") === "status";
   const { token } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [requests, setRequests] = useState<OrderRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [requestType, setRequestType] = useState<OrderRequestType>("return");
-  const [reason, setReason] = useState(returnReasons[0]);
+  const [requestType, setRequestType] = useState<OrderRequestType>("exchange");
+  const [reason, setReason] = useState(exchangeReasons[0]);
   const [notes, setNotes] = useState("");
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
   const [requestMessage, setRequestMessage] = useState("");
   const [requestError, setRequestError] = useState("");
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
-  const [manageOpen, setManageOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(openParam === "exchange" || openParam === "manage");
 
   useEffect(() => {
     getOrderById(params.id)
@@ -89,7 +91,7 @@ export default function OrderConfirmationPage() {
   }, [params.id, token]);
 
   useEffect(() => {
-    setReason(requestType === "cancel" ? cancelReasons[0] : returnReasons[0]);
+    setReason(requestType === "cancel" ? cancelReasons[0] : exchangeReasons[0]);
   }, [requestType]);
 
   const downloadInvoice = () => {
@@ -151,8 +153,8 @@ export default function OrderConfirmationPage() {
 
   return (
     <div className="order-confirmation-page">
-      {/* Hero */}
-      <div className={`order-hero ${isCancelled ? "order-hero-cancelled" : ""}`}>
+      {/* Hero — hidden when browsing from account (view=status) */}
+      {!viewStatus && <div className={`order-hero ${isCancelled ? "order-hero-cancelled" : ""}`}>
         <div className="order-hero-inner">
           <div className={`order-hero-icon ${isCancelled ? "cancelled" : ""}`}>
             {isCancelled ? "✕" : "✓"}
@@ -173,11 +175,19 @@ export default function OrderConfirmationPage() {
             <div className="order-hero-badges">
               <span className="order-hero-badge">🔒 Payment Secure</span>
               <span className="order-hero-badge">📦 Free Shipping</span>
-              <span className="order-hero-badge">↩ 30-Day Returns</span>
+              <span className="order-hero-badge">↩ 7-Day Exchanges</span>
             </div>
           )}
         </div>
-      </div>
+      </div>}
+
+      {/* Order Status heading when coming from account */}
+      {viewStatus && (
+        <div style={{ padding: "var(--space-xl) 24px var(--space-lg)", maxWidth: "1000px", margin: "0 auto" }}>
+          <span className="hero-tag">Order #{order?.displayId || params.id}</span>
+          <h1 className="page-title" style={{ marginTop: "var(--space-sm)" }}>Order Status</h1>
+        </div>
+      )}
 
       <div className="order-body">
         {/* Tracking Timeline */}
@@ -288,7 +298,7 @@ export default function OrderConfirmationPage() {
               <p className="order-support-text">
                 Contact our support team at <strong>support@irraya.in</strong> with your order ID <strong>#{order?.displayId || params.id}</strong> and we'll assist you promptly.
               </p>
-              <Link href="/returns" className="order-support-link">View Returns Policy →</Link>
+              <Link href="/returns" className="order-support-link">View Exchange Policy →</Link>
             </div>
           </div>
 
@@ -360,7 +370,7 @@ export default function OrderConfirmationPage() {
                 {manageOpen && (
                   <div className="order-manage-body">
                     <p className="text-secondary" style={{ fontSize: "0.85rem", marginBottom: "16px" }}>
-                      Cancel requests are reviewed before fulfillment. Returns and exchanges are available within 30 days of delivery.
+                      Cancel requests are reviewed before fulfillment. Exchanges are available within 7 days of delivery.
                     </p>
 
                     {requestMessage && (
@@ -375,7 +385,6 @@ export default function OrderConfirmationPage() {
                         <label className="form-label">Request Type</label>
                         <select className="form-input" value={requestType}
                           onChange={(e) => setRequestType(e.target.value as OrderRequestType)}>
-                          <option value="return" disabled={!order.eligibility?.canReturn}>Return</option>
                           <option value="exchange" disabled={!order.eligibility?.canExchange}>Exchange</option>
                           <option value="cancel" disabled={!order.eligibility?.canCancel}>Cancel</option>
                         </select>
@@ -383,14 +392,14 @@ export default function OrderConfirmationPage() {
                       <div className="form-group">
                         <label className="form-label">Reason</label>
                         <select className="form-input" value={reason} onChange={(e) => setReason(e.target.value)}>
-                          {(requestType === "cancel" ? cancelReasons : returnReasons).map((o) => (
+                          {(requestType === "cancel" ? cancelReasons : exchangeReasons).map((o) => (
                             <option key={o}>{o}</option>
                           ))}
                         </select>
                       </div>
                       {requestType !== "cancel" && (
                         <div className="form-group full">
-                          <label className="form-label">Select items to return/exchange</label>
+                          <label className="form-label">Select items to exchange</label>
                           {order.items.map((item) => (
                             <label key={item.id} className="order-item-check">
                               <input type="checkbox" checked={Boolean(selectedItems[item.id])}

@@ -5,7 +5,6 @@ import Image from "next/image";
 import { formatMoney } from "@/lib/format";
 import type { Product } from "@/lib/types";
 import { useWishlist } from "@/components/WishlistProvider";
-import { useCompare } from "@/components/CompareProvider";
 import { getStockLabel, getTotalStock } from "@/lib/catalog";
 import { productAltText } from "@/lib/seo";
 
@@ -16,20 +15,13 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const primaryVariant = product.variants[0];
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
-  const { isInCompare, addToCompare, removeFromCompare } = useCompare();
   const isSaved = isInWishlist(product.id);
-  const isCompared = isInCompare(product.id);
   const totalStock = getTotalStock(product);
   const stock = getStockLabel(product);
 
   const toggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     isSaved ? removeFromWishlist(product.id) : addToWishlist(product);
-  };
-
-  const toggleCompare = (e: React.MouseEvent) => {
-    e.preventDefault();
-    isCompared ? removeFromCompare(product.id) : addToCompare(product);
   };
 
   return (
@@ -62,15 +54,6 @@ export function ProductCard({ product }: ProductCardProps) {
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </button>
-          <button
-            onClick={toggleCompare}
-            className={`card-action-btn${isCompared ? " active" : ""}`}
-            aria-label={isCompared ? "Remove from compare" : "Compare"}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
             </svg>
           </button>
         </div>

@@ -273,12 +273,17 @@ export default function CheckoutPage() {
 
       if (saveAddress && token) {
         try {
-          await saveCustomerAddress(token, {
-            first_name: form.firstName, last_name: form.lastName,
-            address_1: form.address, city: form.city,
-            country_code: "in", postal_code: form.zipCode
-          });
-          await refreshUser();
+          const isDuplicate = user.addresses?.some(
+            (a) => a.address_1 === form.address && a.city === form.city && a.postal_code === form.zipCode
+          );
+          if (!isDuplicate) {
+            await saveCustomerAddress(token, {
+              first_name: form.firstName, last_name: form.lastName,
+              address_1: form.address, city: form.city,
+              country_code: "in", postal_code: form.zipCode
+            });
+            await refreshUser();
+          }
         } catch {
           // non-fatal — order still proceeds
         }
@@ -400,8 +405,12 @@ export default function CheckoutPage() {
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="state">State</label>
-                <input id="state" className="form-input" type="text" placeholder="Telangana"
-                  value={form.state} onChange={(e) => updateField("state", e.target.value)} />
+                <select id="state" className="form-input" value={form.state} onChange={(e) => updateField("state", e.target.value)}>
+                  <option value="">Select State</option>
+                  {["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Andaman & Nicobar Islands","Chandigarh","Dadra & Nagar Haveli and Daman & Diu","Delhi","Jammu & Kashmir","Ladakh","Lakshadweep","Puducherry"].map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="zipCode">PIN Code <span className="required">*</span></label>
@@ -591,7 +600,7 @@ export default function CheckoutPage() {
 
             <div className="checkout-trust-badges">
               <span>🔒 SSL Secured</span>
-              <span>↩ Easy Returns</span>
+              <span>↩ 7-Day Exchanges</span>
               <span>✓ Razorpay Verified</span>
             </div>
           </div>

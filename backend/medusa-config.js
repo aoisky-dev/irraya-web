@@ -19,7 +19,7 @@ module.exports = defineConfig({
     }
   },
   admin: {
-    maxUploadFileSize: 10 * 1024 * 1024,
+    maxUploadFileSize: 2 * 1024 * 1024,
   },
   modules: [
     {

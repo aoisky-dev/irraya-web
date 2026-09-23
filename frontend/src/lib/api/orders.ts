@@ -50,7 +50,7 @@ type OrderRequestApiRow = {
 const mapOrderRequest = (row: OrderRequestApiRow): OrderRequest => ({
   id: String(row.id ?? ""),
   orderId: String(row.order_id ?? ""),
-  type: String(row.request_type ?? "return") as OrderRequest["type"],
+  type: String(row.request_type ?? "exchange") as OrderRequest["type"],
   status: String(row.status ?? "requested") as OrderRequest["status"],
   reason: String(row.reason ?? ""),
   notes: typeof row.notes === "string" ? row.notes : undefined,
