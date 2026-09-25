@@ -1,4 +1,6 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { capturePaymentWorkflow } from "@medusajs/core-flows"
 import { normalizeRazorpayAmount, normalizeRazorpayCurrency, verifyRazorpayWebhookSignature } from "../../../../../lib/razorpay"
 import { upsertRazorpayPaymentReference, type RazorpayReferenceStatus } from "../../../../../lib/razorpay-payment-references"
 
@@ -73,6 +75,37 @@ function statusForEvent(event: string, payment: Record<string, unknown> | undefi
   return "authorized"
 }
 
+/**
+ * When Razorpay confirms payment.captured, find the corresponding Medusa payment
+ * via the cart_id and auto-capture it using the official capturePaymentWorkflow.
+ */
+async function autoCaptureByCartId(req: MedusaRequest, cartId: string): Promise<void> {
+  if (!cartId) return
+  try {
+    const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
+    const { data: cartData } = await query.graph({
+      entity: "cart",
+      filters: { id: cartId },
+      fields: ["payment_collection.payments.id", "payment_collection.payments.status"],
+    })
+    const payments = cartData?.[0]?.payment_collection?.payments ?? []
+    for (const p of payments) {
+      if (p.status === "authorized" || p.status === "not_paid") {
+        try {
+          await capturePaymentWorkflow(req.scope).run({
+            input: { payment_id: p.id },
+          })
+          console.info(`[webhook] Captured Medusa payment ${p.id} for cart ${cartId}`)
+        } catch (err) {
+          console.warn(`[webhook] Could not capture payment ${p.id}:`, err)
+        }
+      }
+    }
+  } catch (err) {
+    console.warn(`[webhook] Auto-capture lookup failed for cart ${cartId}:`, err)
+  }
+}
+
 export async function POST(req: MedusaRequest, res: MedusaResponse): Promise<void> {
   const rawBody = await getRawWebhookBody(req)
   const signature = getWebhookSignature(req)
@@ -118,6 +151,13 @@ export async function POST(req: MedusaRequest, res: MedusaResponse): Promise<voi
       lastEvent: event,
       payload: payload as Record<string, unknown>
     })
+
+    // On payment.captured: auto-capture in Medusa as fallback if frontend flow broke
+    if (event === "payment.captured" && cartId) {
+      autoCaptureByCartId(req, cartId).catch(err =>
+        console.warn("[webhook] Non-fatal auto-capture error:", err)
+      )
+    }
 
     res.status(200).json({ received: true, event, status, reference })
   } catch (error: unknown) {

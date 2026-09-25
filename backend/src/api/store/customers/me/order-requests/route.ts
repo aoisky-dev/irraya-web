@@ -54,7 +54,7 @@ export async function POST(req: MedusaRequest<CreateOrderRequestBody>, res: Medu
 
     res.status(201).json({
       request,
-      message: "Request submitted. Our support team will review it in Medusa Admin."
+      message: "Request submitted. Our team will review it and get back to you shortly."
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to submit order request."

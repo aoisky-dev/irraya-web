@@ -74,3 +74,12 @@ logs/
 # prisma generated code
 /backend/src/generated/prisma
 /backend/prisma/generated
+razorpay-prod-keys.env
+rzp-test-key.csv
+
+# scratch / local-only files
+dummy.txt
+
+# raw source image assets (large binaries, kept locally / excluded from deploys)
+/images/
+/optimized_images/

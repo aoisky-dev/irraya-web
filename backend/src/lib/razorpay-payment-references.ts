@@ -1,6 +1,5 @@
 import pg from "pg"
-
-const { Client } = pg
+import { withPooledClient } from "./db"
 
 export type RazorpayReferenceStatus =
   | "created"
@@ -42,19 +41,11 @@ export type UpsertRazorpayPaymentReferenceInput = {
   payload?: Record<string, unknown>
 }
 
-async function withClient<T>(callback: (client: pg.Client) => Promise<T>): Promise<T> {
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
-
-  try {
-    await client.connect()
-    await ensureRazorpayPaymentReferencesTable(client)
-    return await callback(client)
-  } finally {
-    await client.end().catch(() => undefined)
-  }
+async function withClient<T>(callback: (client: pg.PoolClient) => Promise<T>): Promise<T> {
+  return withPooledClient("razorpay_payment_references", ensureRazorpayPaymentReferencesTable, callback)
 }
 
-async function ensureRazorpayPaymentReferencesTable(client: pg.Client): Promise<void> {
+async function ensureRazorpayPaymentReferencesTable(client: pg.PoolClient): Promise<void> {
   await client.query(`
     create table if not exists razorpay_payment_references (
       id bigserial primary key,

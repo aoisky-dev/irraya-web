@@ -1,6 +1,5 @@
 import pg from "pg"
-
-const { Client } = pg
+import { withPooledClient } from "./db"
 
 export type OrderRequestType = "cancel" | "return" | "exchange"
 export type OrderRequestStatus = "requested" | "under_review" | "approved" | "rejected" | "refunded" | "completed"
@@ -37,19 +36,11 @@ type OrderRow = {
   created_at: string
 }
 
-async function withClient<T>(callback: (client: pg.Client) => Promise<T>): Promise<T> {
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
-
-  try {
-    await client.connect()
-    await ensureCustomerOrderRequestTable(client)
-    return await callback(client)
-  } finally {
-    await client.end().catch(() => undefined)
-  }
+async function withClient<T>(callback: (client: pg.PoolClient) => Promise<T>): Promise<T> {
+  return withPooledClient("customer_order_requests", ensureCustomerOrderRequestTable, callback)
 }
 
-async function ensureCustomerOrderRequestTable(client: pg.Client): Promise<void> {
+async function ensureCustomerOrderRequestTable(client: pg.PoolClient): Promise<void> {
   await client.query(`
     create table if not exists customer_order_requests (
       id bigserial primary key,
@@ -98,7 +89,7 @@ function normalizeItems(value: unknown): OrderRequestItem[] {
 function isWithinReturnWindow(order: OrderRow): boolean {
   const createdAt = new Date(order.created_at).getTime()
   if (!Number.isFinite(createdAt)) return false
-  const returnWindowMs = 30 * 24 * 60 * 60 * 1000
+  const returnWindowMs = 48 * 60 * 60 * 1000
   return Date.now() - createdAt <= returnWindowMs
 }
 
@@ -118,11 +109,11 @@ function assertEligible(order: OrderRow, requestType: OrderRequestType): void {
   }
 
   if (!isWithinReturnWindow(order)) {
-    throw new Error("This order is outside the 30-day return/exchange window.")
+    throw new Error("This order is outside the 48-hour exchange window.")
   }
 }
 
-async function getOwnedOrder(client: pg.Client, customerId: string, orderId: string): Promise<OrderRow> {
+async function getOwnedOrder(client: pg.PoolClient, customerId: string, orderId: string): Promise<OrderRow> {
   const result = await client.query<OrderRow>(
     `select id, customer_id, status, metadata, created_at
      from "order"
@@ -140,7 +131,7 @@ async function getOwnedOrder(client: pg.Client, customerId: string, orderId: str
   return order
 }
 
-async function attachRequestMetadata(client: pg.Client, request: CustomerOrderRequest): Promise<void> {
+async function attachRequestMetadata(client: pg.PoolClient, request: CustomerOrderRequest): Promise<void> {
   const summary = {
     id: request.id,
     type: request.request_type,
@@ -243,7 +234,7 @@ export function getOrderEligibility(order: { status?: string; fulfillment_status
 } {
   const createdAt = order.created_at ? new Date(order.created_at) : null
   const returnWindowEndsAt = createdAt && Number.isFinite(createdAt.getTime())
-    ? new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    ? new Date(createdAt.getTime() + 48 * 60 * 60 * 1000).toISOString()
     : null
   const status = normalizeString(order.status).toLowerCase()
   const fulfillmentStatus = normalizeString(order.fulfillment_status).toLowerCase()

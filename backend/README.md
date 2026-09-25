@@ -149,6 +149,22 @@ Eligibility rules:
 - Return/exchange requests are allowed within 30 days and not for cancelled orders.
 - Duplicate open requests of the same type for the same order are blocked.
 
+### Site feedback
+
+General website feedback (bugs, suggestions, praise) is collected from a floating widget on the storefront:
+
+```text
+POST  /store/feedback
+GET   /admin/feedback
+PATCH /admin/feedback
+```
+
+Feedback is stored in `site_feedback` with `new`, `reviewed`, and `resolved` statuses. Submission works for guests and signed-in customers (best-effort auth); admin listing/status updates require an admin customer account.
+
+### Database connection pooling
+
+Custom (non-Medusa-ORM) queries in `src/lib/customer-auth.ts`, `customer-commerce.ts`, `customer-order-management.ts`, `razorpay-payment-references.ts`, and `site-feedback.ts` share a single bounded `pg.Pool` via `src/lib/db.ts` instead of opening a new raw connection per request. This avoids per-request connect/disconnect latency and Postgres connection exhaustion under load (previously a likely cause of intermittent errors/high latency, including on the Admin Inventory page, since all requests share the same Postgres instance). Tune pool size with `PG_POOL_MAX` (custom queries) and `DB_POOL_MIN`/`DB_POOL_MAX` (Medusa's own ORM pool in `medusa-config.js`).
+
 ## Optional local services (Postgres + Redis)
 
 ```bash

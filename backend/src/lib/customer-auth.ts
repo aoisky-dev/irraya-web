@@ -1,7 +1,5 @@
 import crypto from "node:crypto"
-import pg from "pg"
-
-const { Client } = pg
+import { withPooledClient } from "./db"
 
 export type CustomerAuthToken = {
   actor_id?: string
@@ -53,35 +51,38 @@ export async function authenticateCustomer(authHeader: string | undefined): Prom
   const token = verifyCustomerToken(authHeader)
   if (!token?.auth_identity_id) return null
 
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
-
   try {
-    await client.connect()
-    const result = await client.query(
-      `select c.id, c.email, c.metadata
-       from provider_identity pi
-       join customer c on (c.id = $2 or lower(c.email) = lower(pi.entity_id))
-       where pi.auth_identity_id = $1
-         and pi.deleted_at is null
-         and c.deleted_at is null
-       limit 1`,
-      [token.auth_identity_id, token.actor_id ?? ""]
+    return await withPooledClient(
+      "customer_auth_lookup",
+      async () => undefined, // no schema to ensure — these tables are managed by Medusa
+      async (client) => {
+        const result = await client.query(
+          `select c.id, c.email, c.metadata
+           from provider_identity pi
+           join customer c on (c.id = $2 or lower(c.email) = lower(pi.entity_id))
+           where pi.auth_identity_id = $1
+             and pi.deleted_at is null
+             and c.deleted_at is null
+           limit 1`,
+          [token.auth_identity_id, token.actor_id ?? ""]
+        )
+
+        const row = result.rows[0]
+        if (!row?.id) return null
+
+        return {
+          customerId: String(row.id),
+          authIdentityId: token.auth_identity_id as string,
+          email: typeof row.email === "string" ? row.email : undefined,
+          role: row.metadata?.role === "admin" ? "admin" : "customer"
+        } satisfies AuthenticatedCustomer
+      }
     )
-
-    const row = result.rows[0]
-    if (!row?.id) return null
-
-    return {
-      customerId: String(row.id),
-      authIdentityId: token.auth_identity_id,
-      email: typeof row.email === "string" ? row.email : undefined,
-      role: row.metadata?.role === "admin" ? "admin" : "customer"
-    }
   } catch {
     return null
-  } finally {
-    await client.end().catch(() => undefined)
   }
 }
+
+
 
 

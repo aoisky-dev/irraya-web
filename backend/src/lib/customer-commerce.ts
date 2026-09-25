@@ -1,6 +1,5 @@
 import pg from "pg"
-
-const { Client } = pg
+import { withPooledClient } from "./db"
 
 export type ProductSnapshot = {
   id: string
@@ -48,23 +47,11 @@ export type ReviewSummary = {
   reviewsCount: number
 }
 
-async function withClient<T>(callback: (client: pg.Client) => Promise<T>): Promise<T> {
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
-
-  try {
-    await client.connect()
-    await ensureCustomerCommerceTables(client)
-    return await callback(client)
-  } finally {
-    await client.end().catch(() => undefined)
-  }
+async function withClient<T>(callback: (client: pg.PoolClient) => Promise<T>): Promise<T> {
+  return withPooledClient("customer_commerce", ensureCustomerCommerceTables, callback)
 }
 
-let tablesEnsured = false;
-
-async function ensureCustomerCommerceTables(client: pg.Client): Promise<void> {
-  if (tablesEnsured) return;
-
+async function ensureCustomerCommerceTables(client: pg.PoolClient): Promise<void> {
   await client.query(`
     create table if not exists customer_wishlist_items (
       id bigserial primary key,
@@ -110,9 +97,8 @@ async function ensureCustomerCommerceTables(client: pg.Client): Promise<void> {
   `)
   await client.query(`create index if not exists idx_product_reviews_product_status on product_reviews(product_id, status)`)
   await client.query(`create index if not exists idx_product_reviews_customer_id on product_reviews(customer_id)`)
-
-  tablesEnsured = true;
 }
+
 
 function normalizeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : ""
