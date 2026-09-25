@@ -6,6 +6,7 @@ import { WishlistProvider } from "@/components/WishlistProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { CompareProvider } from "@/components/CompareProvider";
 import { ToastProvider } from "@/components/ToastProvider";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { config } from "@/lib/config";
 import "./globals.css";
 
@@ -57,6 +58,7 @@ export default function RootLayout({
                   <Header />
                   <main className="container page">{children}</main>
                   <Footer />
+                  <FeedbackWidget />
                 </CompareProvider>
               </WishlistProvider>
             </CartProvider>

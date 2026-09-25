@@ -40,6 +40,7 @@ export async function prepareCartForCheckout(cartId: string, form: {
   address: string;
   city: string;
   zipCode: string;
+  phone?: string;
 }, token?: string): Promise<void> {
   const authHeaders = authHeader(token);
 
@@ -56,6 +57,7 @@ export async function prepareCartForCheckout(cartId: string, form: {
         city: form.city,
         country_code: "in",
         postal_code: form.zipCode,
+        ...(form.phone ? { phone: form.phone } : {}),
       },
       billing_address: {
         first_name: form.firstName,
@@ -64,6 +66,7 @@ export async function prepareCartForCheckout(cartId: string, form: {
         city: form.city,
         country_code: "in",
         postal_code: form.zipCode,
+        ...(form.phone ? { phone: form.phone } : {}),
       }
     })
   });
@@ -174,7 +177,7 @@ export async function createRazorpayPaymentOrder(input: {
   }
 
   const amount = typeof response.amount === "number" ? response.amount : Number(response.amount);
-  const currency = String(response.currency ?? input.currencyCode).toLowerCase() === "inr" ? "inr" : "usd";
+  const currency = String(response.currency ?? input.currencyCode).toLowerCase() === "usd" ? "usd" : "inr";
 
   return {
     razorpayOrderId: response.razorpay_order_id,

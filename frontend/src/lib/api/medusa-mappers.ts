@@ -68,6 +68,7 @@ export const mapMedusaProduct = (raw: any): Product => {
     rating: rating > 0 ? rating : undefined,
     reviewsCount: reviewsCount > 0 ? Math.round(reviewsCount) : undefined,
     variants,
+    material: normalizeText(raw?.material, "") || undefined,
     metadata: metadataRecord,
     tags: Array.isArray(raw?.tags) ? raw.tags.map((tag: any) => normalizeText(tag?.value ?? tag?.name ?? tag, "")).filter(Boolean) : undefined,
     metaTitle: normalizeText((metadata as Record<string, unknown>).metaTitle ?? (metadata as Record<string, unknown>).meta_title, "") || undefined,
@@ -93,7 +94,7 @@ export const mapMedusaCart = (raw: any): Cart => {
   return {
     id: String(raw?.id ?? ""),
     customerId: raw?.customer_id ? String(raw.customer_id) : undefined,
-    currencyCode: String(raw?.currency_code ?? "usd").toLowerCase() === "inr" ? "inr" : "usd",
+    currencyCode: String(raw?.currency_code ?? "inr").toLowerCase() === "usd" ? "usd" : "inr",
     items: Array.isArray(raw?.items) ? raw.items.map(mapCartItem) : [],
     promoCode: Array.isArray(raw?.promotions) ? raw.promotions[0]?.code : undefined,
     discountInCents: Math.max(0, Math.round(toNumber(raw?.discount_total, Math.max((subtotalInCents - totalInCents) / 100, 0)))) * 100,
@@ -118,7 +119,8 @@ const mapOrderItem = (raw: any): OrderItem => {
     title: normalizeText(raw?.title ?? raw?.product_title ?? raw?.product?.title, "Product"),
     image: normalizeText(raw?.thumbnail ?? raw?.product?.thumbnail ?? raw?.variant?.product?.thumbnail, "") || undefined,
     size: optionValue("size"),
-    color: optionValue("color")
+    color: optionValue("color"),
+    handle: normalizeText(raw?.product_handle ?? raw?.product?.handle ?? raw?.variant?.product?.handle, "") || undefined
   };
 };
 
@@ -127,7 +129,7 @@ const getOrderEligibility = (raw: any) => {
   const fulfillmentStatus = String(raw?.fulfillment_status ?? raw?.fulfillment_statuses?.[0] ?? "").toLowerCase();
   const createdAt = raw?.created_at ? new Date(raw.created_at) : null;
   const returnWindowEndsAt = createdAt && Number.isFinite(createdAt.getTime())
-    ? new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    ? new Date(createdAt.getTime() + 48 * 60 * 60 * 1000).toISOString()
     : undefined;
   const cancelled = status === "canceled" || status === "cancelled";
   const fulfilled = status === "fulfilled" || ["fulfilled", "shipped", "delivered"].includes(fulfillmentStatus);
@@ -143,7 +145,12 @@ const getOrderEligibility = (raw: any) => {
 
 export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
   const statusRaw = String(raw?.status ?? "pending").toLowerCase();
-  const status =
+  const metadata = raw?.metadata && typeof raw.metadata === "object" ? raw.metadata : {};
+
+  // Derive effective status: if the latest customer request is an approved cancel,
+  // treat the order as cancelled even if Medusa's native status hasn't been updated
+  const latestReq = (metadata as Record<string, any>).latest_customer_request;
+  const nativeStatus =
     statusRaw === "canceled" || statusRaw === "cancelled"
       ? "cancelled"
       : statusRaw === "fulfilled"
@@ -151,7 +158,12 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
         : statusRaw === "confirmed" || statusRaw === "completed"
           ? "confirmed"
           : "pending";
-  const metadata = raw?.metadata && typeof raw.metadata === "object" ? raw.metadata : {};
+  const status: Order["status"] =
+    nativeStatus === "cancelled"
+      ? "cancelled"
+      : latestReq?.type === "cancel" && (latestReq?.status === "approved" || latestReq?.status === "completed" || latestReq?.status === "refunded")
+        ? "cancelled"
+        : nativeStatus;
   const razorpay = (metadata as Record<string, any>).razorpay && typeof (metadata as Record<string, any>).razorpay === "object"
     ? (metadata as Record<string, any>).razorpay
     : null;
@@ -177,7 +189,7 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
     cartId: String(raw?.cart_id ?? cartIdFallback ?? ""),
     customerId: raw?.customer_id ? String(raw.customer_id) : undefined,
     status,
-    currencyCode: String(raw?.currency_code ?? "usd").toLowerCase() === "inr" ? "inr" : "usd",
+    currencyCode: String(raw?.currency_code ?? "inr").toLowerCase() === "usd" ? "usd" : "inr",
     items: Array.isArray(raw?.items) ? raw.items.map(mapOrderItem) : [],
     subtotalInCents: Math.max(0, Math.round(toNumber(raw?.subtotal, 0))) * 100 || undefined,
     totalInCents: Math.max(0, Math.round(toNumber(raw?.total, 0))) * 100,
@@ -200,6 +212,11 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
       estimatedDelivery: normalizeText(shipment.estimated_delivery, "") || undefined
     } : undefined,
     eligibility: getOrderEligibility(raw),
+    latestRequest: (metadata as Record<string, any>).latest_customer_request ? {
+      type: (metadata as Record<string, any>).latest_customer_request.type,
+      status: (metadata as Record<string, any>).latest_customer_request.status,
+      reason: (metadata as Record<string, any>).latest_customer_request.reason
+    } : undefined,
     createdAt: raw?.created_at ? new Date(raw.created_at).toISOString() : new Date().toISOString()
   };
 };

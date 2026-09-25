@@ -4,8 +4,7 @@ node_modules
 !.next/standalone/**
 !.next/static
 !.next/static/**
-.env
-.env.*
+
 *.log
 npm-debug.log*
 coverage

@@ -17,7 +17,9 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
 export async function getMyOrders(token: string): Promise<Order[]> {
   try {
     const response = await medusaRequest<{ orders?: unknown[]; order?: unknown[] }>(
-      "/store/orders?limit=50&fields=*items,*payment_collections,*payment_collections.payment_sessions",
+      // "+metadata" ADDS to Medusa's default field set; a bare "metadata"
+      // would REPLACE the defaults and drop status/display_id/total/etc.
+      "/store/orders?limit=50&fields=*items,*payment_collections,*payment_collections.payment_sessions,+metadata",
       { headers: { Authorization: `Bearer ${token}` } }
     );
     const orders = response.orders ?? (Array.isArray(response.order) ? response.order : []);

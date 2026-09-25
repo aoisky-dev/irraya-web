@@ -1472,6 +1472,19 @@ textarea.input {
   color: var(--text-muted);
 }
 
+/* ─── QUANTITY STEPPER (PDP) ───────────────────────────────
+   Hide native number spin buttons — they overlapped the digit
+   in the compact stepper, making the quantity look empty. */
+.qty-input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .input::placeholder {
   color: var(--text-muted);
 }

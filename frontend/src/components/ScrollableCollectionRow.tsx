@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useLayoutEffect, useCallback } from "react";
+import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -16,21 +16,23 @@ interface Props {
 
 export function ScrollableCollectionRow({ collections }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const jumping = useRef(false);
 
   const items = collections.slice(0, 10);
   if (items.length === 0) return null;
 
-  // Show 2 cards at once on desktop; single if only 1 item
-  const visibleCount = Math.min(items.length, 2);
   const canCycle = items.length > 1;
 
-  const scrollBy = useCallback((dir: -1 | 1) => {
+  const scrollBy = (dir: -1 | 1) => {
     const el = scrollRef.current;
     if (!el) return;
-    
+
     const maxScroll = el.scrollWidth - el.clientWidth;
-    const scrollAmount = el.offsetWidth / visibleCount;
+    // Measure the actual rendered card width instead of assuming a fixed
+    // "2 visible" layout — `.scroll-row-item-collection` shows 1 card per
+    // row on mobile, so a hardcoded divisor made the arrows scroll by only
+    // half a screen-width there, making them feel broken vs. swipe.
+    const firstItem = el.firstElementChild as HTMLElement | null;
+    const scrollAmount = firstItem?.offsetWidth || el.offsetWidth / Math.min(items.length, 2);
     let newScroll = el.scrollLeft + dir * scrollAmount;
 
     if (dir === 1 && Math.ceil(el.scrollLeft) >= maxScroll) {
@@ -38,9 +40,10 @@ export function ScrollableCollectionRow({ collections }: Props) {
     } else if (dir === -1 && el.scrollLeft <= 0) {
       newScroll = maxScroll; // Wrap to end
     }
-    
+
     el.scrollTo({ left: newScroll, behavior: "smooth" });
-  }, [visibleCount]);
+  };
+
 
   return (
     <div className="scroll-row-wrapper">

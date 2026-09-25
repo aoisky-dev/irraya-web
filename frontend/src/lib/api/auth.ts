@@ -226,19 +226,29 @@ export async function login(identifier: string, passwordHash: string): Promise<{
   }
 
   try {
-    const token = isEmailIdentifier(normalizedIdentifier)
-      ? await authTokenWithCandidates(["/auth/customer/emailpass", "/auth/customer/emailpass/login", "/store/auth"], {
-          email: normalizedIdentifier,
-          password: passwordHash
-        })
-      : await authTokenWithCandidates(
-          ["/auth/customer/phonepass", "/auth/customer/phonepass/login", "/auth/customer/smspass", "/auth/customer/password"],
-          {
-            phone: normalizePhone(normalizedIdentifier),
-            identifier: normalizePhone(normalizedIdentifier),
-            password: passwordHash
-          }
+    let token: string;
+
+    if (isEmailIdentifier(normalizedIdentifier)) {
+      token = await authTokenWithCandidates(
+        ["/auth/customer/emailpass", "/auth/customer/emailpass/login", "/store/auth"],
+        { email: normalizedIdentifier, password: passwordHash }
+      );
+    } else {
+      const phone = normalizePhone(normalizedIdentifier);
+      // Try phone-specific auth providers first, then our custom phone-login endpoint
+      try {
+        token = await authTokenWithCandidates(
+          ["/auth/customer/phonepass", "/auth/customer/phonepass/login", "/auth/customer/smspass"],
+          { phone, identifier: phone, password: passwordHash }
         );
+      } catch {
+        // Fall back to custom phone-login route that looks up email by phone
+        token = await authTokenWithCandidates(
+          ["/store/auth/phone-login"],
+          { phone, password: passwordHash }
+        );
+      }
+    }
 
     const user = await getMe(token);
     return { token, user };
@@ -344,20 +354,44 @@ export async function changePassword(input: ChangePasswordInput): Promise<{ mess
 }
 
 
-export async function saveCustomerAddress(token: string, address: {
+export type AddressInput = {
   first_name: string;
   last_name: string;
   address_1: string;
+  address_2?: string;
   city: string;
+  province?: string;
   postal_code: string;
   country_code: string;
-}): Promise<void> {
+  phone?: string;
+};
+
+export async function saveCustomerAddress(token: string, address: AddressInput): Promise<void> {
   await medusaRequest("/store/customers/me/addresses", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`
     },
     body: JSON.stringify(address)
+  });
+}
+
+export async function updateCustomerAddress(token: string, addressId: string, address: Partial<AddressInput>): Promise<void> {
+  await medusaRequest(`/store/customers/me/addresses/${addressId}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(address)
+  });
+}
+
+export async function deleteCustomerAddress(token: string, addressId: string): Promise<void> {
+  await medusaRequest(`/store/customers/me/addresses/${addressId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
   });
 }
 

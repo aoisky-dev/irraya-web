@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { IconHeart, IconStar, IconDiamond } from "@/components/Icons";
 
 export default function AboutPage() {
   return (
@@ -14,7 +15,7 @@ export default function AboutPage() {
 
       <div className="values-grid">
         <div className="value-card">
-          <div className="value-icon">✦</div>
+          <div className="value-icon"><IconStar size={24} /></div>
           <h3>Quality First</h3>
           <p>
             We source premium materials from trusted suppliers around the world.
@@ -22,7 +23,7 @@ export default function AboutPage() {
           </p>
         </div>
         <div className="value-card">
-          <div className="value-icon">♡</div>
+          <div className="value-icon"><IconHeart size={24} /></div>
           <h3>Ethical Production</h3>
           <p>
             Our manufacturing partners provide fair wages and safe working conditions.
@@ -30,7 +31,7 @@ export default function AboutPage() {
           </p>
         </div>
         <div className="value-card">
-          <div className="value-icon">◇</div>
+          <div className="value-icon"><IconDiamond size={24} /></div>
           <h3>Sustainable Design</h3>
           <p>
             We design for longevity, not trends. Our timeless pieces are made to

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "./CartProvider";
 import { useToast } from "./ToastProvider";
+import { IconCheck } from "@/components/Icons";
 
 interface AddToCartButtonProps {
   productId: string;
@@ -12,6 +13,7 @@ interface AddToCartButtonProps {
   image?: string;
   size: string;
   color: string;
+  quantity?: number;
 }
 
 export function AddToCartButton({
@@ -20,7 +22,8 @@ export function AddToCartButton({
   title,
   image,
   size,
-  color
+  color,
+  quantity = 1
 }: AddToCartButtonProps) {
   const router = useRouter();
   const { addItem } = useCart();
@@ -32,9 +35,9 @@ export function AddToCartButton({
   const handleAdd = async () => {
     setIsAdding(true);
     try {
-      await addItem(productId, variantId, 1, { title, image, size, color });
+      await addItem(productId, variantId, quantity, { title, image, size, color });
       setIsAdded(true);
-      addToast(`Added ${title} to cart`, "success");
+      addToast(`Added ${quantity > 1 ? `${quantity} × ` : ""}${title} to cart`, "success");
       setTimeout(() => setIsAdded(false), 2000);
     } catch {
       addToast("Failed to add item. Please try again.", "error");
@@ -46,13 +49,14 @@ export function AddToCartButton({
   const handleBuyNow = async () => {
     setIsBuying(true);
     try {
-      await addItem(productId, variantId, 1, { title, image, size, color });
+      await addItem(productId, variantId, quantity, { title, image, size, color });
       router.push("/checkout");
     } catch {
       addToast("Failed to initiate checkout. Please try again.", "error");
       setIsBuying(false);
     }
   };
+
 
   return (
     <>
@@ -62,7 +66,7 @@ export function AddToCartButton({
         disabled={isAdding || isBuying}
         style={{ flex: 1, backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border)", transition: "all 0.2s ease" }}
       >
-        {isAdding ? "Adding..." : isAdded ? "✓ Added" : "Add to Cart"}
+        {isAdding ? "Adding..." : isAdded ? <><IconCheck size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />Added</> : "Add to Cart"}
       </button>
       <button
         onClick={handleBuyNow}

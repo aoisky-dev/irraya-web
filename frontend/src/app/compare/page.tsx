@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCompare } from "@/components/CompareProvider";
 import { formatMoney } from "@/lib/format";
+import { IconX, IconImage } from "@/components/Icons";
 
 export default function ComparePage() {
   const { compareItems, removeFromCompare, clearCompare, isSyncing, syncError } = useCompare();
@@ -71,13 +72,13 @@ export default function ComparePage() {
                     {product.image ? (
                       <img src={product.image} alt={product.title} style={{ width: "100%", height: "200px", objectFit: "cover", borderRadius: "var(--radius-md)" }} />
                     ) : (
-                      <div className="card-image-placeholder" style={{ height: "200px" }}>✦</div>
+                      <div className="card-image-placeholder" style={{ height: "200px" }}><IconImage size={24} /></div>
                     )}
                     <button 
                       onClick={() => removeFromCompare(product.id)}
                       style={{ position: "absolute", top: "8px", right: "8px", background: "white", borderRadius: "50%", width: "24px", height: "24px", border: "none", cursor: "pointer", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
                     >
-                      ✕
+                      <IconX size={14} />
                     </button>
                   </div>
                   <Link href={`/products/${product.handle}`} style={{ color: "var(--text-primary)", textDecoration: "none" }}>

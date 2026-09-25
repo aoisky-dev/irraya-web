@@ -16,12 +16,17 @@ export interface User {
   role: "admin" | "customer";
   createdAt: string;
   addresses?: Array<{
+    id?: string;
     first_name?: string;
     last_name?: string;
     address_1?: string;
+    address_2?: string;
     city?: string;
+    province?: string;
     postal_code?: string;
     country_code?: string;
+    phone?: string;
+    is_default_shipping?: boolean;
   }>;
 }
 
@@ -52,6 +57,8 @@ export interface Product {
   rating?: number;
   reviewsCount?: number;
   variants: ProductVariant[];
+  /** Medusa's native product.material field (e.g. "Modal cotton"). */
+  material?: string;
   metadata?: Record<string, string>;
   tags?: string[];
   metaTitle?: string;
@@ -93,6 +100,7 @@ export interface OrderItem {
   image?: string;
   size?: string;
   color?: string;
+  handle?: string;
 }
 
 export interface ShipmentTracking {
@@ -159,6 +167,7 @@ export interface Order {
   payment?: Payment;
   tracking?: ShipmentTracking;
   eligibility?: OrderEligibility;
+  latestRequest?: { type: string; status: string; reason?: string };
   createdAt: string;
 }
 

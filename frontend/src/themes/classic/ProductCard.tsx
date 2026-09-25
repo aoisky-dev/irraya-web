@@ -8,6 +8,7 @@ import { useWishlist } from "@/components/WishlistProvider";
 import { useCompare } from "@/components/CompareProvider";
 import { getStockLabel, getTotalStock } from "@/lib/catalog";
 import { productAltText } from "@/lib/seo";
+import { IconHeart, IconHeartFilled, IconImage } from "@/components/Icons";
 
 interface ProductCardProps {
   product: Product;
@@ -47,7 +48,7 @@ export function ProductCard({ product }: ProductCardProps) {
         {product.image ? (
           <Image src={product.image} alt={productAltText(product)} fill style={{ objectFit: "cover" }} sizes="(max-width: 768px) 100vw, 33vw" />
         ) : (
-          <div className="card-image-placeholder">✦</div>
+          <div className="card-image-placeholder"><IconImage size={24} /></div>
         )}
         <button 
           onClick={toggleWishlist}
@@ -72,7 +73,7 @@ export function ProductCard({ product }: ProductCardProps) {
             fontSize: "1.1rem"
           }}
         >
-          {isSaved ? "♥" : "♡"}
+          {isSaved ? <IconHeartFilled size={16} /> : <IconHeart size={16} />}
         </button>
         <button 
           onClick={toggleCompare}

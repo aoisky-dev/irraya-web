@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { IconAlertTriangle } from "@/components/Icons";
 
 export default function GlobalError({
   error,
@@ -25,7 +26,7 @@ export default function GlobalError({
       padding: "var(--space-2xl)",
       textAlign: "center"
     }}>
-      <div style={{ fontSize: "3rem", marginBottom: "var(--space-md)" }}>✦</div>
+      <div style={{ marginBottom: "var(--space-md)" }}><IconAlertTriangle size={48} /></div>
       <h2 className="section-title">Something went wrong!</h2>
       <p style={{ color: "var(--text-secondary)", marginBottom: "var(--space-xl)", maxWidth: "500px" }}>
         We apologize for the inconvenience. An unexpected error has occurred on our end.

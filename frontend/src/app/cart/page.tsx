@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/components/CartProvider";
 import { formatMoney } from "@/lib/format";
+import { IconX, IconImage } from "@/components/Icons";
 
 export default function CartPage() {
   const { cart, isLoading, removeItem, updateQuantity, itemMeta } = useCart();
@@ -47,7 +48,7 @@ export default function CartPage() {
                   {meta?.image ? (
                     <Image src={meta.image} alt={meta.title || "Product"} fill style={{ objectFit: "cover" }} sizes="120px" />
                   ) : (
-                    <div className="card-image-placeholder" style={{ height: "100%", fontSize: "1rem" }}>✦</div>
+                    <div className="card-image-placeholder" style={{ height: "100%" }}><IconImage size={20} /></div>
                   )}
                 </div>
                 <div className="cart-item-info">
@@ -85,7 +86,7 @@ export default function CartPage() {
                     title="Remove item"
                     aria-label="Remove item"
                   >
-                    ✕
+                    <IconX size={14} />
                   </button>
                 </div>
               </div>

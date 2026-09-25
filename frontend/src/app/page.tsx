@@ -5,6 +5,7 @@ import { NewsletterForm } from "@/components/NewsletterForm";
 import { getProducts } from "@/lib/api/products";
 import { ScrollableProductRow } from "@/components/ScrollableProductRow";
 import { ScrollableCollectionRow } from "@/components/ScrollableCollectionRow";
+import { IconHeart, IconStar, IconDiamond, IconRefreshCw } from "@/components/Icons";
 
 export default async function HomePage() {
   let products = [] as Awaited<ReturnType<typeof getProducts>>;
@@ -64,22 +65,22 @@ export default async function HomePage() {
       {/* Features Row */}
       <div className="features-row">
         <div className="feature-item">
-          <div className="feature-icon">✦</div>
+          <div className="feature-icon"><IconStar size={24} /></div>
           <h4>Premium Quality</h4>
           <p>Crafted from the finest materials</p>
         </div>
         <div className="feature-item">
-          <div className="feature-icon">◇</div>
+          <div className="feature-icon"><IconDiamond size={24} /></div>
           <h4>Free Shipping</h4>
           <p>On all orders</p>
         </div>
         <div className="feature-item">
-          <div className="feature-icon">↻</div>
+          <div className="feature-icon"><IconRefreshCw size={24} /></div>
           <h4>Easy Exchanges</h4>
-          <p>7 days exchange only. No returns.</p>
+          <p>48-hour exchange only. No returns.</p>
         </div>
         <div className="feature-item">
-          <div className="feature-icon">♡</div>
+          <div className="feature-icon"><IconHeart size={24} /></div>
           <h4>Sustainable</h4>
           <p>Ethically sourced fabrics</p>
         </div>

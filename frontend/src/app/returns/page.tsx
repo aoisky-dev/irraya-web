@@ -90,7 +90,7 @@ export default function ReturnsPage() {
         <div className="checkout-section" style={{ marginBottom: "var(--space-xl)" }}>
           <h2>Start an exchange</h2>
           <p className="text-muted" style={{ marginBottom: "var(--space-md)" }}>
-            Eligible orders are within 7 days of delivery and not cancelled.
+            Eligible orders are within 48 hours of delivery and not cancelled.
           </p>
           {message && <p style={{ color: "var(--success, green)", marginBottom: "var(--space-md)" }}>{message}</p>}
           {error && <p style={{ color: "var(--error)", marginBottom: "var(--space-md)" }}>{error}</p>}
@@ -136,11 +136,15 @@ export default function ReturnsPage() {
       <div className="prose" style={{ lineHeight: 1.8 }}>
         <p>At Irraya, we only offer exchanges — no returns or refunds.</p>
 
-        <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: "var(--space-xl)", marginBottom: "var(--space-md)" }}>7-Day Exchange Policy</h2>
-        <p>We do not offer returns. You have 7 days from the date of delivery to request an exchange for your items. We only accept exchanges for items that arrive damaged or defective.</p>
-
-        <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: "var(--space-xl)", marginBottom: "var(--space-md)" }}>Damaged Product Proof Required</h2>
-        <p>To accept an exchange, it is mandatory to provide clear images or a video of the damaged product. Please upload this evidence when submitting your exchange request.</p>
+        <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: "var(--space-xl)", marginBottom: "var(--space-md)" }}>48-Hour Exchange Policy</h2>
+        <p style={{ whiteSpace: "pre-line" }}>
+          {"We accept exchanges only in case of a damaged or defective product.\n\n"}
+          {"• Please share clear photos and an unedited video showing the damage within 48 hours of delivery.\n"}
+          {"• The product must be unused, unworn, unwashed, and with all original tags intact.\n"}
+          {"• Requests received after 48 hours of delivery will not be eligible for exchange.\n"}
+          {"• Once the issue is verified and approved by our team, we will guide you through the exchange process.\n\n"}
+          {"Please make sure to record a video while opening the package for a smooth verification process."}
+        </p>
 
         <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: "var(--space-xl)", marginBottom: "var(--space-md)" }}>Exchanges</h2>
         <p>Your replacement will be shipped out as soon as your exchange request is approved and you drop off the original item.</p>

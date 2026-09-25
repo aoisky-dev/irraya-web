@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
+import { IconCheck, IconX, IconInfo } from "@/components/Icons";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -62,7 +63,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             }}
           >
             <span style={{ fontSize: "1.2rem" }}>
-              {toast.type === "success" ? "✓" : toast.type === "error" ? "✕" : "ℹ"}
+              {toast.type === "success" ? <IconCheck size={16} /> : toast.type === "error" ? <IconX size={16} /> : <IconInfo size={16} />}
             </span>
             <span style={{ fontSize: "0.95rem" }}>{toast.message}</span>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatMoney } from "@/lib/format";
@@ -10,7 +10,34 @@ import { Breadcrumb } from "@/components/Breadcrumb";
 import { FAQAccordion } from "@/components/FAQAccordion";
 import { ReviewList } from "@/components/ReviewList";
 import { useWishlist } from "@/components/WishlistProvider";
+import { SizeChartModal } from "@/components/SizeChartModal";
+import { ShareButton } from "@/components/ShareButton";
 import type { Product, ProductVariant } from "@/lib/types";
+import { config } from "@/lib/config";
+import { IconHeart, IconHeartFilled, IconRefreshCw, IconStar, IconDiamond, IconImage, IconMail, IconPhone, IconWhatsApp, IconTruck } from "@/components/Icons";
+
+// Metadata keys already surfaced elsewhere in the page (badges, category, SEO)
+// so they are excluded from the generic "Product Details" list below.
+const KNOWN_METADATA_KEYS = new Set([
+  "category",
+  "rating",
+  "reviews_count",
+  "reviewscount",
+  "metatitle",
+  "meta_title",
+  "metadescription",
+  "meta_description",
+  // Already surfaced as a dedicated badge above via materialLabel.
+  "material",
+  "fabric",
+  "fabric_type",
+  "fabrictype"
+]);
+
+const formatMetadataLabel = (key: string): string =>
+  key
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 
 interface ProductDetailClientProps {
   product: Product;
@@ -28,9 +55,16 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product.variants?.[0] ?? null
   );
+  const [quantity, setQuantity] = useState(1);
 
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const isSaved = isInWishlist(product.id);
+
+  const maxQuantity = Math.max(1, Math.min(selectedVariant?.stock ?? 1, 10));
+
+  const changeQuantity = (delta: number) => {
+    setQuantity((prev) => Math.min(maxQuantity, Math.max(1, prev + delta)));
+  };
 
   // Get unique sizes and colors
   const sizes = useMemo(() => {
@@ -41,12 +75,35 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
     return [...new Set(product.variants.map((v) => v.color))];
   }, [product]);
 
+  // Fabric/material can come from Medusa's native product.material field, or
+  // (as a fallback) from metadata under a few different key names depending
+  // on how it was entered in Medusa Admin.
+  const materialLabel = useMemo(() => {
+    const metadata = product.metadata ?? {};
+    const value = product.material || metadata.material || metadata.fabric || metadata.fabric_type || metadata.fabricType;
+    return value?.trim() || undefined;
+  }, [product]);
+
+  // Any other backend-added product metadata (fabric, pattern, care, fit,
+  // origin, etc.) that isn't already surfaced elsewhere on the page.
+  const additionalDetails = useMemo(() => {
+    const metadata = product.metadata ?? {};
+    return Object.entries(metadata).filter(([key, value]) => {
+      if (!value) return false;
+      if (KNOWN_METADATA_KEYS.has(key.toLowerCase())) return false;
+      return true;
+    });
+  }, [product]);
+
   const handleSizeSelect = (size: string) => {
     const color = selectedVariant?.color;
     const match =
       product.variants.find((v) => v.size === size && v.color === color) ||
       product.variants.find((v) => v.size === size);
-    if (match) setSelectedVariant(match);
+    if (match) {
+      setSelectedVariant(match);
+      setQuantity((prev) => Math.min(prev, Math.max(1, Math.min(match.stock, 10))));
+    }
   };
 
   const handleColorSelect = (color: string) => {
@@ -54,7 +111,10 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
     const match =
       product.variants.find((v) => v.color === color && v.size === size) ||
       product.variants.find((v) => v.color === color);
-    if (match) setSelectedVariant(match);
+    if (match) {
+      setSelectedVariant(match);
+      setQuantity((prev) => Math.min(prev, Math.max(1, Math.min(match.stock, 10))));
+    }
   };
 
   const renderStars = (rating: number = 5) => {
@@ -126,7 +186,7 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
                 )}
               </>
             ) : (
-              <div className="card-image-placeholder" style={{ height: "100%" }}>✦</div>
+              <div className="card-image-placeholder" style={{ height: "100%" }}><IconImage size={24} /></div>
             )}
           </div>
 
@@ -185,6 +245,10 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
                 </svg>
                 Free shipping on all orders
               </span>
+              <span className="text-muted" style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.25rem", marginTop: "0.25rem" }}>
+                <IconTruck size={14} />
+                Estimated delivery: 7–10 business days
+              </span>
             </div>
           )}
 
@@ -212,7 +276,10 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
           {/* Size Selection */}
           {sizes.filter(s => s !== "Default").length > 0 && (
             <div className="pdp-variants">
-              <h3>Size</h3>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <h3>Size</h3>
+                <SizeChartModal />
+              </div>
               <div className="variant-options">
                 {sizes.filter(s => s !== "Default").map((size) => (
                   <button
@@ -245,6 +312,64 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
             </div>
           )}
 
+          {/* Quantity Selector */}
+          {selectedVariant && (
+            <div className="pdp-variants">
+              <h3>Quantity</h3>
+              <div style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--border)", borderRadius: "var(--radius-sm, 6px)" }}>
+                <button
+                  type="button"
+                  onClick={() => changeQuantity(-1)}
+                  disabled={quantity <= 1}
+                  aria-label="Decrease quantity"
+                  style={{ width: "36px", height: "36px", background: "none", border: "none", cursor: quantity <= 1 ? "not-allowed" : "pointer", fontSize: "1.1rem", opacity: quantity <= 1 ? 0.4 : 1 }}
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={maxQuantity}
+                  value={quantity}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    if (Number.isFinite(next)) {
+                      setQuantity(Math.min(maxQuantity, Math.max(1, Math.round(next))));
+                    }
+                  }}
+                  aria-label="Quantity"
+                  className="qty-input"
+                  style={{
+                    width: "48px",
+                    height: "36px",
+                    textAlign: "center",
+                    border: "none",
+                    background: "none",
+                    color: "var(--text-primary)",
+                    fontSize: "1rem",
+                    lineHeight: "36px",
+                    padding: 0
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => changeQuantity(1)}
+                  disabled={quantity >= maxQuantity}
+                  aria-label="Increase quantity"
+                  style={{ width: "36px", height: "36px", background: "none", border: "none", cursor: quantity >= maxQuantity ? "not-allowed" : "pointer", fontSize: "1.1rem", opacity: quantity >= maxQuantity ? 0.4 : 1 }}
+                >
+                  +
+                </button>
+              </div>
+              {selectedVariant.stock > 0 && selectedVariant.stock <= 10 && (
+                <span className="text-muted" style={{ marginLeft: "var(--space-sm)", fontSize: "0.8rem" }}>
+                  Max {maxQuantity} per order
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Actions */}
           <div className="pdp-actions" style={{ display: "flex", gap: "var(--space-md)", alignItems: "center" }}>
             {selectedVariant ? (
@@ -255,6 +380,7 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
                 image={product.image}
                 size={selectedVariant.size}
                 color={selectedVariant.color}
+                quantity={quantity}
               />
             ) : (
               <button className="btn btn-lg" style={{ flex: 1, opacity: 0.5 }} disabled>
@@ -276,42 +402,105 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
               }}
               aria-label="Toggle Wishlist"
             >
-              {isSaved ? "♥" : "♡"}
+              {isSaved ? <IconHeartFilled size={20} /> : <IconHeart size={20} />}
             </button>
+            <ShareButton title={product.title} text={`Check out ${product.title} on Irraya Fashion`} />
           </div>
 
           <hr className="pdp-divider" />
 
           {/* Product Meta */}
           <div className="pdp-meta">
-            {product.metadata?.material && (
+            {materialLabel && (
               <div className="pdp-meta-item">
-                <span>✦</span>
-                <span>{product.metadata.material}</span>
+                <span><IconStar size={14} /></span>
+                <span>{materialLabel}</span>
               </div>
             )}
             <div className="pdp-meta-item">
-              <span>↻</span>
-              <span>7-Day Exchange Only</span>
+              <span><IconRefreshCw size={14} /></span>
+              <span>48-Hour Exchange Only</span>
             </div>
             <div className="pdp-meta-item">
-              <span>◇</span>
+              <span><IconDiamond size={14} /></span>
               <span>Free Shipping</span>
             </div>
             <div className="pdp-meta-item">
-              <span>♡</span>
+              <span><IconHeart size={14} /></span>
               <span>Ethically Made</span>
             </div>
           </div>
+
+          {/* Additional product details (fabric, pattern, care, fit, origin, etc.) */}
+          {additionalDetails.length > 0 && (
+            <div style={{ marginTop: "var(--space-lg)" }}>
+              <h3 style={{ marginBottom: "var(--space-sm)" }}>Product Details</h3>
+              <dl style={{ display: "grid", gridTemplateColumns: "max-content 1fr", rowGap: "6px", columnGap: "var(--space-md)", margin: 0 }}>
+                {additionalDetails.map(([key, value]) => (
+                  <React.Fragment key={key}>
+                    <dt style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>{formatMetadataLabel(key)}</dt>
+                    <dd style={{ margin: 0, fontSize: "0.88rem", color: "var(--text-secondary)" }}>{value}</dd>
+                  </React.Fragment>
+                ))}
+              </dl>
+            </div>
+          )}
 
           {/* Product FAQ */}
           <FAQAccordion
             items={[
               { question: "What is the sizing like?", answer: "Our products run true to size. If you are between sizes, we recommend sizing up for a more relaxed fit." },
               { question: "How do I care for this item?", answer: "Hand wash gently in cold/normal water with mild detergent.\nDo not machine wash, bleach, soak, or wring.\nDry in shade and iron on low heat, preferably inside out.\nFor delicate garments, professional dry cleaning is recommended." },
-              { question: "What is your exchange policy?", answer: "We offer a 7-day exchange policy. No returns are accepted. To process an exchange, you must provide clear images or a video of the damaged product." }
+              { question: "What is your exchange policy?", answer: "We accept exchanges only in case of a damaged or defective product.\n\n• Please share clear photos and an unedited video showing the damage within 48 hours of delivery.\n• The product must be unused, unworn, unwashed, and with all original tags intact.\n• Requests received after 48 hours of delivery will not be eligible for exchange.\n• Once the issue is verified and approved by our team, we will guide you through the exchange process.\n\nPlease make sure to record a video while opening the package for a smooth verification process." }
             ]}
           />
+        </div>
+      </section>
+
+      {/* Customization / Contact Section */}
+      <section
+        style={{
+          marginTop: "var(--space-4xl)",
+          padding: "var(--space-2xl)",
+          background: "var(--bg-secondary)",
+          borderRadius: "var(--radius-lg)",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "var(--space-lg)",
+          alignItems: "center",
+          justifyContent: "space-between"
+        }}
+      >
+        <div>
+          <h2 className="section-title" style={{ marginBottom: "var(--space-xs)" }}>Want a Custom Fit or Design?</h2>
+          <p className="text-muted" style={{ maxWidth: "48ch" }}>
+            Reach out to us for customization requests on this piece — sizing tweaks, fabric preferences, or bespoke designs.
+          </p>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-md)" }}>
+          <a
+            href={`mailto:${config.contactEmail}?subject=${encodeURIComponent(`Customization request — ${product.title}`)}`}
+            className="btn btn-outline"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+          >
+            <IconMail size={16} /> {config.contactEmail}
+          </a>
+          <a
+            href={`tel:${config.contactPhone.replace(/\s+/g, "")}`}
+            className="btn btn-outline"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+          >
+            <IconPhone size={16} /> {config.contactPhone}
+          </a>
+          <a
+            href={`https://wa.me/${config.whatsAppNumber}?text=${encodeURIComponent(`Hi, I'd like to customize "${product.title}".`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-outline"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+          >
+            <IconWhatsApp size={16} /> WhatsApp
+          </a>
         </div>
       </section>
 

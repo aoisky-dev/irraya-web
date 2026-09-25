@@ -2,7 +2,15 @@ import type { Product } from "../types";
 import { medusaRequest } from "./client";
 import { mapMedusaProduct } from "./medusa-mappers";
 
-const defaultProductFields = "*metadata,*categories,*tags,*images,*variants.prices,*variants.options";
+// NOTE: Medusa's `fields` query param REPLACES the default field selection
+// entirely once any plain (non-"*") field is present. Using a bare
+// "material" here previously wiped out default scalar fields like title,
+// handle, thumbnail, description, and status — causing every product to
+// render as "Untitled Product" and listing links to fall back to raw
+// product IDs (which then 404 on the detail page's handle lookup).
+// Prefixing with "+" tells Medusa to ADD the field to the defaults instead
+// of replacing them.
+const defaultProductFields = "+material,*metadata,*categories,*tags,*images,*variants.prices,*variants.options";
 
 export async function getProducts(params?: Record<string, string | number>): Promise<Product[]> {
   const queryParams = new URLSearchParams({

@@ -50,7 +50,7 @@ export function FAQAccordion({ items }: { items: FAQItem[] }) {
                 transition: "max-height 0.3s ease-in-out",
               }}
             >
-              <div style={{ paddingBottom: "var(--space-lg)", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+              <div style={{ paddingBottom: "var(--space-lg)", color: "var(--text-secondary)", lineHeight: 1.6, whiteSpace: "pre-line" }}>
                 {item.answer}
               </div>
             </div>

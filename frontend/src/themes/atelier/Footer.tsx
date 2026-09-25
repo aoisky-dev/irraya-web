@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getProducts } from "@/lib/api/products";
+import { config } from "@/lib/config";
 
 const fmt = (v: string) =>
   v.split("-").filter(Boolean).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(" ");
@@ -48,7 +49,7 @@ export async function Footer() {
               <h4>Follow</h4>
               <Link href="https://www.instagram.com/irraya.co" target="_blank" rel="noopener noreferrer">Instagram</Link>
               <Link href="/">Pinterest</Link>
-              <Link href="/">Twitter / X</Link>
+              <Link href={`https://wa.me/${config.whatsAppNumber}`} target="_blank" rel="noopener noreferrer">WhatsApp</Link>
             </div>
           </div>
 

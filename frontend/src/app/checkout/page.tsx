@@ -17,6 +17,11 @@ import { saveCustomerAddress } from "@/lib/api/auth";
 import { config } from "@/lib/config";
 import Link from "next/link";
 import Image from "next/image";
+import {
+  IconShoppingBag, IconUser, IconMapPin, IconTruck, IconCreditCard,
+  IconSmartphone, IconBuilding, IconWallet, IconLock, IconCornerDownLeft,
+  IconCheck, IconAlertTriangle, IconShield
+} from "@/components/Icons";
 
 type RazorpayCheckoutResponse = {
   razorpay_payment_id: string;
@@ -160,18 +165,24 @@ export default function CheckoutPage() {
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState("");
   const [error, setError] = useState("");
+  const [validationError, setValidationError] = useState("");
   const [saveAddress, setSaveAddress] = useState(false);
   const [failureReference, setFailureReference] = useState<{ razorpayOrderId?: string; razorpayPaymentId?: string } | null>(null);
   const [recoverablePayment, setRecoverablePayment] = useState<RecoverablePayment | null>(null);
 
+  const [selectedAddressIndex, setSelectedAddressIndex] = useState<number | "new">(0);
+  const [addressDropdownOpen, setAddressDropdownOpen] = useState(false);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [checkoutPhoneError, setCheckoutPhoneError] = useState("");
   const [form, setForm] = useState({
     firstName: "", lastName: "", email: "",
-    address: "", city: "", state: "", zipCode: "", country: "India"
+    address: "", city: "", state: "", zipCode: "", phone: "", country: "India"
   });
 
   useEffect(() => {
     if (user) {
-      const defaultAddress = user.addresses?.[0];
+      const addresses = user.addresses ?? [];
+      const defaultAddress = addresses.length > 0 ? addresses[0] : null;
       setForm((prev) => ({
         ...prev,
         firstName: prev.firstName || user.firstName || defaultAddress?.first_name || "",
@@ -179,12 +190,52 @@ export default function CheckoutPage() {
         email: prev.email || user.email || "",
         address: prev.address || defaultAddress?.address_1 || "",
         city: prev.city || defaultAddress?.city || "",
-        zipCode: prev.zipCode || defaultAddress?.postal_code || ""
+        state: prev.state || defaultAddress?.province || "",
+        zipCode: prev.zipCode || defaultAddress?.postal_code || "",
+        phone: prev.phone || defaultAddress?.phone || ""
       }));
+      if (addresses.length === 0) {
+        setSelectedAddressIndex("new");
+        setShowAddressForm(true);
+      }
     } else if (!isAuthLoading) {
       router.push("/login?next=/checkout&reason=checkout");
     }
   }, [user, isAuthLoading, router]);
+
+  const selectSavedAddress = (index: number) => {
+    const addr = user?.addresses?.[index];
+    if (!addr) return;
+    setSelectedAddressIndex(index);
+    setShowAddressForm(false);
+    setAddressDropdownOpen(false);
+    setForm((prev) => ({
+      ...prev,
+      firstName: addr.first_name || user?.firstName || "",
+      lastName: addr.last_name || user?.lastName || "",
+      address: addr.address_1 || "",
+      city: addr.city || "",
+      state: addr.province || "",
+      zipCode: addr.postal_code || "",
+      phone: addr.phone || ""
+    }));
+  };
+
+  const selectNewAddress = () => {
+    setSelectedAddressIndex("new");
+    setShowAddressForm(true);
+    setAddressDropdownOpen(false);
+    setForm((prev) => ({
+      ...prev,
+      firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
+      address: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      phone: ""
+    }));
+  };
 
   const updateField = (field: string, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -203,7 +254,7 @@ export default function CheckoutPage() {
   if (!cart || cart.items.length === 0) {
     return (
       <div className="checkout-empty">
-        <div className="checkout-empty-icon">🛍️</div>
+        <div className="checkout-empty-icon"><IconShoppingBag size={48} /></div>
         <h1>Your cart is empty</h1>
         <p>Add some items before checking out.</p>
         <Link href="/products" className="btn btn-lg">Browse Products</Link>
@@ -269,11 +320,25 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
-    if (!form.firstName || !form.lastName || !form.email || !form.address || !form.city || !form.zipCode) {
-      setError("Please fill in all required fields.");
+    const missing: string[] = [];
+    if (!form.firstName) missing.push("First Name");
+    if (!form.lastName) missing.push("Last Name");
+    if (!form.email) missing.push("Email");
+    if (!form.address) missing.push("Street Address");
+    if (!form.city) missing.push("City");
+    if (!form.zipCode) missing.push("PIN Code");
+    if (!form.phone) missing.push("Phone Number");
+    if (missing.length > 0) {
+      setValidationError(`Please fill in: ${missing.join(", ")}`);
+      return;
+    }
+    const phoneDigits = form.phone.replace(/\D/g, "");
+    if (phoneDigits.length !== 10) {
+      setValidationError("Please enter a valid 10-digit phone number.");
       return;
     }
 
+    setValidationError("");
     setIsSubmitting(true);
     setError("");
     setFailureReference(null);
@@ -293,7 +358,8 @@ export default function CheckoutPage() {
             await saveCustomerAddress(token, {
               first_name: form.firstName, last_name: form.lastName,
               address_1: form.address, city: form.city,
-              country_code: "in", postal_code: form.zipCode
+              country_code: "in", postal_code: form.zipCode,
+              phone: form.phone || undefined
             });
             await refreshUser();
           }
@@ -376,7 +442,7 @@ export default function CheckoutPage() {
           {/* Contact */}
           <div className="checkout-card">
             <div className="checkout-card-header">
-              <span className="checkout-card-icon">👤</span>
+              <span className="checkout-card-icon"><IconUser size={18} /></span>
               <h2>Contact Information</h2>
             </div>
             <div className="form-grid">
@@ -402,52 +468,161 @@ export default function CheckoutPage() {
           {/* Shipping Address */}
           <div className="checkout-card">
             <div className="checkout-card-header">
-              <span className="checkout-card-icon">📍</span>
+              <span className="checkout-card-icon"><IconMapPin size={18} /></span>
               <h2>Shipping Address</h2>
+              {user.addresses && user.addresses.length > 0 && (
+                <div style={{ display: "flex", gap: "8px", marginLeft: "auto" }}>
+                  {selectedAddressIndex === "new" ? (
+                    <button
+                      className="btn btn-secondary"
+                      style={{ padding: "4px 14px", fontSize: "0.8rem" }}
+                      onClick={() => selectSavedAddress(0)}
+                    >
+                      Use Saved Address
+                    </button>
+                  ) : (
+                    <>
+                      <div style={{ position: "relative" }}>
+                        <button
+                          className="btn btn-secondary"
+                          style={{ padding: "4px 14px", fontSize: "0.8rem" }}
+                          onClick={() => setAddressDropdownOpen(!addressDropdownOpen)}
+                        >
+                          Change
+                        </button>
+                        {addressDropdownOpen && (
+                          <>
+                            <div style={{ position: "fixed", inset: 0, zIndex: 9 }} onClick={() => setAddressDropdownOpen(false)} />
+                            <div style={{
+                              position: "absolute", top: "100%", right: 0, marginTop: "4px",
+                              background: "#fff", border: "1px solid var(--border)", borderRadius: "8px",
+                              boxShadow: "0 8px 24px rgba(0,0,0,0.12)", minWidth: "300px", zIndex: 10, overflow: "hidden"
+                            }}>
+                              {user.addresses!.map((addr, i) => (
+                                <button
+                                  key={addr.id || i}
+                                  onClick={() => selectSavedAddress(i)}
+                                  style={{
+                                    display: "block", width: "100%", textAlign: "left", padding: "12px 16px",
+                                    border: "none", background: selectedAddressIndex === i ? "#f5f5f5" : "#fff",
+                                    cursor: "pointer", fontSize: "0.84rem", borderBottom: "1px solid #eee",
+                                    color: "#111"
+                                  }}
+                                >
+                                  <strong>{[addr.first_name, addr.last_name].filter(Boolean).join(" ")}</strong>
+                                  <br />
+                                  <span style={{ color: "#666" }}>
+                                    {addr.address_1}, {[addr.city, addr.postal_code].filter(Boolean).join(" - ")}
+                                  </span>
+                                </button>
+                              ))}
+                              <button
+                                onClick={selectNewAddress}
+                                style={{
+                                  display: "block", width: "100%", textAlign: "left", padding: "12px 16px",
+                                  border: "none", background: "#fff", cursor: "pointer",
+                                  fontSize: "0.84rem", fontWeight: 600, color: "var(--accent)"
+                                }}
+                              >
+                                + Add New Address
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <button
+                        className="btn btn-outline"
+                        style={{ padding: "4px 14px", fontSize: "0.8rem" }}
+                        onClick={selectNewAddress}
+                      >
+                        + Add New
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="form-grid">
-              <div className="form-group full">
-                <label className="form-label" htmlFor="address">Street Address <span className="required">*</span></label>
-                <input id="address" className="form-input" type="text" placeholder="House no., street, locality"
-                  value={form.address} onChange={(e) => updateField("address", e.target.value)} />
+
+            {/* Show selected saved address summary */}
+            {user.addresses && user.addresses.length > 0 && selectedAddressIndex !== "new" && (() => {
+              const addr = user.addresses![selectedAddressIndex as number];
+              if (!addr) return null;
+              return (
+                <div style={{
+                  padding: "14px 16px", background: "var(--bg-secondary)", borderRadius: "8px",
+                  fontSize: "0.88rem", lineHeight: 1.6
+                }}>
+                  <p style={{ fontWeight: 600 }}>
+                    {[addr.first_name, addr.last_name].filter(Boolean).join(" ")}
+                  </p>
+                  <p style={{ color: "var(--text-secondary)" }}>{addr.address_1}</p>
+                  {addr.address_2 && <p style={{ color: "var(--text-secondary)" }}>{addr.address_2}</p>}
+                  <p style={{ color: "var(--text-secondary)" }}>
+                    {[addr.city, addr.province, addr.postal_code].filter(Boolean).join(", ")}
+                  </p>
+                  {addr.phone && <p style={{ color: "var(--text-secondary)" }}>Ph: {addr.phone}</p>}
+                </div>
+              );
+            })()}
+
+            {/* Show form only for new address */}
+            {(selectedAddressIndex === "new" || showAddressForm) && (
+              <div className="form-grid">
+                <div className="form-group full">
+                  <label className="form-label" htmlFor="address">Street Address <span className="required">*</span></label>
+                  <input id="address" className="form-input" type="text" placeholder="House no., street, locality"
+                    value={form.address} onChange={(e) => updateField("address", e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="city">City <span className="required">*</span></label>
+                  <input id="city" className="form-input" type="text" placeholder="Hyderabad"
+                    value={form.city} onChange={(e) => updateField("city", e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="state">State</label>
+                  <select id="state" className="form-input" value={form.state} onChange={(e) => updateField("state", e.target.value)}>
+                    <option value="">Select State</option>
+                    {["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Andaman & Nicobar Islands","Chandigarh","Dadra & Nagar Haveli and Daman & Diu","Delhi","Jammu & Kashmir","Ladakh","Lakshadweep","Puducherry"].map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="zipCode">PIN Code <span className="required">*</span></label>
+                  <input id="zipCode" className="form-input" type="text" placeholder="500001" maxLength={6}
+                    value={form.zipCode} onChange={(e) => updateField("zipCode", e.target.value.replace(/\D/g, ""))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="phone">Phone <span className="required">*</span></label>
+                  <input id="phone" className={`form-input${checkoutPhoneError ? " input-error" : ""}`} type="tel"
+                    placeholder="10-digit mobile number" maxLength={10}
+                    value={form.phone}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      updateField("phone", digits);
+                      if (checkoutPhoneError) setCheckoutPhoneError("");
+                    }} />
+                  {checkoutPhoneError && <p style={{ color: "var(--error)", fontSize: "0.78rem", marginTop: "4px" }}>{checkoutPhoneError}</p>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="country">Country</label>
+                  <input id="country" className="form-input" type="text" value={form.country} readOnly
+                    style={{ opacity: 0.7, cursor: "not-allowed" }} />
+                </div>
+                <div className="form-group full">
+                  <label className="checkout-save-label">
+                    <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />
+                    <span>Save address</span>
+                  </label>
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="city">City <span className="required">*</span></label>
-                <input id="city" className="form-input" type="text" placeholder="Hyderabad"
-                  value={form.city} onChange={(e) => updateField("city", e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="state">State</label>
-                <select id="state" className="form-input" value={form.state} onChange={(e) => updateField("state", e.target.value)}>
-                  <option value="">Select State</option>
-                  {["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Andaman & Nicobar Islands","Chandigarh","Dadra & Nagar Haveli and Daman & Diu","Delhi","Jammu & Kashmir","Ladakh","Lakshadweep","Puducherry"].map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="zipCode">PIN Code <span className="required">*</span></label>
-                <input id="zipCode" className="form-input" type="text" placeholder="500001" maxLength={6}
-                  value={form.zipCode} onChange={(e) => updateField("zipCode", e.target.value.replace(/\D/g, ""))} />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="country">Country</label>
-                <input id="country" className="form-input" type="text" value={form.country} readOnly
-                  style={{ opacity: 0.7, cursor: "not-allowed" }} />
-              </div>
-              <div className="form-group full">
-                <label className="checkout-save-label">
-                  <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />
-                  <span>Save address</span>
-                </label>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Shipping Method */}
           <div className="checkout-card">
             <div className="checkout-card-header">
-              <span className="checkout-card-icon">🚚</span>
+              <span className="checkout-card-icon"><IconTruck size={18} /></span>
               <h2>Shipping Method</h2>
             </div>
             <div className="shipping-option-card active">
@@ -455,7 +630,7 @@ export default function CheckoutPage() {
                 <div className="shipping-option-radio" />
                 <div>
                   <p className="shipping-option-name">Standard Shipping</p>
-                  <p className="shipping-option-meta">Estimated delivery: 5–7 business days</p>
+                  <p className="shipping-option-meta">Estimated delivery: 7–10 business days</p>
                 </div>
               </div>
               <span className="shipping-option-price">FREE</span>
@@ -465,15 +640,15 @@ export default function CheckoutPage() {
           {/* Payment */}
           <div className="checkout-card">
             <div className="checkout-card-header">
-              <span className="checkout-card-icon">💳</span>
+              <span className="checkout-card-icon"><IconCreditCard size={18} /></span>
               <h2>Payment Method</h2>
             </div>
             <div className="payment-methods-grid">
               {[
-                { icon: "📱", label: "UPI" },
-                { icon: "💳", label: "Cards" },
-                { icon: "🏦", label: "Net Banking" },
-                { icon: "👛", label: "Wallets" },
+                { icon: <IconSmartphone size={16} />, label: "UPI" },
+                { icon: <IconCreditCard size={16} />, label: "Cards" },
+                { icon: <IconBuilding size={16} />, label: "Net Banking" },
+                { icon: <IconWallet size={16} />, label: "Wallets" },
               ].map((m) => (
                 <div key={m.label} className="payment-method-chip">
                   <span>{m.icon}</span>
@@ -545,7 +720,7 @@ export default function CheckoutPage() {
             {promoError && <p className="checkout-promo-error">{promoError}</p>}
             {cart.promoCode && (
               <p className="checkout-promo-success" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span>✓ Code <strong>{cart.promoCode}</strong> applied</span>
+                <span><IconCheck size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />Code <strong>{cart.promoCode}</strong> applied</span>
                 <button type="button" onClick={handleRemovePromo} disabled={promoLoading} style={{ background: "none", border: "none", color: "var(--error)", cursor: "pointer", fontSize: "0.8rem", padding: 0 }}>
                   Remove
                 </button>
@@ -583,9 +758,15 @@ export default function CheckoutPage() {
               <span>{formatMoney(cart.totalInCents, "inr")}</span>
             </div>
 
+            {validationError && (
+              <p style={{ color: "var(--error)", fontSize: "0.85rem", textAlign: "center", marginBottom: "var(--space-sm)" }}>
+                {validationError}
+              </p>
+            )}
+
             {error && (
               <div className="checkout-alert checkout-alert-error">
-                <div className="checkout-alert-icon">⚠️</div>
+                <div className="checkout-alert-icon"><IconAlertTriangle size={20} /></div>
                 <div className="checkout-alert-body">
                   <p className="checkout-alert-title">
                     {recoverablePayment ? "Payment received – confirmation pending" : "Something went wrong"}
@@ -619,9 +800,9 @@ export default function CheckoutPage() {
             </button>
 
             <div className="checkout-trust-badges">
-              <span>🔒 SSL Secured</span>
-              <span>↩ 7-Day Exchanges</span>
-              <span>✓ Razorpay Verified</span>
+              <span><IconLock size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />SSL Secured</span>
+              <span><IconCornerDownLeft size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />48-Hour Exchange</span>
+              <span><IconShield size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />Razorpay Verified</span>
             </div>
           </div>
         </div>

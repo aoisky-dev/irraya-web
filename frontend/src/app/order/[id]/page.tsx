@@ -7,6 +7,11 @@ import { formatMoney } from "@/lib/format";
 import type { Order, OrderRequest, OrderRequestItem, OrderRequestType } from "@/lib/types";
 import { buildInvoiceText, createOrderRequest, getOrderById, getOrderRequests } from "@/lib/api/orders";
 import { useAuth } from "@/components/AuthProvider";
+import {
+  IconSearch, IconX, IconCheck, IconCheckCircle, IconPackage, IconTruck,
+  IconClipboard, IconSettings, IconClock, IconRefreshCw, IconMapPin,
+  IconLock, IconCornerDownLeft, IconAlertTriangle
+} from "@/components/Icons";
 
 const exchangeReasons = [
   "Size or fit issue",
@@ -28,11 +33,27 @@ function StatusBadge({ status }: { status: string }) {
     authorized: { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Authorized" },
     captured:   { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Captured" },
     failed:     { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Failed" },
+    // Order request statuses
+    requested:    { color: "#d97706", bg: "rgba(217,119,6,0.1)", label: "Requested" },
+    under_review: { color: "#2563eb", bg: "rgba(37,99,235,0.1)", label: "Under Review" },
+    approved:     { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Approved" },
+    rejected:     { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Rejected" },
+    refunded:     { color: "#7c3aed", bg: "rgba(124,58,237,0.1)", label: "Refunded" },
+    completed:    { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Completed" },
+    // Composite request statuses
+    cancel_requested:    { color: "#d97706", bg: "rgba(217,119,6,0.1)", label: "Cancel Requested" },
+    cancel_approved:     { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Cancelled" },
+    cancel_rejected:     { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Cancel Rejected" },
+    exchange_requested:  { color: "#4f46e5", bg: "rgba(99,102,241,0.1)", label: "Exchange Requested" },
+    exchange_under_review: { color: "#2563eb", bg: "rgba(37,99,235,0.1)", label: "Exchange Under Review" },
+    exchange_approved:   { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Exchange Approved" },
+    exchange_rejected:   { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Exchange Rejected" },
+    exchange_completed:  { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Exchange Completed" },
   };
-  const s = map[status] ?? { color: "#6b7280", bg: "rgba(107,114,128,0.1)", label: status };
+  const s = map[status] ?? { color: "#6b7280", bg: "rgba(107,114,128,0.1)", label: status.replace(/_/g, " ") };
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 10px", borderRadius: "20px",
-      background: s.bg, color: s.color, fontSize: "0.78rem", fontWeight: 600, letterSpacing: "0.02em" }}>
+      background: s.bg, color: s.color, fontSize: "0.78rem", fontWeight: 600, letterSpacing: "0.02em", textTransform: "capitalize" }}>
       <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: s.color, display: "inline-block" }} />
       {s.label}
     </span>
@@ -42,7 +63,7 @@ function StatusBadge({ status }: { status: string }) {
 function OrderNotFound() {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", textAlign: "center", gap: "16px", padding: "40px 24px" }}>
-      <div style={{ fontSize: "3rem" }}>🔍</div>
+      <div style={{ color: "var(--text-muted)" }}><IconSearch size={48} /></div>
       <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Order not found</h1>
       <p style={{ color: "var(--text-muted)", maxWidth: "360px", lineHeight: 1.6 }}>
         We couldn&apos;t find this order. It may still be processing, or the link may be incorrect.
@@ -127,13 +148,57 @@ export default function OrderConfirmationPage() {
     }
   };
 
-  const timelineSteps = [
-    { key: "ordered",    label: "Order Placed",     icon: "📋", active: true },
-    { key: "processing", label: "Processing",        icon: "⚙️", active: Boolean(order) && order?.status !== "cancelled" },
-    { key: "shipped",    label: "Shipped",           icon: "📦", active: ["shipped", "out_for_delivery", "delivered"].includes(order?.tracking?.status ?? "") || order?.status === "fulfilled" },
-    { key: "delivery",   label: "Out for Delivery",  icon: "🚚", active: ["out_for_delivery", "delivered"].includes(order?.tracking?.status ?? "") },
-    { key: "delivered",  label: "Delivered",         icon: "✅", active: order?.tracking?.status === "delivered" },
-  ];
+  // Derive effective display status from the order + latestRequest
+  const effectiveStatus = (() => {
+    if (!order) return "pending";
+    // If order is natively cancelled, that takes priority
+    if (order.status === "cancelled") return "cancelled";
+    // Check latestRequest for cancel approved/completed/refunded
+    if (order.latestRequest) {
+      const { type, status } = order.latestRequest;
+      if (type === "cancel" && ["approved", "completed", "refunded"].includes(status)) return "cancelled";
+    }
+    return order.status;
+  })();
+
+  // Build display status string for badges
+  const displayStatus = (() => {
+    if (!order) return "pending";
+    if (effectiveStatus === "cancelled") return "cancelled";
+    if (order.latestRequest) {
+      const { type, status } = order.latestRequest;
+      return `${type}_${status}`;
+    }
+    return order.status;
+  })();
+
+  const isCancelRequested = order?.latestRequest?.type === "cancel" && ["requested", "under_review"].includes(order?.latestRequest?.status ?? "");
+  const isExchangeInProgress = order?.latestRequest?.type === "exchange" && ["requested", "under_review", "approved"].includes(order?.latestRequest?.status ?? "");
+
+  const timelineSteps = effectiveStatus === "cancelled"
+    ? [
+        { key: "ordered",   label: "Order Placed",  icon: <IconClipboard size={16} />, active: true },
+        { key: "cancelled", label: "Cancelled",     icon: <IconX size={16} />,         active: true },
+      ]
+    : isCancelRequested
+      ? [
+          { key: "ordered",          label: "Order Placed",     icon: <IconClipboard size={16} />, active: true },
+          { key: "cancel_requested", label: "Cancel Requested", icon: <IconClock size={16} />,     active: true },
+          { key: "cancelled",        label: "Cancelled",        icon: <IconX size={16} />,         active: false },
+        ]
+      : isExchangeInProgress
+        ? [
+            { key: "ordered",            label: "Order Placed",       icon: <IconClipboard size={16} />,  active: true },
+            { key: "exchange_requested", label: "Exchange Requested", icon: <IconRefreshCw size={16} />,  active: true },
+            { key: "exchange_processed", label: "Exchange Processed", icon: <IconCheckCircle size={16} />, active: order?.latestRequest?.status === "approved" },
+          ]
+        : [
+            { key: "ordered",    label: "Order Placed",     icon: <IconClipboard size={16} />,  active: true },
+            { key: "processing", label: "Processing",       icon: <IconSettings size={16} />,   active: Boolean(order) && order?.status !== "cancelled" },
+            { key: "shipped",    label: "Shipped",          icon: <IconPackage size={16} />,    active: ["shipped", "out_for_delivery", "delivered"].includes(order?.tracking?.status ?? "") || order?.status === "fulfilled" },
+            { key: "delivery",   label: "Out for Delivery", icon: <IconTruck size={16} />,      active: ["out_for_delivery", "delivered"].includes(order?.tracking?.status ?? "") },
+            { key: "delivered",  label: "Delivered",        icon: <IconCheckCircle size={16} />, active: order?.tracking?.status === "delivered" },
+          ];
 
   if (isLoading) {
     return (
@@ -146,7 +211,7 @@ export default function OrderConfirmationPage() {
 
   if (notFound) return <OrderNotFound />;
 
-  const isCancelled = order?.status === "cancelled";
+  const isCancelled = effectiveStatus === "cancelled";
   const orderDate = order?.createdAt ? new Date(order.createdAt).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : null;
   const addr = order?.shippingAddress;
   const addrLine = addr ? [addr.address1, addr.city, addr.province, addr.postalCode].filter(Boolean).join(", ") : null;
@@ -156,14 +221,18 @@ export default function OrderConfirmationPage() {
       {/* Hero — hidden when browsing from account (view=status) */}
       {!viewStatus && <div className={`order-hero ${isCancelled ? "order-hero-cancelled" : ""}`}>
         <div className="order-hero-inner">
-          <div className={`order-hero-icon ${isCancelled ? "cancelled" : ""}`}>
-            {isCancelled ? "✕" : "✓"}
+          <div className={`order-hero-icon ${isCancelled ? "cancelled" : isCancelRequested ? "cancelled" : ""}`}>
+            {isCancelled ? <IconX size={32} /> : isCancelRequested ? <IconClock size={32} /> : isExchangeInProgress ? <IconRefreshCw size={32} /> : <IconCheck size={32} />}
           </div>
-          <h1>{isCancelled ? "Order Cancelled" : "Order Confirmed!"}</h1>
+          <h1>{isCancelled ? "Order Cancelled" : isCancelRequested ? "Cancel Requested" : isExchangeInProgress ? "Exchange In Progress" : "Order Confirmed!"}</h1>
           <p className="order-hero-sub">
             {isCancelled
               ? "Your order has been cancelled. Any payment will be refunded within 5–7 business days."
-              : `Thank you! Your order #${order?.displayId || params.id} has been placed successfully.`}
+              : isCancelRequested
+                ? `Your cancellation request for order #${order?.displayId || params.id} is being reviewed.`
+                : isExchangeInProgress
+                  ? `Your exchange request for order #${order?.displayId || params.id} is being processed.`
+                  : `Thank you! Your order #${order?.displayId || params.id} has been placed successfully.`}
           </p>
           {!isCancelled && orderDate && (
             <p className="order-hero-email">Placed on {orderDate}</p>
@@ -173,9 +242,9 @@ export default function OrderConfirmationPage() {
           )}
           {!isCancelled && (
             <div className="order-hero-badges">
-              <span className="order-hero-badge">🔒 Payment Secure</span>
-              <span className="order-hero-badge">📦 Free Shipping</span>
-              <span className="order-hero-badge">↩ 7-Day Exchanges</span>
+              <span className="order-hero-badge"><IconLock size={14} /> Payment Secure</span>
+              <span className="order-hero-badge"><IconPackage size={14} /> Free Shipping</span>
+              <span className="order-hero-badge"><IconCornerDownLeft size={14} /> 48-Hour Exchange</span>
             </div>
           )}
         </div>
@@ -183,7 +252,7 @@ export default function OrderConfirmationPage() {
 
       {/* Order Status heading when coming from account */}
       {viewStatus && (
-        <div style={{ padding: "var(--space-xl) 24px var(--space-lg)", maxWidth: "1000px", margin: "0 auto" }}>
+        <div style={{ padding: "var(--space-xl) 16px var(--space-lg)", maxWidth: "1000px", margin: "0 auto" }}>
           <span className="hero-tag">Order #{order?.displayId || params.id}</span>
           <h1 className="page-title" style={{ marginTop: "var(--space-sm)" }}>Order Status</h1>
         </div>
@@ -193,12 +262,12 @@ export default function OrderConfirmationPage() {
         {/* Tracking Timeline */}
         {!isCancelled && (
           <div className="order-card">
-            <h2 className="order-card-title">📍 Order Progress</h2>
+            <h2 className="order-card-title"><IconMapPin size={16} style={{ display: "inline", verticalAlign: "-2px", marginRight: "6px" }} />Order Progress</h2>
             <div className="order-timeline">
               {timelineSteps.map((step, i) => (
                 <div key={step.key} className={`order-timeline-step ${step.active ? "active" : ""}`}>
                   <div className="order-timeline-icon-wrap">
-                    <div className="order-timeline-icon">{step.active ? step.icon : String(i + 1)}</div>
+                    <div className="order-timeline-icon">{step.active ? step.icon : (i + 1)}</div>
                     {i < timelineSteps.length - 1 && (
                       <div className={`order-timeline-line ${step.active && timelineSteps[i + 1]?.active ? "filled" : ""}`} />
                     )}
@@ -230,7 +299,7 @@ export default function OrderConfirmationPage() {
                 )}
                 <div className="order-detail-item">
                   <span className="order-detail-label">Order Status</span>
-                  <StatusBadge status={order?.status || "processing"} />
+                  <StatusBadge status={displayStatus} />
                 </div>
                 <div className="order-detail-item">
                   <span className="order-detail-label">Payment</span>
@@ -242,14 +311,16 @@ export default function OrderConfirmationPage() {
                     <code className="order-detail-code">{order.payment.providerPaymentId}</code>
                   </div>
                 )}
-                <div className="order-detail-item">
-                  <span className="order-detail-label">Estimated Delivery</span>
-                  <span className="order-detail-value" style={{ fontWeight: 600 }}>
-                    {order?.tracking?.estimatedDelivery
-                      ? new Date(order.tracking.estimatedDelivery).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
-                      : "5–7 Business Days"}
-                  </span>
-                </div>
+                {!isCancelled && (
+                  <div className="order-detail-item">
+                    <span className="order-detail-label">Estimated Delivery</span>
+                    <span className="order-detail-value" style={{ fontWeight: 600 }}>
+                      {order?.tracking?.estimatedDelivery
+                        ? new Date(order.tracking.estimatedDelivery).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
+                        : "5–7 Business Days"}
+                    </span>
+                  </div>
+                )}
                 {order?.tracking?.trackingNumber && (
                   <div className="order-detail-item">
                     <span className="order-detail-label">Tracking</span>
@@ -308,27 +379,55 @@ export default function OrderConfirmationPage() {
               <div className="order-card">
                 <h2 className="order-card-title">Items Ordered</h2>
                 <div className="order-items-list">
-                  {order.items.map((item) => (
-                    <div key={item.id} className="order-item-row">
-                      <div className="order-item-placeholder">
-                        {(item.title || "P").charAt(0)}
+                  {order.items.map((item) => {
+                    const productUrl = item.handle ? `/products/${item.handle}` : null;
+                    return (
+                      <div key={item.id} className="order-item-row">
+                        {productUrl ? (
+                          <Link href={productUrl} className="order-item-placeholder" style={{ textDecoration: "none", color: "inherit" }}>
+                            {item.image ? (
+                              <img src={item.image} alt={item.title || "Product"} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "6px" }} />
+                            ) : (
+                              (item.title || "P").charAt(0)
+                            )}
+                          </Link>
+                        ) : (
+                          <div className="order-item-placeholder">
+                            {item.image ? (
+                              <img src={item.image} alt={item.title || "Product"} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "6px" }} />
+                            ) : (
+                              (item.title || "P").charAt(0)
+                            )}
+                          </div>
+                        )}
+                        <div className="order-item-info">
+                          {productUrl ? (
+                            <Link href={productUrl} className="order-item-title" style={{ textDecoration: "none", color: "inherit" }}>
+                              {item.title ?? "Product"}
+                            </Link>
+                          ) : (
+                            <p className="order-item-title">{item.title ?? "Product"}</p>
+                          )}
+                          <p className="order-item-meta">
+                            Qty: {item.quantity}
+                            {item.size ? ` · Size: ${item.size}` : ""}
+                            {item.color ? ` · ${item.color}` : ""}
+                          </p>
+                          <p className="order-item-unit-price" style={{ fontSize: "0.76rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                            {formatMoney(item.unitPriceInCents, order.currencyCode)} each
+                          </p>
+                          {productUrl && (
+                            <Link href={productUrl} style={{ fontSize: "0.78rem", color: "var(--accent)", textDecoration: "none", marginTop: "4px", display: "inline-block" }}>
+                              View Product →
+                            </Link>
+                          )}
+                        </div>
+                        <span className="order-item-price">
+                          {formatMoney(item.unitPriceInCents * item.quantity, order.currencyCode)}
+                        </span>
                       </div>
-                      <div className="order-item-info">
-                        <p className="order-item-title">{item.title ?? "Product"}</p>
-                        <p className="order-item-meta">
-                          Qty: {item.quantity}
-                          {item.size ? ` · Size: ${item.size}` : ""}
-                          {item.color ? ` · ${item.color}` : ""}
-                        </p>
-                        <p className="order-item-unit-price" style={{ fontSize: "0.76rem", color: "var(--text-muted)", marginTop: "2px" }}>
-                          {formatMoney(item.unitPriceInCents, order.currencyCode)} each
-                        </p>
-                      </div>
-                      <span className="order-item-price">
-                        {formatMoney(item.unitPriceInCents * item.quantity, order.currencyCode)}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="order-summary-totals">
@@ -370,7 +469,7 @@ export default function OrderConfirmationPage() {
                 {manageOpen && (
                   <div className="order-manage-body">
                     <p className="text-secondary" style={{ fontSize: "0.85rem", marginBottom: "16px" }}>
-                      Cancel requests are reviewed before fulfillment. Exchanges are available within 7 days of delivery.
+                      Cancel requests are reviewed before fulfillment. Exchanges are available within 48 hours of delivery.
                     </p>
 
                     {requestMessage && (

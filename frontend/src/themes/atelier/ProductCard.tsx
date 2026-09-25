@@ -7,6 +7,7 @@ import type { Product } from "@/lib/types";
 import { useWishlist } from "@/components/WishlistProvider";
 import { getStockLabel, getTotalStock } from "@/lib/catalog";
 import { productAltText } from "@/lib/seo";
+import { IconImage } from "@/components/Icons";
 
 interface ProductCardProps {
   product: Product;
@@ -36,7 +37,7 @@ export function ProductCard({ product }: ProductCardProps) {
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
         ) : (
-          <div className="card-image-placeholder"><span>✦</span></div>
+          <div className="card-image-placeholder"><span><IconImage size={24} /></span></div>
         )}
 
         {totalStock <= 0 && <span className="card-badge badge-out-of-stock">Sold Out</span>}

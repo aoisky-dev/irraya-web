@@ -33,4 +33,9 @@ npm run dev
 - Current active auth is email/password. Signup creates/logs in customers directly and redirects to `/`; email/phone verification and phone login are intentionally detached until mail/SMS/phone auth providers are configured.
 - `/verify` is a disabled/coming-soon page for the future OTP flow. See [`../AUTH_VERIFICATION.md`](../AUTH_VERIFICATION.md).
 - Google and Apple sign-in buttons are intentionally hidden until OAuth providers and callback handling are implemented.
+- Product pages show a "Product Details" list built from any extra backend product metadata (fabric, pattern, care, fit, origin, etc.), plus a dedicated fabric/material badge (checks `material`, `fabric`, and `fabric_type` metadata keys). Add these fields as product metadata in Medusa Admin to have them appear automatically.
+- Product pages include a customization contact section (email/phone/WhatsApp, from `NEXT_PUBLIC_CONTACT_EMAIL`/`NEXT_PUBLIC_CONTACT_PHONE`/`NEXT_PUBLIC_WHATSAPP_NUMBER`) shown above Customer Reviews.
+- A site-wide feedback widget (floating button, bottom-right) lets guests and signed-in customers submit feedback to `/store/feedback` on the backend.
+- Product pages include a quantity selector (capped at stock/10), an estimated delivery line ("5–7 business days", matching checkout), a Size Chart modal (`public/images/size-guide/`), and a native-share/copy-link Share button.
+- The footer's "Follow" links use WhatsApp (via `NEXT_PUBLIC_WHATSAPP_NUMBER`) instead of Twitter/X.
 
