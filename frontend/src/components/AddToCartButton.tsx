@@ -64,7 +64,7 @@ export function AddToCartButton({
         onClick={handleAdd}
         className="btn btn-lg"
         disabled={isAdding || isBuying}
-        style={{ flex: 1, backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border)", transition: "all 0.2s ease" }}
+        style={{ flex: 1, width: "100%", backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border)", transition: "all 0.2s ease" }}
       >
         {isAdding ? "Adding..." : isAdded ? <><IconCheck size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />Added</> : "Add to Cart"}
       </button>
@@ -72,7 +72,7 @@ export function AddToCartButton({
         onClick={handleBuyNow}
         className="btn btn-lg"
         disabled={isAdding || isBuying}
-        style={{ flex: 1 }}
+        style={{ flex: 1, width: "100%" }}
       >
         {isBuying ? "Processing..." : "Buy Now"}
       </button>

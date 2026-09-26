@@ -26,12 +26,7 @@ const KNOWN_METADATA_KEYS = new Set([
   "metatitle",
   "meta_title",
   "metadescription",
-  "meta_description",
-  // Already surfaced as a dedicated badge above via materialLabel.
-  "material",
-  "fabric",
-  "fabric_type",
-  "fabrictype"
+  "meta_description"
 ]);
 
 const formatMetadataLabel = (key: string): string =>
@@ -68,7 +63,30 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
 
   // Get unique sizes and colors
   const sizes = useMemo(() => {
-    return [...new Set(product.variants.map((v) => v.size))];
+    const SIZE_ORDER: Record<string, number> = {
+      "xxs": 1,
+      "xs": 2,
+      "s": 3,
+      "m": 4,
+      "l": 5,
+      "xl": 6,
+      "xxl": 7,
+      "2xl": 7,
+      "xxxl": 8,
+      "3xl": 8,
+    };
+    const uniqueSizes = [...new Set(product.variants.map((v) => v.size))];
+    return uniqueSizes.sort((a, b) => {
+      const aLower = a.toLowerCase();
+      const bLower = b.toLowerCase();
+      const aOrder = SIZE_ORDER[aLower] || 99;
+      const bOrder = SIZE_ORDER[bLower] || 99;
+      
+      if (aOrder !== bOrder) {
+        return aOrder - bOrder;
+      }
+      return a.localeCompare(b, undefined, { numeric: true });
+    });
   }, [product]);
 
   const colors = useMemo(() => {
@@ -88,11 +106,15 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
   // origin, etc.) that isn't already surfaced elsewhere on the page.
   const additionalDetails = useMemo(() => {
     const metadata = product.metadata ?? {};
-    return Object.entries(metadata).filter(([key, value]) => {
-      if (!value) return false;
-      if (KNOWN_METADATA_KEYS.has(key.toLowerCase())) return false;
-      return true;
+    const details: [string, string][] = [];
+
+    Object.entries(metadata).forEach(([key, value]) => {
+      if (!value) return;
+      if (KNOWN_METADATA_KEYS.has(key.toLowerCase())) return;
+      details.push([key, String(value)]);
     });
+
+    return details;
   }, [product]);
 
   const handleSizeSelect = (size: string) => {
@@ -276,20 +298,22 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
           {/* Size Selection */}
           {sizes.filter(s => s !== "Default").length > 0 && (
             <div className="pdp-variants">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <h3>Size</h3>
-                <SizeChartModal />
-              </div>
-              <div className="variant-options">
-                {sizes.filter(s => s !== "Default").map((size) => (
-                  <button
-                    key={size}
-                    className={`variant-chip ${selectedVariant?.size === size ? "active" : ""}`}
-                    onClick={() => handleSizeSelect(size)}
-                  >
-                    {size}
-                  </button>
-                ))}
+              <h3>Size</h3>
+              <div className="size-selector-layout">
+                <div className="variant-options" style={{ marginBottom: 0, width: "100%" }}>
+                  {sizes.filter(s => s !== "Default").map((size) => (
+                    <button
+                      key={size}
+                      className={`variant-chip ${selectedVariant?.size === size ? "active" : ""}`}
+                      onClick={() => handleSizeSelect(size)}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ flexShrink: 0, whiteSpace: "nowrap" }}>
+                  <SizeChartModal />
+                </div>
               </div>
             </div>
           )}
@@ -312,66 +336,88 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
             </div>
           )}
 
-          {/* Quantity Selector */}
+          {/* Quantity Selector & Secondary Actions */}
           {selectedVariant && (
-            <div className="pdp-variants">
-              <h3>Quantity</h3>
-              <div style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--border)", borderRadius: "var(--radius-sm, 6px)" }}>
+            <div className="pdp-variants" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "1rem" }}>
+              <div>
+                <h3>Quantity</h3>
+                <div style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--border)", borderRadius: "var(--radius-sm, 6px)" }}>
+                  <button
+                    type="button"
+                    onClick={() => changeQuantity(-1)}
+                    disabled={quantity <= 1}
+                    aria-label="Decrease quantity"
+                    style={{ width: "36px", height: "36px", background: "none", border: "none", cursor: quantity <= 1 ? "not-allowed" : "pointer", fontSize: "1.1rem", opacity: quantity <= 1 ? 0.4 : 1 }}
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={maxQuantity}
+                    value={quantity}
+                    onChange={(e) => {
+                      const next = Number(e.target.value);
+                      if (Number.isFinite(next)) {
+                        setQuantity(Math.min(maxQuantity, Math.max(1, Math.round(next))));
+                      }
+                    }}
+                    aria-label="Quantity"
+                    className="qty-input"
+                    style={{
+                      width: "48px",
+                      height: "36px",
+                      textAlign: "center",
+                      border: "none",
+                      background: "none",
+                      color: "var(--text-primary)",
+                      fontSize: "1rem",
+                      lineHeight: "36px",
+                      padding: 0
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => changeQuantity(1)}
+                    disabled={quantity >= maxQuantity}
+                    aria-label="Increase quantity"
+                    style={{ width: "36px", height: "36px", background: "none", border: "none", cursor: quantity >= maxQuantity ? "not-allowed" : "pointer", fontSize: "1.1rem", opacity: quantity >= maxQuantity ? 0.4 : 1 }}
+                  >
+                    +
+                  </button>
+                </div>
+                {selectedVariant.stock > 0 && selectedVariant.stock <= 10 && (
+                  <div className="text-muted" style={{ marginTop: "4px", fontSize: "0.8rem" }}>
+                    Max {maxQuantity} per order
+                  </div>
+                )}
+              </div>
+              <div style={{ display: "flex", gap: "var(--space-md)", alignItems: "center" }}>
                 <button
-                  type="button"
-                  onClick={() => changeQuantity(-1)}
-                  disabled={quantity <= 1}
-                  aria-label="Decrease quantity"
-                  style={{ width: "36px", height: "36px", background: "none", border: "none", cursor: quantity <= 1 ? "not-allowed" : "pointer", fontSize: "1.1rem", opacity: quantity <= 1 ? 0.4 : 1 }}
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={maxQuantity}
-                  value={quantity}
-                  onChange={(e) => {
-                    const next = Number(e.target.value);
-                    if (Number.isFinite(next)) {
-                      setQuantity(Math.min(maxQuantity, Math.max(1, Math.round(next))));
-                    }
+                  onClick={() => {
+                    if (isSaved) removeFromWishlist(product.id);
+                    else addToWishlist(product);
                   }}
-                  aria-label="Quantity"
-                  className="qty-input"
+                  className="btn-icon"
                   style={{
                     width: "48px",
-                    height: "36px",
-                    textAlign: "center",
-                    border: "none",
-                    background: "none",
-                    color: "var(--text-primary)",
-                    fontSize: "1rem",
-                    lineHeight: "36px",
-                    padding: 0
+                    height: "48px",
+                    fontSize: "1.4rem",
+                    color: isSaved ? "var(--error)" : "var(--text-secondary)",
+                    flexShrink: 0
                   }}
-                />
-                <button
-                  type="button"
-                  onClick={() => changeQuantity(1)}
-                  disabled={quantity >= maxQuantity}
-                  aria-label="Increase quantity"
-                  style={{ width: "36px", height: "36px", background: "none", border: "none", cursor: quantity >= maxQuantity ? "not-allowed" : "pointer", fontSize: "1.1rem", opacity: quantity >= maxQuantity ? 0.4 : 1 }}
+                  aria-label="Toggle Wishlist"
                 >
-                  +
+                  {isSaved ? <IconHeartFilled size={20} /> : <IconHeart size={20} />}
                 </button>
+                <ShareButton title={product.title} text={`Check out ${product.title} on Irraya Fashion`} />
               </div>
-              {selectedVariant.stock > 0 && selectedVariant.stock <= 10 && (
-                <span className="text-muted" style={{ marginLeft: "var(--space-sm)", fontSize: "0.8rem" }}>
-                  Max {maxQuantity} per order
-                </span>
-              )}
             </div>
           )}
 
           {/* Actions */}
-          <div className="pdp-actions" style={{ display: "flex", gap: "var(--space-md)", alignItems: "center" }}>
+          <div className="pdp-actions" style={{ display: "flex", flexDirection: "row", gap: "var(--space-md)", alignItems: "stretch", width: "100%" }}>
             {selectedVariant ? (
               <AddToCartButton
                 productId={product.id}
@@ -387,36 +433,12 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
                 Select a variant
               </button>
             )}
-            <button
-              onClick={() => {
-                if (isSaved) removeFromWishlist(product.id);
-                else addToWishlist(product);
-              }}
-              className="btn-icon"
-              style={{
-                width: "48px",
-                height: "48px",
-                fontSize: "1.4rem",
-                color: isSaved ? "var(--error)" : "var(--text-secondary)",
-                flexShrink: 0
-              }}
-              aria-label="Toggle Wishlist"
-            >
-              {isSaved ? <IconHeartFilled size={20} /> : <IconHeart size={20} />}
-            </button>
-            <ShareButton title={product.title} text={`Check out ${product.title} on Irraya Fashion`} />
           </div>
 
           <hr className="pdp-divider" />
 
           {/* Product Meta */}
           <div className="pdp-meta">
-            {materialLabel && (
-              <div className="pdp-meta-item">
-                <span><IconStar size={14} /></span>
-                <span>{materialLabel}</span>
-              </div>
-            )}
             <div className="pdp-meta-item">
               <span><IconRefreshCw size={14} /></span>
               <span>48-Hour Exchange Only</span>

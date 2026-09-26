@@ -26,11 +26,11 @@ export const config = {
   medusaPublishableApiKey: "pk_a256d78487e40d25a556864cdf4982c4c5eca64f09c0627436648e4993e798e2",
   medusaAdminUrl: "https://api.irraya.com/app",
   // Used for the product-customization contact section and the feedback widget.
-  contactEmail: firstNonEmpty(process.env.NEXT_PUBLIC_CONTACT_EMAIL, "irraya.customcare@gmail.com"),
-  contactPhone: firstNonEmpty(process.env.NEXT_PUBLIC_CONTACT_PHONE, "+91 98765 43210"),
+  contactEmail: firstNonEmpty(process.env.NEXT_PUBLIC_CONTACT_EMAIL, "info@irraya.com"),
+  contactPhone: firstNonEmpty(process.env.NEXT_PUBLIC_CONTACT_PHONE, "+91 8500365656"),
   // Digits-only phone used to build wa.me links (defaults derived from contactPhone).
   whatsAppNumber: firstNonEmpty(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER, "").replace(/\D/g, "") ||
-    firstNonEmpty(process.env.NEXT_PUBLIC_CONTACT_PHONE, "+91 98765 43210").replace(/\D/g, "")
+    firstNonEmpty(process.env.NEXT_PUBLIC_CONTACT_PHONE, "+91 8500365656").replace(/\D/g, "")
 };
 
 

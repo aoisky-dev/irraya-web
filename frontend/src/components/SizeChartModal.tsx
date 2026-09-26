@@ -18,7 +18,7 @@ export function SizeChartModal() {
         type="button"
         onClick={() => setIsOpen(true)}
         className="btn btn-outline"
-        style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", padding: "6px 12px" }}
+        style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", padding: "6px 12px", whiteSpace: "nowrap" }}
       >
         <IconClipboard size={14} /> Size Chart
       </button>
@@ -70,19 +70,19 @@ export function SizeChartModal() {
             {/* Full-width, landscape-framed images (rather than a cramped
                 side-by-side portrait split) so both stay large and legible. */}
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-lg, 16px)" }}>
-              <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3", background: "var(--bg-secondary)", borderRadius: "var(--radius-md, 8px)", overflow: "hidden" }}>
+              <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 460", background: "var(--bg-secondary)", borderRadius: "var(--radius-md, 8px)", overflow: "hidden" }}>
                 <Image
-                  src="/images/size-guide/size-measurement.jpg"
-                  alt="How to measure yourself for the size chart"
+                  src="/images/size-guide/size-chart.jpg"
+                  alt="Size chart with measurements per size"
                   fill
                   style={{ objectFit: "contain" }}
                   sizes="(max-width: 800px) 100vw, 720px"
                 />
               </div>
-              <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3", background: "var(--bg-secondary)", borderRadius: "var(--radius-md, 8px)", overflow: "hidden" }}>
+              <div style={{ position: "relative", width: "100%", aspectRatio: "960 / 1600", background: "var(--bg-secondary)", borderRadius: "var(--radius-md, 8px)", overflow: "hidden" }}>
                 <Image
-                  src="/images/size-guide/size-chart.jpg"
-                  alt="Size chart with measurements per size"
+                  src="/images/size-guide/size-measurement.jpg"
+                  alt="How to measure yourself for the size chart"
                   fill
                   style={{ objectFit: "contain" }}
                   sizes="(max-width: 800px) 100vw, 720px"

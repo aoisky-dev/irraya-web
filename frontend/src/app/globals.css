@@ -13,3 +13,17 @@
 
 /* ─── ACTIVE THEME ─────────────────────────────────────── */
 @import "../themes/atelier/theme.css";
+
+/* Size Options Layout */
+.size-selector-layout {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .size-selector-layout {
+    flex-direction: column;
+  }
+}
