@@ -105,8 +105,72 @@ export async function POST(req: MedusaRequest<UpdateStatusBody>, res: MedusaResp
            where id = $2`,
           [status, request.order_id]
         )
-      } catch (exchangeError) {
-        console.warn(`[admin] Failed to update exchange metadata for order ${request.order_id}:`, exchangeError)
+        
+        if (status === "approved") {
+          const logger = req.scope.resolve("logger")
+          const shiprocketService = new (require("../../../../../../modules/shiprocket/service").default)({ logger })
+          const orderService = req.scope.resolve("orderModuleService") as any
+
+          const order = await orderService.retrieveOrder(request.order_id, {
+            relations: ["items", "shipping_address", "billing_address", "customer"],
+          })
+
+          if (order) {
+            const exchangeItems = (request.items || []).map((exchangeItem: any) => {
+              const orderItem = order.items?.find((i: any) => i.id === exchangeItem.item_id || i.product_id === exchangeItem.product_id)
+              return {
+                sku: orderItem?.variant_sku || orderItem?.product_title || "SKU",
+                name: orderItem?.product_title || "Exchange Item",
+                units: exchangeItem.quantity || 1,
+                selling_price: orderItem?.unit_price || 0,
+              }
+            })
+
+            const subTotal = exchangeItems.reduce((acc: number, item: any) => acc + (Number(item.selling_price) * item.units), 0)
+
+            const shiprocketPayload = {
+              order_id: `EX-${order.display_id || order.id.split('_')[1]}-${Date.now().toString().slice(-4)}`,
+              order_date: new Date().toISOString().split('T')[0],
+              channel_id: "",
+              pickup_customer_name: order.shipping_address?.first_name || order.customer?.first_name || "Customer",
+              pickup_last_name: order.shipping_address?.last_name || order.customer?.last_name || "",
+              pickup_address: order.shipping_address?.address_1 || "",
+              pickup_address_2: order.shipping_address?.address_2 || "",
+              pickup_city: order.shipping_address?.city || "",
+              pickup_state: order.shipping_address?.province || "",
+              pickup_country: order.shipping_address?.country_code || "IN",
+              pickup_pincode: order.shipping_address?.postal_code || "",
+              pickup_email: order.email || order.customer?.email || "",
+              pickup_phone: order.shipping_address?.phone || order.customer?.phone || "9999999999",
+              shipping_customer_name: "Irraya Warehouse",
+              shipping_last_name: "",
+              shipping_address: "Irraya Warehouse Address",
+              shipping_address_2: "",
+              shipping_city: "Hyderabad",
+              shipping_country: "IN",
+              shipping_pincode: process.env.SHIPROCKET_PICKUP_PINCODE || "500016",
+              shipping_state: "Telangana",
+              shipping_email: "support@irraya.com",
+              shipping_phone: "9999999999",
+              order_items: exchangeItems,
+              payment_method: "Prepaid",
+              shipping_charges: 0,
+              giftwrap_charges: 0,
+              transaction_charges: 0,
+              total_discount: 0,
+              sub_total: subTotal,
+              length: 10,
+              breadth: 10,
+              height: 10,
+              weight: 0.5
+            }
+
+            await shiprocketService.createReturnOrder(shiprocketPayload)
+            console.info(`[admin] Created Shiprocket return order for exchange ${request.order_id}`)
+          }
+        }
+      } catch (exchangeError: any) {
+        console.warn(`[admin] Failed to process exchange for order ${request.order_id}:`, exchangeError.message)
       }
     }
 
