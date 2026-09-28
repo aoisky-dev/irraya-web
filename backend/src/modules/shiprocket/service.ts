@@ -87,6 +87,10 @@ export default class ShiprocketService {
     return this.request("/orders/cancel", "POST", { ids })
   }
 
+  async createReturnOrder(payload: any) {
+    return this.request("/orders/create/return", "POST", payload)
+  }
+
   async checkServiceability(params: { pickup_postcode: string, delivery_postcode: string, weight: string | number, cod: 0 | 1 }) {
     const query = new URLSearchParams(params as any).toString()
     return this.request(`/courier/serviceability/?${query}`, "GET")
