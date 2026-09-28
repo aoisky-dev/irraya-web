@@ -39,7 +39,7 @@ export function Header() {
 
           {/* Centre brand */}
           <Link href="/" className="brand-logo" aria-label="Irraya Fashion Home">
-            <Image src="/logo.png" alt="Irraya Logo" width={165} height={52} priority style={{ objectFit: 'contain' }} />
+            <Image src="/logo.png" alt="Irraya Logo" width={140} height={44} priority style={{ objectFit: 'contain' }} />
           </Link>
 
           {/* Right actions */}

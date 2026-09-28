@@ -27,7 +27,7 @@ export function Header() {
         <div className="header-left">
           <Link href="/" className="brand-logo" aria-label="Irraya Fashion Home">
             <span className="brand-arc" />
-            <Image src="/logo.png" alt="Irraya Logo" width={165} height={52} priority style={{ objectFit: 'contain' }} />
+            <Image src="/logo.png" alt="Irraya Logo" width={140} height={44} priority style={{ objectFit: 'contain' }} />
           </Link>
         </div>
 
