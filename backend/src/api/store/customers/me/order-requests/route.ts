@@ -56,7 +56,7 @@ export async function POST(req: MedusaRequest<CreateOrderRequestBody>, res: Medu
       try {
         const logger = req.scope.resolve("logger")
         const shiprocketService = new (require("../../../../../modules/shiprocket/service").default)({ logger })
-        const orderService = req.scope.resolve("orderModuleService")
+        const orderService = req.scope.resolve("orderModuleService") as any
 
         const order = await orderService.retrieveOrder(request.order_id, {
           relations: ["items", "shipping_address", "billing_address", "customer"],
