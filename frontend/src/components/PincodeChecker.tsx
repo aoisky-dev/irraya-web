@@ -38,10 +38,8 @@ export function PincodeChecker() {
         let displayStr = `Estimated delivery by ${etdStr}`;
         const etdDate = new Date(etdStr);
         if (!isNaN(etdDate.getTime())) {
-          const maxDate = new Date(etdDate);
-          maxDate.setDate(maxDate.getDate() + 2);
           const formatDate = (d: Date) => d.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' });
-          displayStr = `Estimated delivery by ${formatDate(etdDate)} to ${formatDate(maxDate)}`;
+          displayStr = `Estimated delivery by ${formatDate(etdDate)}`;
         }
         
         setResult({ 
