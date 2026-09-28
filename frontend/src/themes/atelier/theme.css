@@ -1464,23 +1464,60 @@ label {
   align-items: start;
 }
 
-/* Intentionally NOT position: sticky. Because .pdp-images shares a CSS
-   grid row with .pdp-info, sticky's containing block (the row track) is
-   bounded by .pdp-info's height — which changes whenever FAQ accordions /
-   product-detail sections expand or collapse, causing the sticky image
-   column to visibly snap up/down. Static positioning keeps the gallery
-   perfectly stable regardless of what happens in the info column. */
-.pdp-images { position: static; }
-
-.pdp-image-main {
-  aspect-ratio: 2 / 3;
-  overflow: hidden;
-  background: var(--bg-secondary);
-  margin-bottom: 8px;
-  position: relative;
+@media (min-width: 1025px) {
+  .pdp-layout {
+    height: calc(100vh - 140px); /* Constrain to viewport minus header */
+    min-height: 600px; /* Prevent being too squished on tiny screens */
+  }
+  
+  .pdp-images { 
+    position: static; 
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .pdp-image-main {
+    flex: 1;
+    min-height: 0;
+    margin-bottom: 8px;
+    background: var(--bg-secondary);
+    position: relative;
+    border-radius: var(--radius-md);
+  }
+  
+  .pdp-image-thumbs {
+    flex-shrink: 0;
+    display: grid; 
+    grid-template-columns: repeat(4, 1fr); 
+    gap: 8px; 
+  }
+  
+  .pdp-info { 
+    height: 100%;
+    overflow-y: auto;
+    padding-right: var(--space-xl);
+    padding-bottom: var(--space-2xl);
+  }
+  
+  /* Scrollbar styles for the right column */
+  .pdp-info::-webkit-scrollbar { width: 6px; }
+  .pdp-info::-webkit-scrollbar-track { background: transparent; }
+  .pdp-info::-webkit-scrollbar-thumb { background-color: var(--border); border-radius: 10px; }
 }
 
-.pdp-image-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+@media (max-width: 1024px) {
+  .pdp-image-main {
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    background: var(--bg-secondary);
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .pdp-images { position: static; }
+  .pdp-image-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .pdp-info { padding-top: var(--space-xl); }
+}
 
 .pdp-image-thumb {
   aspect-ratio: 1;
@@ -1492,8 +1529,6 @@ label {
 }
 
 .pdp-image-thumb.active { border-color: var(--text-primary); }
-
-.pdp-info { padding-top: var(--space-xl); }
 
 .pdp-category {
   font-size: 0.6rem;

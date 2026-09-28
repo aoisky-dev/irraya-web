@@ -182,7 +182,7 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
                         src={src}
                         alt={`${product.title} — image ${index + 1}`}
                         fill
-                        style={{ objectFit: "cover" }}
+                        style={{ objectFit: "contain" }}
                         priority={index === 0}
                         sizes="(max-width: 768px) 100vw, 50vw"
                       />
