@@ -1,4 +1,5 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import {
   buildRazorpayReceipt,
   createRazorpayOrder,
@@ -46,11 +47,37 @@ export async function POST(req: MedusaRequest<CreateRazorpayOrderBody>, res: Med
     if (customerEmail) notes.customer_email = customerEmail
     if (customerContact) notes.customer_contact = customerContact
 
+    let shouldAutoCapture = true
+    try {
+      const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
+      const { data: cartData } = await query.graph({
+        entity: "cart",
+        filters: { id: cartId },
+        fields: ["items.product_id"],
+      })
+      const items = cartData?.[0]?.items ?? []
+      const productIds = items.map((i: any) => i.product_id).filter(Boolean)
+      
+      if (productIds.length > 0) {
+        const productModuleService = req.scope.resolve(Modules.PRODUCT)
+        const products = await productModuleService.listProducts({ id: productIds })
+        for (const product of products) {
+          if (product.metadata?.auto_capture === "false" || product.metadata?.auto_capture === false) {
+            shouldAutoCapture = false
+            break
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[razorpay-orders] Failed to fetch cart product metadata:", err)
+    }
+
     const razorpayOrder = await createRazorpayOrder({
       amount,
       currency,
       receipt: buildRazorpayReceipt(cartId),
-      notes
+      notes,
+      autoCapture: shouldAutoCapture
     })
 
     await upsertRazorpayPaymentReference({

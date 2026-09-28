@@ -155,8 +155,34 @@ export async function POST(req: MedusaRequest<LinkRazorpayOrderBody>, res: Medus
       currency: currency || undefined
     })
 
+    let shouldAutoCapture = true
+    try {
+      const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
+      const { data: cartData } = await query.graph({
+        entity: "cart",
+        filters: { id: cartId },
+        fields: ["items.product_id"],
+      })
+      const items = cartData?.[0]?.items ?? []
+      const productIds = items.map((i: any) => i.product_id).filter(Boolean)
+      
+      if (productIds.length > 0) {
+        const { Modules } = await import("@medusajs/framework/utils")
+        const productModuleService = req.scope.resolve(Modules.PRODUCT)
+        const products = await productModuleService.listProducts({ id: productIds })
+        for (const product of products) {
+          if (product.metadata?.auto_capture === "false" || product.metadata?.auto_capture === false) {
+            shouldAutoCapture = false
+            break
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[link-order] Failed to fetch cart product metadata:", err)
+    }
+
     // Capture the payment at Razorpay explicitly
-    if (status !== "captured") {
+    if (status !== "captured" && shouldAutoCapture) {
       try {
         const { captureRazorpayPayment } = await import("../../../../../lib/razorpay.js")
         const capturedInfo = await captureRazorpayPayment(razorpayPaymentId, amount ?? 0, currency || "INR")
@@ -168,10 +194,12 @@ export async function POST(req: MedusaRequest<LinkRazorpayOrderBody>, res: Medus
 
     // Auto-capture the payment in Medusa so Admin doesn't prompt for manual capture
     // Await instead of fire-and-forget so capture completes before response
-    try {
-      await autoCaptureOrderPayments(req, orderId, cartId)
-    } catch (err) {
-      console.warn("[link-order] Non-fatal auto-capture error:", err)
+    if (shouldAutoCapture) {
+      try {
+        await autoCaptureOrderPayments(req, orderId, cartId)
+      } catch (err) {
+        console.warn("[link-order] Non-fatal auto-capture error:", err)
+      }
     }
 
     res.status(200).json({

@@ -93,6 +93,7 @@ export async function createRazorpayOrder(input: {
   currency: string
   receipt: string
   notes?: Record<string, string>
+  autoCapture?: boolean
 }): Promise<{ id: string; amount: number; currency: string; status: string }> {
   const response = await fetch(RAZORPAY_ORDERS_URL, {
     method: "POST",
@@ -105,7 +106,7 @@ export async function createRazorpayOrder(input: {
       currency: input.currency,
       receipt: input.receipt,
       notes: input.notes,
-      payment_capture: true
+      payment_capture: input.autoCapture ?? true
     })
   })
 
