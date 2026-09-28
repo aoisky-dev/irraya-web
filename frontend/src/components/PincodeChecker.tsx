@@ -34,9 +34,19 @@ export function PincodeChecker() {
           (a: any, b: any) => a.etd_hours - b.etd_hours
         )[0];
         
+        const etdStr = fastestCourier.etd;
+        let displayStr = `Estimated delivery by ${etdStr}`;
+        const etdDate = new Date(etdStr);
+        if (!isNaN(etdDate.getTime())) {
+          const maxDate = new Date(etdDate);
+          maxDate.setDate(maxDate.getDate() + 2);
+          const formatDate = (d: Date) => d.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' });
+          displayStr = `Estimated delivery by ${formatDate(etdDate)} to ${formatDate(maxDate)}`;
+        }
+        
         setResult({ 
           success: true, 
-          message: `Delivery available by ${fastestCourier.etd}` 
+          message: displayStr 
         });
       } else {
         setResult({ success: false, message: "Sorry, delivery is not available to this pincode." });
