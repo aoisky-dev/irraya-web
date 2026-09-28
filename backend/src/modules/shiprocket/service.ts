@@ -95,4 +95,8 @@ export default class ShiprocketService {
     const query = new URLSearchParams(params as any).toString()
     return this.request(`/courier/serviceability/?${query}`, "GET")
   }
+
+  async generateInvoice(ids: (number | string)[]) {
+    return this.request("/orders/print/invoice", "POST", { ids: ids.map(id => Number(id)) })
+  }
 }

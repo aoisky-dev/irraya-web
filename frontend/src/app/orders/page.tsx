@@ -11,18 +11,33 @@ import { getMyOrders } from "@/lib/api/orders";
 import { IconPackage } from "@/components/Icons";
 
 const STATUS_MAP: Record<string, { color: string; bg: string; label: string }> = {
-  pending:    { color: "#d97706", bg: "rgba(217,119,6,0.1)",    label: "Pending" },
-  confirmed:  { color: "#059669", bg: "rgba(5,150,105,0.1)",   label: "Confirmed" },
-  fulfilled:  { color: "#059669", bg: "rgba(5,150,105,0.1)",   label: "Fulfilled" },
-  cancelled:  { color: "#dc2626", bg: "rgba(220,38,38,0.1)",   label: "Cancelled" },
-  authorized: { color: "#059669", bg: "rgba(5,150,105,0.1)",   label: "Paid" },
-  captured:   { color: "#059669", bg: "rgba(5,150,105,0.1)",   label: "Paid" },
-  failed:     { color: "#dc2626", bg: "rgba(220,38,38,0.1)",   label: "Failed" },
-  cancel_rejected:     { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Cancel Rejected" },
+  pending:    { color: "#d97706", bg: "rgba(217,119,6,0.1)", label: "Pending" },
+  processing: { color: "#2563eb", bg: "rgba(37,99,235,0.1)", label: "Processing" },
+  confirmed:  { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Confirmed" },
+  shipped:    { color: "#7c3aed", bg: "rgba(124,58,237,0.1)", label: "Shipped" },
+  out_for_delivery: { color: "#7c3aed", bg: "rgba(124,58,237,0.1)", label: "Out for Delivery" },
+  delivered:  { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Delivered" },
+  fulfilled:  { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Fulfilled" },
+  cancelled:  { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Cancelled" },
+  authorized: { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Authorized" },
+  captured:   { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Captured" },
+  failed:     { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Failed" },
+  // Order request statuses
+  requested:    { color: "#d97706", bg: "rgba(217,119,6,0.1)", label: "Requested" },
+  under_review: { color: "#2563eb", bg: "rgba(37,99,235,0.1)", label: "Under Review" },
+  approved:     { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Approved" },
+  rejected:     { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Rejected" },
+  refunded:     { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Refunded" },
+  completed:    { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Completed" },
+  // Composite request statuses
   cancel_requested:    { color: "#d97706", bg: "rgba(217,119,6,0.1)", label: "Cancel Requested" },
+  cancel_approved:     { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Cancelled" },
+  cancel_rejected:     { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Cancel Rejected" },
   exchange_requested:  { color: "#4f46e5", bg: "rgba(99,102,241,0.1)", label: "Exchange Requested" },
+  exchange_under_review: { color: "#2563eb", bg: "rgba(37,99,235,0.1)", label: "Exchange Under Review" },
   exchange_approved:   { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Exchange Approved" },
   exchange_rejected:   { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Exchange Rejected" },
+  exchange_completed:  { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Exchange Completed" },
 };
 
 function StatusPill({ status }: { status: string }) {
@@ -48,7 +63,7 @@ function getDisplayStatus(order: Order): string {
     if (type === "cancel" && ["approved", "completed", "refunded"].includes(status)) return "cancelled";
     return `${type}_${status}`;
   }
-  return order.status;
+  return order.tracking?.status || order.status;
 }
 
 export default function OrdersPage() {

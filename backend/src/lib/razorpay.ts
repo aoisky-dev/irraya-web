@@ -232,3 +232,20 @@ export function verifyRazorpayPaymentSignature(input: RazorpayPaymentVerificatio
   return expectedBuffer.length === providedBuffer.length && crypto.timingSafeEqual(expectedBuffer, providedBuffer)
 }
 
+export async function captureRazorpayPayment(paymentId: string, amount: number, currency: string = "INR"): Promise<RazorpayPaymentApiResponse> {
+  if (!paymentId) throw new Error("Razorpay payment id is required.")
+  
+  const body = {
+    amount: normalizeRazorpayAmount(amount),
+    currency: normalizeRazorpayCurrency(currency)
+  }
+
+  return requestRazorpayApi<RazorpayPaymentApiResponse & { error?: { description?: string } }>(
+    `/payments/${encodeURIComponent(paymentId)}/capture`,
+    {
+      method: "POST",
+      body: JSON.stringify(body)
+    }
+  )
+}
+

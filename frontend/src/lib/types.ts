@@ -176,7 +176,7 @@ export interface Payment {
   orderId: string;
   provider: "mock" | "stripe" | "razorpay";
   amountInCents: number;
-  status: "requires_action" | "authorized" | "captured" | "failed";
+  status: "requires_action" | "authorized" | "captured" | "failed" | "refunded";
   providerReference: string;
   providerOrderId?: string;
   providerPaymentId?: string;

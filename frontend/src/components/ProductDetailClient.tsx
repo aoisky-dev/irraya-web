@@ -48,6 +48,8 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
       : [];
 
   const [selectedImage, setSelectedImage] = useState(0);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product.variants?.[0] ?? null
   );
@@ -177,7 +179,14 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
                   }}
                 >
                   {allImages.map((src, index) => (
-                    <div key={index} style={{ minWidth: "100%", flexShrink: 0, height: "100%", position: "relative" }}>
+                    <div 
+                      key={index} 
+                      style={{ minWidth: "100%", flexShrink: 0, height: "100%", position: "relative", cursor: "zoom-in" }}
+                      onClick={() => {
+                        setSelectedImage(index);
+                        setIsFullScreen(true);
+                      }}
+                    >
                       <Image
                         src={src}
                         alt={`${product.title} — image ${index + 1}`}
@@ -557,6 +566,136 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
             ))}
           </div>
         </section>
+      )}
+
+      {/* Fullscreen Image Modal */}
+      {isFullScreen && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+          backgroundColor: "#ffffff", zIndex: 9999, display: "flex", flexDirection: "column"
+        }}>
+          <button 
+            onClick={() => { setZoomLevel(1); setIsFullScreen(false); }}
+            style={{ position: "absolute", top: "20px", right: "20px", background: "none", border: "none", color: "#000000", fontSize: "3rem", lineHeight: 1, cursor: "pointer", zIndex: 10000, padding: "10px" }}
+            aria-label="Close fullscreen"
+          >
+            &times;
+          </button>
+          
+          <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+            <div style={{ 
+              display: "flex", 
+              transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)", 
+              transform: `translateX(-${selectedImage * 100}%)`,
+              height: "100%",
+              width: "100%"
+            }}>
+              {allImages.map((src, index) => (
+                <div 
+                  key={index} 
+                  style={{ 
+                    minWidth: "100%", flexShrink: 0, height: "100%", position: "relative",
+                    overflow: selectedImage === index && zoomLevel > 1 ? "auto" : "hidden",
+                    cursor: zoomLevel > 1 ? "zoom-out" : "zoom-in"
+                  }}
+                  onClick={(e) => {
+                    if (selectedImage !== index) return;
+                    if (zoomLevel > 1) {
+                      setZoomLevel(1);
+                    } else {
+                      const targetZoom = 2.5;
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const xRatio = (e.clientX - rect.left) / rect.width;
+                      const yRatio = (e.clientY - rect.top) / rect.height;
+                      
+                      setZoomLevel(targetZoom);
+                      
+                      const container = e.currentTarget;
+                      setTimeout(() => {
+                        const targetScrollLeft = (xRatio * container.scrollWidth) - (container.clientWidth / 2);
+                        const targetScrollTop = (yRatio * container.scrollHeight) - (container.clientHeight / 2);
+                        
+                        container.scrollTo({
+                          left: targetScrollLeft,
+                          top: targetScrollTop,
+                          behavior: "instant"
+                        });
+                      }, 0);
+                    }
+                  }}
+                >
+                  <div style={{ 
+                    width: selectedImage === index ? `${zoomLevel * 100}%` : "100%", 
+                    height: selectedImage === index ? `${zoomLevel * 100}%` : "100%", 
+                    minWidth: "100%", minHeight: "100%",
+                    position: "relative"
+                  }}>
+                    <Image
+                      src={src}
+                      alt={`${product.title} fullscreen — image ${index + 1}`}
+                      fill
+                      style={{ objectFit: "contain", padding: zoomLevel === 1 ? "40px" : "0" }}
+                      sizes="100vw"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {allImages.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setZoomLevel(1); setSelectedImage(prev => (prev === 0 ? allImages.length - 1 : prev - 1)); }}
+                style={{ position: "absolute", left: "20px", top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.05)", border: "none", color: "#000000", fontSize: "2rem", width: "60px", height: "60px", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s", zIndex: 10000 }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.05)")}
+              >
+                &#10094;
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setZoomLevel(1); setSelectedImage(prev => (prev === allImages.length - 1 ? 0 : prev + 1)); }}
+                style={{ position: "absolute", right: "20px", top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.05)", border: "none", color: "#000000", fontSize: "2rem", width: "60px", height: "60px", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s", zIndex: 10000 }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.05)")}
+              >
+                &#10095;
+              </button>
+            </>
+          )}
+
+          {/* Zoom Controls */}
+          <div style={{ position: "absolute", bottom: "120px", right: "20px", display: "flex", flexDirection: "column", gap: "10px", zIndex: 10000 }}>
+            <button onClick={() => setZoomLevel(p => Math.min(p + 0.5, 4))} style={{ background: "rgba(0,0,0,0.05)", border: "1px solid rgba(0,0,0,0.1)", color: "#000000", fontSize: "1.5rem", width: "40px", height: "40px", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.1)")} onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.05)")} aria-label="Zoom in">
+              +
+            </button>
+            <button onClick={() => setZoomLevel(p => Math.max(p - 0.5, 1))} style={{ background: "rgba(0,0,0,0.05)", border: "1px solid rgba(0,0,0,0.1)", color: "#000000", fontSize: "1.5rem", width: "40px", height: "40px", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.1)")} onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.05)")} aria-label="Zoom out">
+              -
+            </button>
+          </div>
+          
+          {/* Thumbnail strip in fullscreen */}
+          {allImages.length > 1 && (
+            <div style={{ display: "flex", justifyContent: "center", gap: "10px", padding: "20px", background: "transparent", zIndex: 10000 }}>
+              {allImages.map((src, i) => (
+                <button
+                  key={i}
+                  onClick={() => { setZoomLevel(1); setSelectedImage(i); }}
+                  style={{ 
+                    position: "relative", width: "60px", height: "60px", 
+                    border: selectedImage === i ? "2px solid #000000" : "2px solid transparent", 
+                    background: "none", padding: 0, cursor: "pointer", opacity: selectedImage === i ? 1 : 0.4,
+                    transition: "opacity 0.2s, border 0.2s"
+                  }}
+                  onMouseEnter={(e) => { if (selectedImage !== i) e.currentTarget.style.opacity = "0.7"; }}
+                  onMouseLeave={(e) => { if (selectedImage !== i) e.currentTarget.style.opacity = "0.4"; }}
+                >
+                  <Image src={src} alt="" fill style={{ objectFit: "cover" }} sizes="60px" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </>
   );

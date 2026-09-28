@@ -2,21 +2,31 @@ import type { Order } from "@/lib/types";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-export function downloadPDFInvoice(order: Order, logoUrl?: string) {
+export async function downloadPDFInvoice(order: Order, logoUrl: string = "/logo.png") {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;
 
-  // Add Logo (Optional)
-  // We cannot easily load remote images synchronously, so we will use text for now if logo is not provided
-  // For production, you could fetch the image as blob and pass base64
-  
-  doc.setFontSize(22);
-  doc.setTextColor(113, 33, 25); // #712119
-  doc.text("IRRAYA", 14, 20);
-  
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text("Fashion", 14, 26);
+  try {
+    const res = await fetch(logoUrl);
+    const blob = await res.blob();
+    const base64data = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    
+    // Add Logo (Assuming ~3:1 aspect ratio, adjust dimensions as needed)
+    doc.addImage(base64data, 'PNG', 14, 15, 40, 13);
+  } catch (err) {
+    // Fallback to text if image fails to load
+    doc.setFontSize(22);
+    doc.setTextColor(113, 33, 25); // #712119
+    doc.text("IRRAYA", 14, 20);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text("Fashion", 14, 26);
+  }
   
   // Invoice title
   doc.setFontSize(16);

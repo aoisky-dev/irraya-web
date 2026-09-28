@@ -1,5 +1,6 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
+import { createOrderShipmentWorkflow } from "@medusajs/core-flows"
 
 export const POST = async (
   req: MedusaRequest,
@@ -22,7 +23,7 @@ export const POST = async (
   if (!isNaN(Number(orderId))) {
     const { data: ordersByDisplayId } = await query.graph({
       entity: "order",
-      fields: ["id", "metadata"],
+      fields: ["id", "metadata", "fulfillments.*", "fulfillments.items.*"],
       filters: { display_id: Number(orderId) }
     })
     if (ordersByDisplayId && ordersByDisplayId.length > 0) {
@@ -32,14 +33,19 @@ export const POST = async (
 
   // Fallback to id
   if (!order) {
-    const orders = await orderModuleService.listOrders({ id: orderId })
-    order = orders[0]
+    const { data: ordersById } = await query.graph({
+      entity: "order",
+      fields: ["id", "metadata", "fulfillments.*", "fulfillments.items.*"],
+      filters: { id: orderId }
+    })
+    if (ordersById && ordersById.length > 0) {
+      order = ordersById[0]
+    }
   }
 
   if (!order) {
     return res.status(404).json({ message: "Order not found" })
   }
-
 
   const srStatus = payload.current_status?.toUpperCase() || ""
   let status = "processing"
@@ -55,6 +61,7 @@ export const POST = async (
   const metadata = order.metadata || {}
   const currentShipment = metadata.shipment || {}
 
+  // 1. Update metadata so frontend gets the custom status updates
   await orderModuleService.updateOrders(order.id, {
     metadata: {
       ...metadata,
@@ -64,9 +71,40 @@ export const POST = async (
         tracking_number: payload.awb || (currentShipment as any).tracking_number,
         tracking_url: payload.awb ? `https://shiprocket.co/tracking/${payload.awb}` : (currentShipment as any).tracking_url,
         status,
+        ...(status === "delivered" && !(currentShipment as any).delivered_at ? { delivered_at: new Date().toISOString() } : {}),
       }
     }
   })
+
+  // 2. If shipped or delivered, officially create the shipment in Medusa so Admin UI updates to "Shipped"
+  if (status === "shipped" || status === "out_for_delivery" || status === "delivered") {
+    // Find a fulfillment that hasn't been shipped yet
+    const fulfillment = order.fulfillments?.find((f: any) => !f.shipped_at)
+    if (fulfillment) {
+      try {
+        await createOrderShipmentWorkflow(req.scope).run({
+          input: {
+            order_id: order.id,
+            fulfillment_id: fulfillment.id,
+            items: fulfillment.items?.map((i: any) => ({
+              id: i.line_item_id || i.id, 
+              quantity: i.quantity,
+            })) || [],
+            labels: [
+              {
+                tracking_number: payload.awb || "",
+                tracking_url: payload.awb ? `https://shiprocket.co/tracking/${payload.awb}` : "",
+                label_url: "",
+              }
+            ],
+          }
+        })
+        console.log(`Successfully created Medusa shipment for order ${order.id} based on Shiprocket webhook.`)
+      } catch (err) {
+        console.error("Failed to create Medusa shipment for order via webhook:", err)
+      }
+    }
+  }
 
   return res.status(200).json({ received: true })
 }

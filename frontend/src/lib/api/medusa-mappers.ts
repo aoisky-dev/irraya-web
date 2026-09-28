@@ -128,16 +128,25 @@ const mapOrderItem = (raw: any): OrderItem => {
 const getOrderEligibility = (raw: any) => {
   const status = String(raw?.status ?? "").toLowerCase();
   const fulfillmentStatus = String(raw?.fulfillment_status ?? raw?.fulfillment_statuses?.[0] ?? "").toLowerCase();
-  const createdAt = raw?.created_at ? new Date(raw.created_at) : null;
-  const returnWindowEndsAt = createdAt && Number.isFinite(createdAt.getTime())
-    ? new Date(createdAt.getTime() + 48 * 60 * 60 * 1000).toISOString()
+  const metadata = raw?.metadata && typeof raw.metadata === "object" ? raw.metadata : {};
+  const shipment = (metadata as Record<string, any>).shipment && typeof (metadata as Record<string, any>).shipment === "object" ? (metadata as Record<string, any>).shipment : {};
+  
+  const isDelivered = shipment.status === "delivered";
+  const deliveredAtStr = shipment.delivered_at;
+  // Fallback to now if it's marked delivered but we don't have the exact timestamp, though it's better to have it.
+  const deliveredAt = deliveredAtStr ? new Date(deliveredAtStr) : (isDelivered ? new Date() : null);
+
+  const returnWindowEndsAt = deliveredAt && Number.isFinite(deliveredAt.getTime())
+    ? new Date(deliveredAt.getTime() + 48 * 60 * 60 * 1000).toISOString()
     : undefined;
+    
   const cancelled = status === "canceled" || status === "cancelled";
   const fulfilled = status === "fulfilled" || ["fulfilled", "shipped", "delivered"].includes(fulfillmentStatus);
-  const inReturnWindow = returnWindowEndsAt ? Date.now() <= new Date(returnWindowEndsAt).getTime() : false;
+  const isShipped = shipment.status === "shipped" || shipment.status === "out_for_delivery" || isDelivered;
+  const inReturnWindow = isDelivered && returnWindowEndsAt ? Date.now() <= new Date(returnWindowEndsAt).getTime() : false;
 
   return {
-    canCancel: !cancelled && !fulfilled,
+    canCancel: !cancelled && !fulfilled && !isShipped,
     canReturn: !cancelled && inReturnWindow,
     canExchange: !cancelled && inReturnWindow,
     returnWindowEndsAt
@@ -200,7 +209,7 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
       orderId: String(raw?.id ?? ""),
       provider: "razorpay",
       amountInCents: Math.max(0, Math.round(toNumber(razorpay?.amount, raw?.total ?? 0))) * 100,
-      status: paymentStatus === "captured" ? "captured" : paymentStatus === "failed" ? "failed" : "authorized",
+      status: paymentStatus === "captured" ? "captured" : paymentStatus === "failed" ? "failed" : ["refunded", "partially_refunded"].includes(paymentStatus) ? "refunded" : "authorized",
       providerReference: String(razorpay?.order_id ?? ""),
       providerOrderId: String(razorpay?.order_id ?? ""),
       providerPaymentId: String(razorpay?.payment_id ?? "")

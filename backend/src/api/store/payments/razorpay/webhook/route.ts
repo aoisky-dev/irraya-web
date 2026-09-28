@@ -106,6 +106,34 @@ async function autoCaptureByCartId(req: MedusaRequest, cartId: string): Promise<
   }
 }
 
+async function syncRefundStatusToOrder(req: MedusaRequest, cartId: string, status: string): Promise<void> {
+  if (!cartId || (status !== "refunded" && status !== "partially_refunded")) return
+  try {
+    const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
+    const orderModuleService = req.scope.resolve("order")
+    const { data: orderData } = await query.graph({
+      entity: "order",
+      filters: { cart_id: cartId },
+      fields: ["id", "metadata"],
+    })
+    const order = orderData?.[0]
+    if (order) {
+      await orderModuleService.updateOrders(order.id, {
+        metadata: {
+          ...(order.metadata ?? {}),
+          razorpay: {
+            ...((order.metadata?.razorpay as any) ?? {}),
+            status
+          }
+        }
+      })
+      console.info(`[webhook] Synced refund status ${status} to order ${order.id}`)
+    }
+  } catch (err) {
+    console.warn(`[webhook] Refund sync lookup failed for cart ${cartId}:`, err)
+  }
+}
+
 export async function POST(req: MedusaRequest, res: MedusaResponse): Promise<void> {
   const rawBody = await getRawWebhookBody(req)
   const signature = getWebhookSignature(req)
@@ -156,6 +184,13 @@ export async function POST(req: MedusaRequest, res: MedusaResponse): Promise<voi
     if (event === "payment.captured" && cartId) {
       autoCaptureByCartId(req, cartId).catch(err =>
         console.warn("[webhook] Non-fatal auto-capture error:", err)
+      )
+    }
+
+    // Sync refund status directly to the order metadata so frontend reads it
+    if (["refund.created", "refund.processed"].includes(event) && cartId) {
+      syncRefundStatusToOrder(req, cartId, status).catch(err =>
+        console.warn("[webhook] Non-fatal refund sync error:", err)
       )
     }
 

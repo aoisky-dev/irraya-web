@@ -87,25 +87,48 @@ function normalizeItems(value: unknown): OrderRequestItem[] {
 }
 
 function isWithinReturnWindow(order: OrderRow): boolean {
-  const createdAt = new Date(order.created_at).getTime()
-  if (!Number.isFinite(createdAt)) return false
+  let metadata: any = order.metadata
+  if (typeof metadata === "string") {
+    try { metadata = JSON.parse(metadata) } catch { metadata = {} }
+  }
+  const shipment = metadata?.shipment || {}
+  const isDelivered = shipment.status === "delivered"
+  
+  if (!isDelivered) return false
+
+  const deliveredAtStr = shipment.delivered_at
+  const deliveredAt = deliveredAtStr ? new Date(deliveredAtStr).getTime() : Date.now()
+  if (!Number.isFinite(deliveredAt)) return false
+
   const returnWindowMs = 48 * 60 * 60 * 1000
-  return Date.now() - createdAt <= returnWindowMs
+  return Date.now() - deliveredAt <= returnWindowMs
 }
 
 function assertEligible(order: OrderRow, requestType: OrderRequestType): void {
   const status = normalizeString(order.status).toLowerCase()
   const fulfillmentStatus = normalizeString(order.fulfillment_status).toLowerCase()
+  
+  let metadata: any = order.metadata
+  if (typeof metadata === "string") {
+    try { metadata = JSON.parse(metadata) } catch { metadata = {} }
+  }
+  const shipment = metadata?.shipment || {}
+  const isDelivered = shipment.status === "delivered"
+  const isShipped = shipment.status === "shipped" || shipment.status === "out_for_delivery" || isDelivered
 
   if (status === "canceled" || status === "cancelled") {
     throw new Error("This order has already been cancelled.")
   }
 
   if (requestType === "cancel") {
-    if (["fulfilled", "shipped", "delivered"].includes(fulfillmentStatus) || status === "fulfilled") {
-      throw new Error("This order is already fulfilled. Please request a return instead.")
+    if (["fulfilled", "shipped", "delivered"].includes(fulfillmentStatus) || status === "fulfilled" || isShipped) {
+      throw new Error("This order has already been shipped or fulfilled. Please request an exchange after delivery.")
     }
     return
+  }
+
+  if (!isDelivered) {
+    throw new Error("Exchanges are only available after the order has been delivered.")
   }
 
   if (!isWithinReturnWindow(order)) {

@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { formatMoney } from "@/lib/format";
 import type { Order, OrderRequest, OrderRequestItem, OrderRequestType } from "@/lib/types";
-import { buildInvoiceText, createOrderRequest, getOrderById, getOrderRequests } from "@/lib/api/orders";
+import { buildInvoiceText, createOrderRequest, getOrderById, getOrderRequests, getShiprocketInvoiceUrl } from "@/lib/api/orders";
 import { downloadPDFInvoice } from "@/lib/pdfInvoice";
 import { useAuth } from "@/components/AuthProvider";
 import {
@@ -29,6 +29,8 @@ function StatusBadge({ status }: { status: string }) {
     processing: { color: "#2563eb", bg: "rgba(37,99,235,0.1)", label: "Processing" },
     confirmed:  { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Confirmed" },
     shipped:    { color: "#7c3aed", bg: "rgba(124,58,237,0.1)", label: "Shipped" },
+    out_for_delivery: { color: "#7c3aed", bg: "rgba(124,58,237,0.1)", label: "Out for Delivery" },
+    delivered:  { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Delivered" },
     fulfilled:  { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Fulfilled" },
     cancelled:  { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Cancelled" },
     authorized: { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Authorized" },
@@ -39,7 +41,7 @@ function StatusBadge({ status }: { status: string }) {
     under_review: { color: "#2563eb", bg: "rgba(37,99,235,0.1)", label: "Under Review" },
     approved:     { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Approved" },
     rejected:     { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Rejected" },
-    refunded:     { color: "#7c3aed", bg: "rgba(124,58,237,0.1)", label: "Refunded" },
+    refunded:     { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Refunded" },
     completed:    { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Completed" },
     // Composite request statuses
     cancel_requested:    { color: "#d97706", bg: "rgba(217,119,6,0.1)", label: "Cancel Requested" },
@@ -99,7 +101,13 @@ export default function OrderConfirmationPage() {
   useEffect(() => {
     getOrderById(params.id)
       .then((o) => {
-        if (!o) { setNotFound(true); } else { setOrder(o); }
+        if (!o) { setNotFound(true); } else {
+          setOrder(o);
+          if (o.eligibility) {
+            if (o.eligibility.canCancel && !o.eligibility.canExchange) setRequestType("cancel");
+            if (o.eligibility.canExchange && !o.eligibility.canCancel) setRequestType("exchange");
+          }
+        }
       })
       .catch(() => setNotFound(true))
       .finally(() => setIsLoading(false));
@@ -116,9 +124,24 @@ export default function OrderConfirmationPage() {
     setReason(requestType === "cancel" ? cancelReasons[0] : exchangeReasons[0]);
   }, [requestType]);
 
-  const downloadInvoice = () => {
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
+
+  const downloadInvoice = async () => {
     if (!order) return;
-    downloadPDFInvoice(order);
+    
+    setIsDownloadingInvoice(true);
+    try {
+      const shiprocketUrl = await getShiprocketInvoiceUrl(order.id);
+      if (shiprocketUrl) {
+        window.open(shiprocketUrl, '_blank');
+      } else {
+        await downloadPDFInvoice(order);
+      }
+    } catch (e) {
+      await downloadPDFInvoice(order);
+    } finally {
+      setIsDownloadingInvoice(false);
+    }
   };
 
   const submitOrderRequest = async () => {
@@ -164,16 +187,32 @@ export default function OrderConfirmationPage() {
       const { type, status } = order.latestRequest;
       return `${type}_${status}`;
     }
-    return order.status;
+    return order.tracking?.status || order.status;
   })();
 
   const isCancelRequested = order?.latestRequest?.type === "cancel" && ["requested", "under_review"].includes(order?.latestRequest?.status ?? "");
-  const isExchangeInProgress = order?.latestRequest?.type === "exchange" && ["requested", "under_review", "approved"].includes(order?.latestRequest?.status ?? "");
+  const isExchangeInProgress = order?.latestRequest?.type === "exchange" && ["requested", "under_review", "approved", "completed"].includes(order?.latestRequest?.status ?? "");
+
+  const standardTimeline = [
+    { key: "ordered",    label: "Order Placed",     icon: <IconClipboard size={16} />,  active: true },
+    { key: "processing", label: "Processing",       icon: <IconSettings size={16} />,   active: Boolean(order) && order?.status !== "cancelled" },
+    { key: "shipped",    label: "Shipped",          icon: <IconPackage size={16} />,    active: ["shipped", "out_for_delivery", "delivered"].includes(order?.tracking?.status ?? "") || order?.status === "fulfilled" },
+    { key: "delivery",   label: "Out for Delivery", icon: <IconTruck size={16} />,      active: ["out_for_delivery", "delivered"].includes(order?.tracking?.status ?? "") },
+    { key: "delivered",  label: "Delivered",        icon: <IconCheckCircle size={16} />, active: order?.tracking?.status === "delivered" },
+  ];
+
+  const exchangeTimeline = [
+    { key: "delivered",          label: "Original Item Delivered", icon: <IconCheckCircle size={16} />, active: true },
+    { key: "exchange_requested", label: "Exchange Requested",      icon: <IconRefreshCw size={16} />, active: true },
+    { key: "exchange_approved",  label: "Exchange Approved",       icon: <IconCheck size={16} />,     active: ["approved", "completed"].includes(order?.latestRequest?.status ?? "") },
+    { key: "exchange_completed", label: "Exchange Completed",      icon: <IconPackage size={16} />,   active: order?.latestRequest?.status === "completed" },
+  ];
 
   const timelineSteps = effectiveStatus === "cancelled"
     ? [
         { key: "ordered",   label: "Order Placed",  icon: <IconClipboard size={16} />, active: true },
         { key: "cancelled", label: "Cancelled",     icon: <IconX size={16} />,         active: true },
+        ...(order?.payment ? [{ key: "refunded",  label: "Refunded",      icon: <IconCheckCircle size={16} />, active: order?.payment?.status === "refunded" || order?.latestRequest?.status === "refunded" || order?.latestRequest?.status === "completed" }] : [])
       ]
     : isCancelRequested
       ? [
@@ -182,18 +221,8 @@ export default function OrderConfirmationPage() {
           { key: "cancelled",        label: "Cancelled",        icon: <IconX size={16} />,         active: false },
         ]
       : isExchangeInProgress
-        ? [
-            { key: "ordered",            label: "Order Placed",       icon: <IconClipboard size={16} />,  active: true },
-            { key: "exchange_requested", label: "Exchange Requested", icon: <IconRefreshCw size={16} />,  active: true },
-            { key: "exchange_processed", label: "Exchange Processed", icon: <IconCheckCircle size={16} />, active: order?.latestRequest?.status === "approved" },
-          ]
-        : [
-            { key: "ordered",    label: "Order Placed",     icon: <IconClipboard size={16} />,  active: true },
-            { key: "processing", label: "Processing",       icon: <IconSettings size={16} />,   active: Boolean(order) && order?.status !== "cancelled" },
-            { key: "shipped",    label: "Shipped",          icon: <IconPackage size={16} />,    active: ["shipped", "out_for_delivery", "delivered"].includes(order?.tracking?.status ?? "") || order?.status === "fulfilled" },
-            { key: "delivery",   label: "Out for Delivery", icon: <IconTruck size={16} />,      active: ["out_for_delivery", "delivered"].includes(order?.tracking?.status ?? "") },
-            { key: "delivered",  label: "Delivered",        icon: <IconCheckCircle size={16} />, active: order?.tracking?.status === "delivered" },
-          ];
+        ? exchangeTimeline
+        : standardTimeline;
 
   if (isLoading) {
     return (
@@ -255,7 +284,6 @@ export default function OrderConfirmationPage() {
 
       <div className="order-body">
         {/* Tracking Timeline */}
-        {!isCancelled && (
           <div className="order-card">
             <h2 className="order-card-title"><IconMapPin size={16} style={{ display: "inline", verticalAlign: "-2px", marginRight: "6px" }} />Order Progress</h2>
             <div className="order-timeline">
@@ -272,7 +300,6 @@ export default function OrderConfirmationPage() {
               ))}
             </div>
           </div>
-        )}
 
         <div className="order-grid">
           {/* Left column: Order Details + Actions */}
@@ -351,9 +378,9 @@ export default function OrderConfirmationPage() {
 
             {/* Action buttons */}
             <div className="order-actions">
-              <button className="btn btn-secondary" onClick={downloadInvoice} disabled={!order}>
+              <button className="btn btn-secondary" onClick={downloadInvoice} disabled={!order || isDownloadingInvoice}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: "6px" }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download Invoice
+                {isDownloadingInvoice ? "Generating..." : "Download Invoice"}
               </button>
               <Link href="/products" className="btn">Continue Shopping</Link>
             </div>
@@ -473,8 +500,14 @@ export default function OrderConfirmationPage() {
                     {requestError && (
                       <div className="order-manage-error">{requestError}</div>
                     )}
+                    
+                    {order.eligibility && !order.eligibility.canCancel && !order.eligibility.canExchange && (
+                      <div className="order-manage-error" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                        This order is no longer eligible for cancellation or exchange.
+                      </div>
+                    )}
 
-                    <div className="form-grid" style={{ marginBottom: "16px" }}>
+                    <div className="form-grid" style={{ marginBottom: "16px", opacity: (!order.eligibility?.canCancel && !order.eligibility?.canExchange) ? 0.5 : 1, pointerEvents: (!order.eligibility?.canCancel && !order.eligibility?.canExchange) ? "none" : "auto" }}>
                       <div className="form-group">
                         <label className="form-label">Request Type</label>
                         <select className="form-input" value={requestType}
@@ -513,8 +546,9 @@ export default function OrderConfirmationPage() {
 
                     {!token && <p style={{ color: "var(--error)", fontSize: "0.85rem", marginBottom: "12px" }}>Sign in to submit a request.</p>}
 
-                    <button className="btn" onClick={submitOrderRequest} disabled={!token || isSubmittingRequest}>
-                      {isSubmittingRequest ? "Submitting…" : `Submit ${requestType} request`}
+                    <button className="btn" onClick={submitOrderRequest} 
+                      disabled={!token || isSubmittingRequest || (requestType === "cancel" && !order.eligibility?.canCancel) || (requestType === "exchange" && !order.eligibility?.canExchange)}>
+                      {isSubmittingRequest ? "Submitting…" : `Submit Request`}
                     </button>
                   </div>
                 )}

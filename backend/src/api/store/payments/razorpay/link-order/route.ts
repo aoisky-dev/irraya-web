@@ -155,6 +155,17 @@ export async function POST(req: MedusaRequest<LinkRazorpayOrderBody>, res: Medus
       currency: currency || undefined
     })
 
+    // Capture the payment at Razorpay explicitly
+    if (status !== "captured") {
+      try {
+        const { captureRazorpayPayment } = await import("../../../../../lib/razorpay.js")
+        const capturedInfo = await captureRazorpayPayment(razorpayPaymentId, amount ?? 0, currency || "INR")
+        console.info(`[link-order] Successfully captured Razorpay payment ${razorpayPaymentId}:`, capturedInfo.status)
+      } catch (err) {
+        console.warn(`[link-order] Failed to capture Razorpay payment ${razorpayPaymentId} at Razorpay:`, err)
+      }
+    }
+
     // Auto-capture the payment in Medusa so Admin doesn't prompt for manual capture
     // Await instead of fire-and-forget so capture completes before response
     try {

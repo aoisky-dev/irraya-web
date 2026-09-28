@@ -2,23 +2,46 @@ import { SubscriberArgs, type SubscriberConfig } from "@medusajs/framework"
 import { Modules } from "@medusajs/framework/utils"
 import ShiprocketService from "../modules/shiprocket/service"
 
-export default async function shiprocketOrderPlacedHandler({
+export default async function shiprocketOrderFulfillmentCreatedHandler({
   event: { data },
   container,
-}: SubscriberArgs<{ id: string }>) {
+}: SubscriberArgs<{ order_id: string, fulfillment_id: string }>) {
   const orderModuleService = container.resolve(Modules.ORDER)
+  const fulfillmentModuleService = container.resolve(Modules.FULFILLMENT)
   const logger = container.resolve("logger")
   const shiprocketService = new ShiprocketService({ logger })
 
-  const order = await orderModuleService.retrieveOrder(data.id, {
-    relations: ["items", "shipping_address", "customer"],
+  // order.fulfillment_created gives order_id and fulfillment_id
+  const orderId = data.order_id || (data as any).id
+  if (!orderId) return
+
+  const order = await orderModuleService.retrieveOrder(orderId, {
+    relations: ["shipping_address", "customer"],
   })
 
   if (!order) return
+  
+  let fulfillmentItems: any[] = []
+  if (data.fulfillment_id) {
+    try {
+      const fulfillment = await fulfillmentModuleService.retrieveFulfillment(data.fulfillment_id, {
+        relations: ["items"]
+      })
+      fulfillmentItems = fulfillment.items || []
+    } catch (e) {
+      console.warn("Could not retrieve fulfillment items", e)
+    }
+  }
+
+  // Fallback to order items if fulfillment retrieval fails or items missing
+  if (fulfillmentItems.length === 0) {
+    const fullOrder = await orderModuleService.retrieveOrder(orderId, { relations: ["items"] })
+    fulfillmentItems = fullOrder.items || []
+  }
 
   // Format payload for Shiprocket Custom Order
   const payload = {
-    order_id: order.display_id || order.id,
+    order_id: (order.display_id || order.id) + (data.fulfillment_id ? `-${data.fulfillment_id.slice(-4)}` : ''),
     order_date: new Date(order.created_at).toISOString().split('T')[0],
     pickup_location: "Primary", // Requires a setup in Shiprocket
     billing_customer_name: order.shipping_address?.first_name || "Customer",
@@ -31,14 +54,14 @@ export default async function shiprocketOrderPlacedHandler({
     billing_email: order.email || "test@example.com",
     billing_phone: order.shipping_address?.phone || "0000000000",
     shipping_is_billing: true,
-    order_items: order.items?.map((item: any) => ({
+    order_items: fulfillmentItems.map((item: any) => ({
       name: item.title,
-      sku: item.variant_sku || "SKU",
+      sku: item.variant_sku || item.sku || "SKU",
       units: item.quantity,
-      selling_price: item.unit_price,
-    })) || [],
+      selling_price: item.unit_price || 0,
+    })),
     payment_method: "Prepaid",
-    sub_total: order.item_total,
+    sub_total: order.item_total || 0,
     length: 10,
     breadth: 10,
     height: 10,
@@ -63,5 +86,5 @@ export default async function shiprocketOrderPlacedHandler({
 }
 
 export const config: SubscriberConfig = {
-  event: "order.placed",
+  event: "order.fulfillment_created",
 }

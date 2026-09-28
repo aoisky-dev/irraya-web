@@ -5,7 +5,7 @@ import { mapMedusaOrder } from "./medusa-mappers";
 export async function getOrderById(orderId: string): Promise<Order | null> {
   try {
     const response = await medusaRequest<{ order?: unknown }>(
-      `/store/orders/${orderId}?fields=*items,*shipping_address,*payment_collections,*payment_collections.payment_sessions`
+      `/store/orders/${orderId}?fields=*items,*shipping_address,*payment_collections,*payment_collections.payment_sessions,+metadata`
     );
     if (!response.order) return null;
     return mapMedusaOrder(response.order);
@@ -134,3 +134,12 @@ export function buildInvoiceText(order: Order): string {
   return lines.join("\n");
 }
 
+export async function getShiprocketInvoiceUrl(orderId: string): Promise<string | null> {
+  try {
+    const response = await medusaRequest<{ invoice_url?: string }>(`/store/orders/${orderId}/invoice`);
+    return response.invoice_url || null;
+  } catch (err) {
+    console.warn("Could not fetch Shiprocket invoice:", err);
+    return null;
+  }
+}
