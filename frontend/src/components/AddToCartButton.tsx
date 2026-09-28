@@ -9,6 +9,7 @@ import { IconCheck } from "@/components/Icons";
 interface AddToCartButtonProps {
   productId: string;
   variantId: string;
+  handle?: string;
   title: string;
   image?: string;
   size: string;
@@ -19,6 +20,7 @@ interface AddToCartButtonProps {
 export function AddToCartButton({
   productId,
   variantId,
+  handle,
   title,
   image,
   size,
@@ -35,7 +37,7 @@ export function AddToCartButton({
   const handleAdd = async () => {
     setIsAdding(true);
     try {
-      await addItem(productId, variantId, quantity, { title, image, size, color });
+      await addItem(productId, variantId, quantity, { productId, handle, title, image, size, color });
       setIsAdded(true);
       addToast(`Added ${quantity > 1 ? `${quantity} × ` : ""}${title} to cart`, "success");
       setTimeout(() => setIsAdded(false), 2000);
@@ -49,7 +51,7 @@ export function AddToCartButton({
   const handleBuyNow = async () => {
     setIsBuying(true);
     try {
-      await addItem(productId, variantId, quantity, { title, image, size, color });
+      await addItem(productId, variantId, quantity, { productId, handle, title, image, size, color });
       router.push("/checkout");
     } catch {
       addToast("Failed to initiate checkout. Please try again.", "error");

@@ -44,24 +44,30 @@ export default function CartPage() {
             const meta = itemMeta.get(item.variantId);
             return (
               <div key={item.id} className="cart-item">
-                <div className="cart-item-image" style={{ position: "relative" }}>
-                  {meta?.image ? (
-                    <Image src={meta.image} alt={meta.title || "Product"} fill style={{ objectFit: "cover" }} sizes="120px" />
-                  ) : (
-                    <div className="card-image-placeholder" style={{ height: "100%" }}><IconImage size={20} /></div>
-                  )}
-                </div>
-                <div className="cart-item-info">
-                  <h3>{meta?.title || "Product"}</h3>
-                  <p className="cart-item-variant">
-                    {meta?.size && `Size: ${meta.size}`}
-                    {meta?.size && meta?.color && " · "}
-                    {meta?.color && `Color: ${meta.color}`}
-                  </p>
-                  <p className="cart-item-price">
-                    {formatMoney(item.unitPriceInCents, cart.currencyCode)} each
-                  </p>
-                </div>
+                <Link 
+                  href={meta?.handle ? `/products/${meta.handle}` : "/products"}
+                  className="cart-item-link"
+                  style={{ display: "contents" }}
+                >
+                  <div className="cart-item-image" style={{ position: "relative" }}>
+                    {meta?.image ? (
+                      <Image src={meta.image} alt={meta.title || "Product"} fill style={{ objectFit: "cover" }} sizes="120px" />
+                    ) : (
+                      <div className="card-image-placeholder" style={{ height: "100%" }}><IconImage size={20} /></div>
+                    )}
+                  </div>
+                  <div className="cart-item-info">
+                    <h3>{meta?.title || "Product"}</h3>
+                    <p className="cart-item-variant">
+                      {meta?.size && `Size: ${meta.size}`}
+                      {meta?.size && meta?.color && " · "}
+                      {meta?.color && `Color: ${meta.color}`}
+                    </p>
+                    <p className="cart-item-price">
+                      {formatMoney(item.unitPriceInCents, cart.currencyCode)} each
+                    </p>
+                  </div>
+                </Link>
                 <div className="cart-item-actions">
                   <div className="quantity-control">
                     <button

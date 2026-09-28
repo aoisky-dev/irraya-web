@@ -6,6 +6,8 @@ import { getCart, createCart, addItemToCart, removeItemFromCart, updateItemQuant
 
 /** Extra display info stored client-side alongside the API cart */
 interface CartItemMeta {
+  productId: string;
+  handle?: string;
   title: string;
   image?: string;
   size: string;
