@@ -18,7 +18,10 @@ async function runTests() {
     try {
       const res = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "x-shiprocket-token": "irraya_shiprocket_secure_token_123"
+        },
         body: JSON.stringify({
           order_id: ORDER_ID,
           current_status: status.current_status,

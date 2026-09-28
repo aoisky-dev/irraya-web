@@ -6,6 +6,14 @@ export const POST = async (
   req: MedusaRequest,
   res: MedusaResponse
 ) => {
+  // Verify webhook security token
+  const expectedToken = process.env.SHIPROCKET_WEBHOOK_SECRET || "default_secret_replace_me"
+  const providedToken = req.headers["x-shiprocket-token"]
+  
+  if (providedToken !== expectedToken) {
+    return res.status(401).json({ message: "Unauthorized webhook request" })
+  }
+
   const orderModuleService = req.scope.resolve(Modules.ORDER)
   const payload = req.body as any
 
