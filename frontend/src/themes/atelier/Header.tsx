@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/components/CartProvider";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -38,8 +39,7 @@ export function Header() {
 
           {/* Centre brand */}
           <Link href="/" className="brand-logo" aria-label="Irraya Fashion Home">
-            <span className="brand-name">Irraya</span>
-            <span className="brand-tagline">Fashion · Lifestyle · Culture</span>
+            <Image src="/logo.png" alt="Irraya Logo" width={220} height={70} priority style={{ objectFit: 'contain' }} />
           </Link>
 
           {/* Right actions */}

@@ -248,12 +248,12 @@ h1, h2, h3, h4, h5 {
 .brand-arc { display: none; }
 
 .brand-name {
-  font-family: var(--font-display);
+  font-family: 'Neo Contact', var(--font-display);
   font-size: 1.42rem;
   font-weight: 700;
   letter-spacing: 0.4em;
   text-transform: uppercase;
-  color: var(--text-primary);
+  color: #712119;
   line-height: 1;
 }
 
@@ -3237,10 +3237,12 @@ label {
 }
 
 .checkout-logo {
-  font-size: 1.25rem;
+  font-family: 'Neo Contact', var(--font-display);
+  font-size: 1.42rem;
   font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--text-primary);
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: #712119;
   text-decoration: none;
 }
 

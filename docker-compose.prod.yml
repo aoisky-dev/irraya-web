@@ -41,6 +41,12 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-irraya}
       REDIS_URL: redis://redis:6379
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
+      STORE_CORS: ${STORE_CORS}
+      ADMIN_CORS: ${ADMIN_CORS}
+      AUTH_CORS: ${AUTH_CORS}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`api.irraya.com`)"

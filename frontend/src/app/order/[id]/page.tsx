@@ -6,6 +6,7 @@ import Link from "next/link";
 import { formatMoney } from "@/lib/format";
 import type { Order, OrderRequest, OrderRequestItem, OrderRequestType } from "@/lib/types";
 import { buildInvoiceText, createOrderRequest, getOrderById, getOrderRequests } from "@/lib/api/orders";
+import { downloadPDFInvoice } from "@/lib/pdfInvoice";
 import { useAuth } from "@/components/AuthProvider";
 import {
   IconSearch, IconX, IconCheck, IconCheckCircle, IconPackage, IconTruck,
@@ -117,13 +118,7 @@ export default function OrderConfirmationPage() {
 
   const downloadInvoice = () => {
     if (!order) return;
-    const blob = new Blob([buildInvoiceText(order)], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `irraya-invoice-${order.displayId || order.id}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadPDFInvoice(order);
   };
 
   const submitOrderRequest = async () => {

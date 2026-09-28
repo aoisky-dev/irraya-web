@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { User } from "@/lib/types";
 import { getMe } from "@/lib/api/auth";
 import { useRouter } from "next/navigation";
@@ -42,11 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = (newToken: string, newUser: User) => {
+  const login = useCallback((newToken: string, newUser: User) => {
     localStorage.setItem(TOKEN_KEY, newToken);
     setToken(newToken);
     setUser(newUser);
-  };
+  }, []);
 
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);

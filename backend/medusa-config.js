@@ -34,6 +34,26 @@ module.exports = defineConfig({
   },
   modules: [
     {
+      resolve: "@medusajs/auth",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/auth-emailpass",
+            id: "emailpass",
+          },
+          {
+            resolve: "@medusajs/auth-google",
+            id: "google",
+            options: {
+              clientId: process.env.GOOGLE_CLIENT_ID || "replace_me",
+              clientSecret: process.env.GOOGLE_CLIENT_SECRET || "replace_me",
+              callbackUrl: process.env.GOOGLE_CALLBACK_URL || "http://localhost:9000/auth/google/callback",
+            },
+          },
+        ],
+      },
+    },
+    {
       resolve: "@medusajs/file",
       options: {
         providers: [

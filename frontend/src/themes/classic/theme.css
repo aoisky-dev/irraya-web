@@ -290,10 +290,10 @@ h1, h2, h3, h4, h5 {
 }
 
 .brand-name {
-  font-family: 'Cormorant Garamond', 'Georgia', serif;
+  font-family: 'Neo Contact', 'Cormorant Garamond', 'Georgia', serif;
   font-size: 1.65rem;
   font-weight: 700;
-  color: var(--accent);
+  color: #712119;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   line-height: 1;
