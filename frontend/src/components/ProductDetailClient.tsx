@@ -12,6 +12,7 @@ import { ReviewList } from "@/components/ReviewList";
 import { useWishlist } from "@/components/WishlistProvider";
 import { SizeChartModal } from "@/components/SizeChartModal";
 import { ShareButton } from "@/components/ShareButton";
+import { PincodeChecker } from "@/components/PincodeChecker";
 import type { Product, ProductVariant } from "@/lib/types";
 import { config } from "@/lib/config";
 import { IconHeart, IconHeartFilled, IconRefreshCw, IconStar, IconDiamond, IconImage, IconMail, IconPhone, IconWhatsApp, IconTruck } from "@/components/Icons";
@@ -422,6 +423,7 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
               <AddToCartButton
                 productId={product.id}
                 variantId={selectedVariant.id}
+                handle={product.handle}
                 title={product.title}
                 image={product.image}
                 size={selectedVariant.size}
@@ -434,6 +436,8 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
               </button>
             )}
           </div>
+
+          <PincodeChecker />
 
           <hr className="pdp-divider" />
 
