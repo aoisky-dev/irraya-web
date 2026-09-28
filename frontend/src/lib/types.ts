@@ -71,11 +71,11 @@ export interface CartItem {
   variantId: string;
   quantity: number;
   unitPriceInCents: number;
-  /** Client-enriched display fields (not from API) */
   title?: string;
   image?: string;
   size?: string;
   color?: string;
+  handle?: string;
 }
 
 export interface Cart {

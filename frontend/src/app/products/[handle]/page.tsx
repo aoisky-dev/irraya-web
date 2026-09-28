@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ProductDetailClient } from "@/components/ProductDetailClient";
-import { getProductByHandle, getProducts } from "@/lib/api/products";
+import { getProductByHandle, getProductById, getProducts } from "@/lib/api/products";
 import { breadcrumbJsonLd, productJsonLd, productMetadata } from "@/lib/seo";
 
 type ProductPageProps = {
@@ -10,7 +10,11 @@ type ProductPageProps = {
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { handle } = await params;
-  const product = await getProductByHandle(handle).catch(() => null);
+  let product = await getProductByHandle(handle).catch(() => null);
+  
+  if (!product && handle.startsWith("prod_")) {
+    product = await getProductById(handle).catch(() => null);
+  }
 
   if (!product) {
     return {
@@ -25,11 +29,16 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { handle } = await params;
 
-  // Both fetches happen on the server — no CORS issues, no client-side loading states
-  const [product, allProducts] = await Promise.all([
-    getProductByHandle(handle).catch(() => null),
-    getProducts().catch(() => [])
-  ]);
+  let product = await getProductByHandle(handle).catch(() => null);
+
+  if (!product && handle.startsWith("prod_")) {
+    product = await getProductById(handle).catch(() => null);
+    if (product && product.handle) {
+      redirect(`/products/${product.handle}`);
+    }
+  }
+
+  const allProducts = await getProducts().catch(() => []);
 
   if (!product) {
     notFound();

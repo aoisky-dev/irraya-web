@@ -45,7 +45,7 @@ export default function CartPage() {
             return (
               <div key={item.id} className="cart-item">
                 <Link 
-                  href={meta?.handle ? `/products/${meta.handle}` : "/products"}
+                  href={(item.handle || meta?.handle) ? `/products/${item.handle || meta?.handle}` : `/products/${item.productId}`}
                   className="cart-item-link"
                   style={{ display: "contents" }}
                 >

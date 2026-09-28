@@ -84,7 +84,8 @@ const mapCartItem = (raw: any): CartItem => ({
   unitPriceInCents: Math.max(
     0,
     Math.round(toNumber(raw?.unit_price ?? raw?.total / Math.max(toNumber(raw?.quantity, 1), 1), 0)) * 100
-  )
+  ),
+  handle: normalizeText(raw?.product_handle ?? raw?.product?.handle ?? raw?.variant?.product?.handle, "") || undefined
 });
 
 export const mapMedusaCart = (raw: any): Cart => {

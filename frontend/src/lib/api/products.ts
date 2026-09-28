@@ -30,6 +30,13 @@ export async function getProductByHandle(handle: string): Promise<Product | null
   return raw ? mapMedusaProduct(raw) : null;
 }
 
+export async function getProductById(id: string): Promise<Product | null> {
+  const response = await medusaRequest<{ product?: unknown }>(
+    `/store/products/${id}?${new URLSearchParams({ fields: defaultProductFields }).toString()}`
+  ).catch(() => null);
+  return response?.product ? mapMedusaProduct(response.product) : null;
+}
+
 export async function getCatalogFacetsSource(): Promise<Product[]> {
   return getProducts({ limit: 200 });
 }
