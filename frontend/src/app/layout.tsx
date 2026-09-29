@@ -7,6 +7,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { CompareProvider } from "@/components/CompareProvider";
 import { ToastProvider } from "@/components/ToastProvider";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
+import { SaleProvider } from "@/components/SaleProvider";
 import { config } from "@/lib/config";
 import "./globals.css";
 
@@ -55,10 +56,12 @@ export default function RootLayout({
             <CartProvider>
               <WishlistProvider>
                 <CompareProvider>
-                  <Header />
-                  <main className="container page">{children}</main>
-                  <Footer />
-                  <FeedbackWidget />
+                  <SaleProvider>
+                    <Header />
+                    <main className="container page">{children}</main>
+                    <Footer />
+                    <FeedbackWidget />
+                  </SaleProvider>
                 </CompareProvider>
               </WishlistProvider>
             </CartProvider>

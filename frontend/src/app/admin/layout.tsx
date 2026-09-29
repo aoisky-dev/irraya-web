@@ -15,6 +15,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin" className="admin-nav-item">Orders</Link>
           <Link href="/admin" className="admin-nav-item">Products</Link>
           <Link href="/admin" className="admin-nav-item">Customers</Link>
+          <Link href="/admin/sale" className="admin-nav-item">Sale</Link>
           <hr className="admin-nav-divider" />
           <Link href="/" className="admin-nav-item">Back to Store</Link>
         </nav>

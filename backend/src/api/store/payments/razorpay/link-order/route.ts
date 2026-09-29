@@ -42,7 +42,7 @@ async function autoCaptureOrderPayments(req: MedusaRequest, orderId: string, car
         })
         const payments = cartData?.[0]?.payment_collection?.payments ?? []
         paymentIds = payments
-          .filter((p: any) => p.status === "authorized" || p.status === "not_paid")
+          .filter((p: any) => p.status === "authorized" || p.status === "not_paid" || p.status === "awaiting")
           .map((p: any) => p.id)
       } catch (err) {
         console.warn("[link-order] Cart query failed:", err)
@@ -59,7 +59,7 @@ async function autoCaptureOrderPayments(req: MedusaRequest, orderId: string, car
         })
         const payments = orderPayColData?.[0]?.payment_collection?.payments ?? []
         paymentIds = payments
-          .filter((p: any) => p.status === "authorized" || p.status === "not_paid")
+          .filter((p: any) => p.status === "authorized" || p.status === "not_paid" || p.status === "awaiting")
           .map((p: any) => p.id)
       } catch (err) {
         console.warn("[link-order] Order query failed:", err)
@@ -77,7 +77,7 @@ async function autoCaptureOrderPayments(req: MedusaRequest, orderId: string, car
         for (const link of linkData ?? []) {
           const payments = link?.payment_collection?.payments ?? []
           for (const p of payments) {
-            if (p.status === "authorized" || p.status === "not_paid") {
+            if (p.status === "authorized" || p.status === "not_paid" || p.status === "awaiting") {
               paymentIds.push(p.id)
             }
           }

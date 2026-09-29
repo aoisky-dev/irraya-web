@@ -32,7 +32,7 @@ export function SizeChartModal() {
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 1000,
+            zIndex: 10001,
             background: "rgba(0,0,0,0.6)",
             display: "flex",
             alignItems: "center",

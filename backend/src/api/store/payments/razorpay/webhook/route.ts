@@ -90,7 +90,7 @@ async function autoCaptureByCartId(req: MedusaRequest, cartId: string): Promise<
     })
     const payments = cartData?.[0]?.payment_collection?.payments ?? []
     for (const p of payments) {
-      if (p.status === "authorized" || p.status === "not_paid") {
+      if (p.status === "authorized" || p.status === "not_paid" || p.status === "awaiting") {
         try {
           await capturePaymentWorkflow(req.scope).run({
             input: { payment_id: p.id },

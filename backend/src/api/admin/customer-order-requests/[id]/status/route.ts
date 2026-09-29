@@ -1,5 +1,7 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { cancelOrderWorkflow } from "@medusajs/core-flows"
+import { createRazorpayRefund } from "../../../../../../lib/razorpay"
+import { upsertRazorpayPaymentReference } from "../../../../../../lib/razorpay-payment-references"
 import pg from "pg"
 
 const { Client } = pg
@@ -70,10 +72,12 @@ export async function POST(req: MedusaRequest<UpdateStatusBody>, res: MedusaResp
 
     // If this is a cancellation and it was approved, trigger Medusa's native order cancellation
     if (request.request_type === "cancel" && status === "approved") {
+      let workflowSucceeded = false
       try {
         await cancelOrderWorkflow(req.scope).run({
           input: { order_id: request.order_id }
         })
+        workflowSucceeded = true
         console.info(`[admin] Successfully native-canceled Medusa order ${request.order_id}`)
       } catch (cancelError) {
         console.error(`[admin] Failed to native-cancel Medusa order via workflow ${request.order_id}:`, cancelError)
@@ -89,6 +93,36 @@ export async function POST(req: MedusaRequest<UpdateStatusBody>, res: MedusaResp
           console.error(`[admin] Also failed to direct-cancel order ${request.order_id}:`, directCancelError)
           // Don't throw — the metadata already records the approved cancel,
           // and the frontend mapper now derives cancelled status from that
+        }
+      }
+
+      // When the workflow fails, the order.canceled event never fires, so the razorpay-refund
+      // subscriber won't run. Trigger the refund directly in that case.
+      if (!workflowSucceeded) {
+        try {
+          const orderResult = await client.query(
+            `select metadata from "order" where id = $1`,
+            [request.order_id]
+          )
+          const orderMetadata = orderResult.rows[0]?.metadata
+          const razorpayPaymentId = orderMetadata?.razorpay?.payment_id
+          if (razorpayPaymentId) {
+            const refundResult = await createRazorpayRefund({
+              paymentId: razorpayPaymentId,
+              notes: { reason: "order_canceled", order_id: request.order_id }
+            })
+            await upsertRazorpayPaymentReference({
+              razorpayPaymentId,
+              razorpayRefundId: typeof refundResult.id === "string" ? refundResult.id : undefined,
+              status: "refund_pending",
+              lastEvent: "order.canceled.refund_initiated.fallback"
+            })
+            console.info(`[admin] Fallback Razorpay refund initiated for order ${request.order_id}`)
+          } else {
+            console.info(`[admin] No razorpay payment_id on order ${request.order_id}, skipping refund`)
+          }
+        } catch (refundError) {
+          console.error(`[admin] Failed to initiate fallback Razorpay refund for order ${request.order_id}:`, refundError)
         }
       }
     }

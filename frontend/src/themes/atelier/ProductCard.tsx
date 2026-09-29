@@ -8,6 +8,7 @@ import { useWishlist } from "@/components/WishlistProvider";
 import { getStockLabel, getTotalStock } from "@/lib/catalog";
 import { productAltText } from "@/lib/seo";
 import { IconImage } from "@/components/Icons";
+import { useSale, applySaleDiscount } from "@/lib/api/sale";
 
 interface ProductCardProps {
   product: Product;
@@ -19,6 +20,8 @@ export function ProductCard({ product }: ProductCardProps) {
   const isSaved = isInWishlist(product.id);
   const totalStock = getTotalStock(product);
   const stock = getStockLabel(product);
+  const sale = useSale();
+  const salePrice = primaryVariant ? applySaleDiscount(primaryVariant.priceInCents, sale) : undefined;
 
   const toggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -44,6 +47,11 @@ export function ProductCard({ product }: ProductCardProps) {
         {totalStock > 0 && totalStock <= 5 && (
           <span className="card-badge badge-low-stock">Only {totalStock} left</span>
         )}
+        {salePrice !== undefined && totalStock > 0 && (
+          <span className="card-badge" style={{ background: "var(--accent-warm, #e11d48)", color: "#fff", top: "auto", bottom: 10 }}>
+            {sale.label || `${sale.discountPct}% OFF`}
+          </span>
+        )}
 
         <div className="card-overlay"><span>View Product</span></div>
 
@@ -68,11 +76,19 @@ export function ProductCard({ product }: ProductCardProps) {
         <h3 className="card-title">{product.title}</h3>
         <div className="card-footer-row">
           <span className="card-price">
-            {primaryVariant ? formatMoney(primaryVariant.priceInCents, "inr") : "—"}
+            {salePrice !== undefined ? (
+              <>
+                <span style={{ color: "var(--accent-warm, #e11d48)", fontWeight: 600 }}>
+                  {formatMoney(salePrice, "inr")}
+                </span>
+                <span style={{ textDecoration: "line-through", color: "var(--text-muted, #9ca3af)", marginLeft: 6, fontSize: "0.85em", fontWeight: 400 }}>
+                  {formatMoney(primaryVariant!.priceInCents, "inr")}
+                </span>
+              </>
+            ) : (
+              primaryVariant ? formatMoney(primaryVariant.priceInCents, "inr") : "—"
+            )}
           </span>
-          {product.variants.length > 1 && (
-            <span className="card-variants">{product.variants.length} options</span>
-          )}
         </div>
         <p className="card-stock text-muted">{stock.label}</p>
       </div>
