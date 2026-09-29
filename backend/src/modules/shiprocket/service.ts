@@ -7,9 +7,12 @@ export type ShiprocketConfig = {
   base_url?: string
 }
 
+// Module-level token cache so all ShiprocketService instances within the same
+// Node.js process share one token and avoid a fresh /auth/login on every request.
+const _sharedToken = { value: null as string | null }
+
 export default class ShiprocketService {
   private config: ShiprocketConfig
-  private token: string | null = null
   private logger: Logger
 
   constructor({ logger }: { logger: Logger }, options?: ShiprocketConfig) {
@@ -20,12 +23,21 @@ export default class ShiprocketService {
       api_token: process.env.SHIPROCKET_API_TOKEN,
       base_url: process.env.SHIPROCKET_API_URL || "https://apiv2.shiprocket.in",
     }
-    if (this.config.api_token) {
-      this.token = this.config.api_token;
+    // Seed the shared token from a static API token if provided
+    if (this.config.api_token && !_sharedToken.value) {
+      _sharedToken.value = this.config.api_token
     }
   }
 
-  async login() {
+  private get token(): string | null {
+    return _sharedToken.value
+  }
+
+  private set token(value: string | null) {
+    _sharedToken.value = value
+  }
+
+  async login(): Promise<string> {
     if (!this.config.email || !this.config.password) {
       throw new Error("Shiprocket credentials are not configured")
     }
@@ -47,10 +59,10 @@ export default class ShiprocketService {
 
     const data = await response.json()
     this.token = data.token
-    return this.token
+    return this.token as string
   }
 
-  private async request(path: string, method: string = "GET", body?: any): Promise<any> {
+  private async request(path: string, method: string = "GET", body?: any, retried = false): Promise<any> {
     if (!this.token) {
       await this.login()
     }
@@ -64,10 +76,12 @@ export default class ShiprocketService {
       body: body ? JSON.stringify(body) : undefined,
     })
 
-    if (response.status === 401 && !this.config.api_token) {
-      // Only try re-login if we are not using a static API token
+    // On 401: attempt one re-login if we're using email/password auth (not a static API token)
+    // The `retried` guard prevents an infinite loop if credentials are wrong.
+    if (response.status === 401 && !this.config.api_token && !retried) {
+      this.token = null
       await this.login()
-      return this.request(path, method, body) // Retry once
+      return this.request(path, method, body, true)
     }
 
     if (!response.ok) {

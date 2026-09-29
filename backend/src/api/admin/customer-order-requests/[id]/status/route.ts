@@ -1,8 +1,13 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { cancelOrderWorkflow } from "@medusajs/core-flows"
-import { createRazorpayRefund } from "../../../../../../lib/razorpay"
-import { upsertRazorpayPaymentReference } from "../../../../../../lib/razorpay-payment-references"
+import { createRazorpayRefund } from "../../../../../lib/razorpay"
+import { upsertRazorpayPaymentReference } from "../../../../../lib/razorpay-payment-references"
+import ShiprocketService from "../../../../../../modules/shiprocket/service"
 import pg from "pg"
+
+/** Convert Medusa paise amount to rupees for Shiprocket. */
+const paisaToRupees = (paise: number | undefined | null): number =>
+  Math.round((paise ?? 0)) / 100
 
 const { Client } = pg
 
@@ -142,7 +147,7 @@ export async function POST(req: MedusaRequest<UpdateStatusBody>, res: MedusaResp
         
         if (status === "approved") {
           const logger = req.scope.resolve("logger")
-          const shiprocketService = new (require("../../../../../../modules/shiprocket/service").default)({ logger })
+          const shiprocketService = new ShiprocketService({ logger })
           const orderService = req.scope.resolve("orderModuleService") as any
 
           const order = await orderService.retrieveOrder(request.order_id, {
@@ -154,38 +159,55 @@ export async function POST(req: MedusaRequest<UpdateStatusBody>, res: MedusaResp
               const orderItem = order.items?.find((i: any) => i.id === exchangeItem.item_id || i.product_id === exchangeItem.product_id)
               return {
                 sku: orderItem?.variant_sku || orderItem?.product_title || "SKU",
-                name: orderItem?.product_title || "Exchange Item",
+                name: orderItem?.product_title || orderItem?.title || "Exchange Item",
                 units: exchangeItem.quantity || 1,
-                selling_price: orderItem?.unit_price || 0,
+                // unit_price is in paise — convert to rupees for Shiprocket
+                selling_price: paisaToRupees(orderItem?.unit_price),
               }
             })
 
             const subTotal = exchangeItems.reduce((acc: number, item: any) => acc + (Number(item.selling_price) * item.units), 0)
 
+            // Warehouse destination for the reverse pickup (customer → warehouse).
+            // All fields must come from env vars — never use placeholder strings.
+            const warehouseName = process.env.SHIPROCKET_WAREHOUSE_NAME || "Irraya Warehouse"
+            const warehouseAddress = process.env.SHIPROCKET_WAREHOUSE_ADDRESS || ""
+            const warehouseCity = process.env.SHIPROCKET_WAREHOUSE_CITY || "Hyderabad"
+            const warehouseState = process.env.SHIPROCKET_WAREHOUSE_STATE || "Telangana"
+            const warehousePincode = process.env.SHIPROCKET_PICKUP_PINCODE || ""
+            const warehouseEmail = process.env.SHIPROCKET_WAREHOUSE_EMAIL || "support@irraya.com"
+            const warehousePhone = process.env.SHIPROCKET_WAREHOUSE_PHONE || ""
+
+            if (!warehouseAddress || !warehousePincode) {
+              throw new Error("SHIPROCKET_WAREHOUSE_ADDRESS and SHIPROCKET_PICKUP_PINCODE must be set to create a return order")
+            }
+
+            // order_id for Shiprocket must be unique and ≤ 50 chars
+            const srReturnOrderId = `EX-${order.display_id || order.id.split("_").pop()?.slice(-8)}-${Date.now().toString().slice(-4)}`.slice(0, 50)
+
             const shiprocketPayload = {
-              order_id: `EX-${order.display_id || order.id.split('_')[1]}-${Date.now().toString().slice(-4)}`,
-              order_date: new Date().toISOString().split('T')[0],
-              channel_id: "",
+              order_id: srReturnOrderId,
+              order_date: new Date().toISOString().split("T")[0],
               pickup_customer_name: order.shipping_address?.first_name || order.customer?.first_name || "Customer",
               pickup_last_name: order.shipping_address?.last_name || order.customer?.last_name || "",
-              pickup_address: order.shipping_address?.address_1 || "",
+              pickup_address: (order.shipping_address?.address_1 || "").slice(0, 150),
               pickup_address_2: order.shipping_address?.address_2 || "",
               pickup_city: order.shipping_address?.city || "",
               pickup_state: order.shipping_address?.province || "",
-              pickup_country: order.shipping_address?.country_code || "IN",
+              pickup_country: (order.shipping_address?.country_code || "IN").toUpperCase(),
               pickup_pincode: order.shipping_address?.postal_code || "",
               pickup_email: order.email || order.customer?.email || "",
-              pickup_phone: order.shipping_address?.phone || order.customer?.phone || "9999999999",
-              shipping_customer_name: "Irraya Warehouse",
+              pickup_phone: order.shipping_address?.phone || order.customer?.phone || "",
+              shipping_customer_name: warehouseName,
               shipping_last_name: "",
-              shipping_address: "Irraya Warehouse Address",
+              shipping_address: warehouseAddress,
               shipping_address_2: "",
-              shipping_city: "Hyderabad",
+              shipping_city: warehouseCity,
               shipping_country: "IN",
-              shipping_pincode: process.env.SHIPROCKET_PICKUP_PINCODE || "500016",
-              shipping_state: "Telangana",
-              shipping_email: "support@irraya.com",
-              shipping_phone: "9999999999",
+              shipping_pincode: warehousePincode,
+              shipping_state: warehouseState,
+              shipping_email: warehouseEmail,
+              shipping_phone: warehousePhone,
               order_items: exchangeItems,
               payment_method: "Prepaid",
               shipping_charges: 0,

@@ -13,14 +13,21 @@ export default async function shiprocketOrderCanceledHandler({
   const order = await orderModuleService.retrieveOrder(data.id)
 
   if (!order || !order.metadata?.shiprocket_order_id) {
-    logger.info("Order missing or no shiprocket_order_id found in metadata, skipping cancelation")
+    logger.info("Order missing or no shiprocket_order_id found in metadata, skipping cancellation")
+    return
+  }
+
+  // Metadata is JSONB — the stored value may come back as a string or number.
+  // Shiprocket cancel expects an array of integer order IDs.
+  const srOrderId = Number(order.metadata.shiprocket_order_id)
+  if (!Number.isFinite(srOrderId) || srOrderId <= 0) {
+    logger.warn(`Invalid shiprocket_order_id "${order.metadata.shiprocket_order_id}" on order ${data.id}, skipping`)
     return
   }
 
   try {
-    const srOrderId = order.metadata.shiprocket_order_id as number
     const result = await shiprocketService.cancelOrder([srOrderId])
-    logger.info(`Shiprocket Order Canceled: ${JSON.stringify(result)}`)
+    logger.info(`Shiprocket Order Cancelled: ${JSON.stringify(result)}`)
   } catch (error) {
     logger.error(`Failed to cancel order in Shiprocket: ${error}`)
   }
