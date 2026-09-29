@@ -16,7 +16,8 @@ import { PincodeChecker } from "@/components/PincodeChecker";
 import type { Product, ProductVariant } from "@/lib/types";
 import { config } from "@/lib/config";
 import { IconHeart, IconHeartFilled, IconRefreshCw, IconStar, IconDiamond, IconImage, IconMail, IconPhone, IconWhatsApp, IconTruck } from "@/components/Icons";
-import { useSale, applySaleDiscount } from "@/lib/api/sale";
+import { applySaleDiscount } from "@/lib/api/sale";
+import { useSale } from "@/components/SaleProvider";
 
 // Metadata keys already surfaced elsewhere in the page (badges, category, SEO)
 // so they are excluded from the generic "Product Details" list below.

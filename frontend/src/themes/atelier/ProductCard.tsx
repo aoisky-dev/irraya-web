@@ -8,7 +8,8 @@ import { useWishlist } from "@/components/WishlistProvider";
 import { getStockLabel, getTotalStock } from "@/lib/catalog";
 import { productAltText } from "@/lib/seo";
 import { IconImage } from "@/components/Icons";
-import { useSale, applySaleDiscount } from "@/lib/api/sale";
+import { applySaleDiscount } from "@/lib/api/sale";
+import { useSale } from "@/components/SaleProvider";
 
 interface ProductCardProps {
   product: Product;

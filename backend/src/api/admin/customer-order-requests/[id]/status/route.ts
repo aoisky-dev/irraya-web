@@ -175,7 +175,7 @@ export async function POST(req: MedusaRequest<UpdateStatusBody>, res: MedusaResp
             const warehouseCity = process.env.SHIPROCKET_WAREHOUSE_CITY || "Hyderabad"
             const warehouseState = process.env.SHIPROCKET_WAREHOUSE_STATE || "Telangana"
             const warehousePincode = process.env.SHIPROCKET_PICKUP_PINCODE || ""
-            const warehouseEmail = process.env.SHIPROCKET_WAREHOUSE_EMAIL || "support@irraya.com"
+            const warehouseEmail = process.env.SHIPROCKET_WAREHOUSE_EMAIL || "info@irraya.com"
             const warehousePhone = process.env.SHIPROCKET_WAREHOUSE_PHONE || ""
 
             if (!warehouseAddress || !warehousePincode) {
