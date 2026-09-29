@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const statuses = [
   { current_status: "PICKED UP", awb: "AWB123456789" },
   { current_status: "IN TRANSIT", awb: "AWB123456789" },
@@ -20,7 +22,7 @@ async function runTests() {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "x-api-key": "irraya_shiprocket_secure_token_123"
+          "x-api-key": process.env.SHIPROCKET_WEBHOOK_SECRET || "irraya_shiprocket_secure_token_123"
         },
         body: JSON.stringify({
           order_id: ORDER_ID,
