@@ -7,7 +7,7 @@ export const POST = async (
 ) => {
   // Verify webhook security token
   const expectedToken = process.env.SHIPROCKET_WEBHOOK_SECRET || "default_secret_replace_me"
-  const providedToken = req.headers["x-shiprocket-token"]
+  const providedToken = req.headers["x-api-key"]
   
   if (providedToken !== expectedToken) {
     return res.status(401).json({ message: "Unauthorized webhook request" })

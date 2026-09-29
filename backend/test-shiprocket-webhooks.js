@@ -6,7 +6,7 @@ const statuses = [
 ];
 
 const ORDER_ID = "6"; // display_id
-const API_URL = "https://api.irraya.com/webhooks/shiprocket";
+const API_URL = "https://api.irraya.com/webhooks/fulfillment";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -20,7 +20,7 @@ async function runTests() {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "x-shiprocket-token": "irraya_shiprocket_secure_token_123"
+          "x-api-key": "irraya_shiprocket_secure_token_123"
         },
         body: JSON.stringify({
           order_id: ORDER_ID,
