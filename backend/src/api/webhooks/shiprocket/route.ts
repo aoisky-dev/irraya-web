@@ -1,7 +1,6 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
-import { createOrderShipmentWorkflow } from "@medusajs/core-flows"
-
+import { createOrderShipmentWorkflow, markOrderFulfillmentAsDeliveredWorkflow } from "@medusajs/core-flows"
 export const POST = async (
   req: MedusaRequest,
   res: MedusaResponse
@@ -110,6 +109,24 @@ export const POST = async (
         console.log(`Successfully created Medusa shipment for order ${order.id} based on Shiprocket webhook.`)
       } catch (err) {
         console.error("Failed to create Medusa shipment for order via webhook:", err)
+      }
+    }
+  }
+
+  // 3. If delivered, also mark the fulfillment as delivered in Medusa
+  if (status === "delivered") {
+    const shippedFulfillment = order.fulfillments?.find((f: any) => !f.delivered_at)
+    if (shippedFulfillment) {
+      try {
+        await markOrderFulfillmentAsDeliveredWorkflow(req.scope).run({
+          input: {
+            orderId: order.id,
+            fulfillmentId: shippedFulfillment.id,
+          }
+        })
+        console.log(`Successfully marked fulfillment as delivered for order ${order.id}.`)
+      } catch (err) {
+        console.error("Failed to mark Medusa fulfillment as delivered via webhook:", err)
       }
     }
   }
