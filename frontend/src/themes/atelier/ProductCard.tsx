@@ -21,7 +21,8 @@ export function ProductCard({ product }: ProductCardProps) {
   const isSaved = isInWishlist(product.id);
   const totalStock = getTotalStock(product);
   const stock = getStockLabel(product);
-  const sale = useSale();
+  const { getSale } = useSale();
+  const sale = getSale(product.id);
   const salePrice = primaryVariant ? applySaleDiscount(primaryVariant.priceInCents, sale) : undefined;
 
   const toggleWishlist = (e: React.MouseEvent) => {
@@ -50,7 +51,7 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
         {salePrice !== undefined && totalStock > 0 && (
           <span className="card-badge" style={{ background: "var(--accent-warm, #e11d48)", color: "#fff", top: "auto", bottom: 10 }}>
-            {sale.label || `${sale.discountPct}% OFF`}
+            {sale?.label || `${sale?.discountPct}% OFF`}
           </span>
         )}
 

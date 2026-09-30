@@ -59,7 +59,8 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
 
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const isSaved = isInWishlist(product.id);
-  const sale = useSale();
+  const { getSale } = useSale();
+  const sale = getSale(product.id);
 
   const maxQuantity = Math.max(1, Math.min(selectedVariant?.stock ?? 1, 10));
 
@@ -278,7 +279,7 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
                           {formatMoney(selectedVariant.priceInCents, "inr")}
                         </span>
                         <span style={{ background: "var(--accent-warm, #e11d48)", color: "#fff", fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: 4, letterSpacing: "0.05em" }}>
-                          {sale.label || `${sale.discountPct}% OFF`}
+                          {sale?.label || `${sale?.discountPct}% OFF`}
                         </span>
                       </>
                     ) : (

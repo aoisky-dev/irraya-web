@@ -1,20 +1,28 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { getSaleConfig, type SaleConfig } from "@/lib/api/sale";
+import { getSales, buildSaleMap, type SaleConfig, type SaleMap } from "@/lib/api/sale";
 
-const SaleContext = createContext<SaleConfig>({ active: false, discountPct: 0 });
+type SaleContextValue = {
+  getSale: (productId: string) => SaleConfig | null;
+};
 
-export function useSale(): SaleConfig {
+const SaleContext = createContext<SaleContextValue>({ getSale: () => null });
+
+export function useSale(): SaleContextValue {
   return useContext(SaleContext);
 }
 
 export function SaleProvider({ children }: { children: React.ReactNode }) {
-  const [sale, setSale] = useState<SaleConfig>({ active: false, discountPct: 0 });
+  const [saleMap, setSaleMap] = useState<SaleMap>({});
 
   useEffect(() => {
-    getSaleConfig().then(setSale).catch(() => {});
+    getSales()
+      .then(sales => setSaleMap(buildSaleMap(sales)))
+      .catch(() => {});
   }, []);
 
-  return <SaleContext.Provider value={sale}>{children}</SaleContext.Provider>;
+  const getSale = (productId: string): SaleConfig | null => saleMap[productId] ?? null;
+
+  return <SaleContext.Provider value={{ getSale }}>{children}</SaleContext.Provider>;
 }
