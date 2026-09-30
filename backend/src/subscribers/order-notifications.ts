@@ -34,7 +34,7 @@ export async function orderPlacedHandler({
     : undefined
 
   const items = extractItems(order)
-  const totalInPaise = Math.round((order.total || 0) * 100)
+  const totalInPaise = Math.round(Number(order.total || 0) * 100)
 
   const userTpl = orderPlacedUserTemplate({
     name: customerName,

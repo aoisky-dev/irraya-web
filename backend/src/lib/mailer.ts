@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer"
+import nodemailer, { type Transporter } from "nodemailer"
 
 // ---------------------------------------------------------------------------
 // Provider-agnostic SMTP mailer.
@@ -10,9 +10,9 @@ import nodemailer from "nodemailer"
 //   Brevo:    SMTP_HOST=smtp-relay.brevo.com  SMTP_USER=<brevo-email>  SMTP_PASS=<brevo-smtp-key>
 // ---------------------------------------------------------------------------
 
-let _transporter: nodemailer.Transporter | null = null
+let _transporter: Transporter | null = null
 
-function getTransporter(): nodemailer.Transporter {
+function getTransporter(): Transporter {
   if (!_transporter) {
     _transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || "mail.smtp2go.com",
