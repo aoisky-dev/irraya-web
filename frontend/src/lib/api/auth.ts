@@ -395,6 +395,27 @@ export async function deleteCustomerAddress(token: string, addressId: string): P
   });
 }
 
+export async function forgotPassword(email: string): Promise<{ requestId: string; expiresAt: number }> {
+  return medusaRequest("/store/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function verifyOtp(email: string, code: string, requestId?: string): Promise<{ verificationToken: string }> {
+  return medusaRequest("/store/auth/otp/verify", {
+    method: "POST",
+    body: JSON.stringify({ channel: "email", value: email, code, requestId }),
+  });
+}
+
+export async function resetPassword(verificationToken: string, newPassword: string): Promise<void> {
+  await medusaRequest("/store/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ verificationToken, newPassword }),
+  });
+}
+
 export async function getMe(token: string): Promise<User> {
   const response = await medusaRequest<{ customer?: MedusaCustomer }>(
     "/store/customers/me?fields=*addresses",
