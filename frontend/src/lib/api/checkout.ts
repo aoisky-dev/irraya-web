@@ -39,8 +39,9 @@ export async function prepareCartForCheckout(cartId: string, form: {
   email: string;
   address: string;
   city: string;
+  state: string;
   zipCode: string;
-  phone?: string;
+  phone: string;
 }, token?: string): Promise<void> {
   const authHeaders = authHeader(token);
 
@@ -55,18 +56,20 @@ export async function prepareCartForCheckout(cartId: string, form: {
         last_name: form.lastName,
         address_1: form.address,
         city: form.city,
+        province: form.state,
         country_code: "in",
         postal_code: form.zipCode,
-        ...(form.phone ? { phone: form.phone } : {}),
+        phone: form.phone,
       },
       billing_address: {
         first_name: form.firstName,
         last_name: form.lastName,
         address_1: form.address,
         city: form.city,
+        province: form.state,
         country_code: "in",
         postal_code: form.zipCode,
-        ...(form.phone ? { phone: form.phone } : {}),
+        phone: form.phone,
       }
     })
   });

@@ -36,6 +36,21 @@ export default async function shiprocketOrderFulfillmentCreatedHandler({
 
   if (!order) return
 
+  // Guard: all fields required for Shiprocket — refuse to create an order with
+  // a fake/incomplete address rather than silently shipping to nowhere
+  const addr = order.shipping_address
+  const missingFields: string[] = []
+  if (!addr?.first_name) missingFields.push("first_name")
+  if (!addr?.address_1) missingFields.push("address_1")
+  if (!addr?.city) missingFields.push("city")
+  if (!addr?.province) missingFields.push("province")
+  if (!addr?.postal_code) missingFields.push("postal_code")
+  if (!addr?.phone) missingFields.push("phone")
+  if (missingFields.length > 0) {
+    logger.error(`[shiprocket-sync] Aborting — shipping address missing required fields: ${missingFields.join(", ")} (order ${orderId})`)
+    return
+  }
+
   let fulfillmentItems: any[] = []
   if (data.fulfillment_id) {
     try {
@@ -58,16 +73,16 @@ export default async function shiprocketOrderFulfillmentCreatedHandler({
     order_id: buildShiprocketOrderId(order.display_id, order.id, data.fulfillment_id),
     order_date: new Date(order.created_at).toISOString().split("T")[0],
     pickup_location: "Primary",
-    billing_customer_name: order.shipping_address?.first_name || "Customer",
-    billing_last_name: order.shipping_address?.last_name || "",
-    billing_address: (order.shipping_address?.address_1 || "N/A").slice(0, 150),
-    billing_address_2: (order.shipping_address?.address_2 || "").slice(0, 150),
-    billing_city: order.shipping_address?.city || "N/A",
-    billing_pincode: order.shipping_address?.postal_code || "000000",
-    billing_state: order.shipping_address?.province || "Telangana",  // Shiprocket requires non-empty state
-    billing_country: (order.shipping_address?.country_code || "IN").toUpperCase(),
+    billing_customer_name: addr!.first_name,
+    billing_last_name: addr!.last_name || "",
+    billing_address: addr!.address_1!.slice(0, 150),
+    billing_address_2: (addr!.address_2 || "").slice(0, 150),
+    billing_city: addr!.city,
+    billing_pincode: addr!.postal_code,
+    billing_state: addr!.province,
+    billing_country: (addr!.country_code || "IN").toUpperCase(),
     billing_email: order.email || "noreply@irraya.com",
-    billing_phone: (order.shipping_address?.phone || "9999999999").replace(/\D/g, "").slice(-10),
+    billing_phone: addr!.phone!.replace(/\D/g, "").slice(-10),
     shipping_is_billing: true,
     order_items: fulfillmentItems.map((item: any) => ({
       name: item.title || item.line_item?.title || item.product_title || "Item",

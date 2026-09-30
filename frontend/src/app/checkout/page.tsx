@@ -326,6 +326,7 @@ export default function CheckoutPage() {
     if (!form.email) missing.push("Email");
     if (!form.address) missing.push("Street Address");
     if (!form.city) missing.push("City");
+    if (!form.state) missing.push("State");
     if (!form.zipCode) missing.push("PIN Code");
     if (!form.phone) missing.push("Phone Number");
     if (missing.length > 0) {
@@ -333,8 +334,12 @@ export default function CheckoutPage() {
       return;
     }
     const phoneDigits = form.phone.replace(/\D/g, "");
-    if (phoneDigits.length !== 10) {
-      setValidationError("Please enter a valid 10-digit phone number.");
+    if (phoneDigits.length !== 10 || !/^[6-9]/.test(phoneDigits)) {
+      setValidationError("Please enter a valid 10-digit Indian mobile number.");
+      return;
+    }
+    if (!/^\d{6}$/.test(form.zipCode.trim())) {
+      setValidationError("Please enter a valid 6-digit PIN code.");
       return;
     }
 
@@ -347,7 +352,7 @@ export default function CheckoutPage() {
     let verifiedPaymentForRecovery: RecoverablePayment | null = null;
 
     try {
-      await prepareCartForCheckout(cart.id, form, token ?? undefined);
+      await prepareCartForCheckout(cart.id, { ...form, state: form.state }, token ?? undefined);
 
       if (saveAddress && token) {
         try {
@@ -358,6 +363,7 @@ export default function CheckoutPage() {
             await saveCustomerAddress(token, {
               first_name: form.firstName, last_name: form.lastName,
               address_1: form.address, city: form.city,
+              province: form.state,
               country_code: "in", postal_code: form.zipCode,
               phone: form.phone || undefined
             });
