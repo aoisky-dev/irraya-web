@@ -163,12 +163,13 @@ export function orderShippedTemplate(opts: {
   name?: string
   email: string
   orderId: string
+  orderRef?: string
   displayId?: number
   trackingNumber?: string
   trackingUrl?: string
   carrier?: string
 }) {
-  const ref = opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase()
+  const ref = opts.orderRef || (opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase())
   const trackingBlock = opts.trackingUrl
     ? `<p><a class="btn" href="${opts.trackingUrl}">Track your order</a></p>`
     : opts.trackingNumber
@@ -197,9 +198,10 @@ export function orderDeliveredTemplate(opts: {
   name?: string
   email: string
   orderId: string
+  orderRef?: string
   displayId?: number
 }) {
-  const ref = opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase()
+  const ref = opts.orderRef || (opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase())
 
   const html = base(`Order ${ref} delivered — Irraya`, `
     <h1>Your order has been delivered!</h1>

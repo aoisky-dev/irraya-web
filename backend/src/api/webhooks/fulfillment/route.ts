@@ -2,7 +2,7 @@ import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
 import { createOrderShipmentWorkflow, markOrderFulfillmentAsDeliveredWorkflow } from "@medusajs/core-flows"
 import { sendMail } from "../../../lib/mailer"
-import { orderDeliveredTemplate } from "../../../lib/email-templates"
+import { orderShippedTemplate, orderDeliveredTemplate } from "../../../lib/email-templates"
 
 export const GET = async (
   req: MedusaRequest,
@@ -166,7 +166,35 @@ export const POST = async (
     }
   }
 
-  // 3. Mark the fulfillment as delivered in Medusa
+  // 3. Send shipped email on first transition to shipped/out_for_delivery
+  const previousStatus = (currentShipment as any).status
+  const isFirstShipment = status === "shipped" && previousStatus !== "shipped" && previousStatus !== "out_for_delivery" && previousStatus !== "delivered"
+  if (isFirstShipment) {
+    const orderService = req.scope.resolve(Modules.ORDER)
+    const fullOrder = await orderService.retrieveOrder(order.id, { relations: ["customer"] }).catch(() => null)
+    const email = fullOrder?.email || (fullOrder as any)?.customer?.email
+    if (email) {
+      const customerName = (fullOrder as any)?.customer
+        ? [(fullOrder as any).customer.first_name, (fullOrder as any).customer.last_name].filter(Boolean).join(" ")
+        : undefined
+      const metadata2 = (fullOrder?.metadata || {}) as Record<string, any>
+      const tpl = orderShippedTemplate({
+        name: customerName,
+        email,
+        orderId: order.id,
+        orderRef: typeof metadata2.order_ref === "string" ? metadata2.order_ref : undefined,
+        displayId: order.display_id,
+        trackingNumber: payload.awb || undefined,
+        trackingUrl: payload.awb ? `https://shiprocket.co/tracking/${payload.awb}` : undefined,
+        carrier: "Delhivery (via Shiprocket)",
+      })
+      sendMail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text }).catch((err) =>
+        console.error("[shiprocket-webhook] Failed to send shipped email:", err)
+      )
+    }
+  }
+
+  // 4. Mark the fulfillment as delivered in Medusa
   if (status === "delivered") {
     const shippedFulfillment = order.fulfillments?.find((f: any) => !f.delivered_at)
     if (shippedFulfillment) {
@@ -191,10 +219,12 @@ export const POST = async (
       const customerName = (fullOrder as any)?.customer
         ? [(fullOrder as any).customer.first_name, (fullOrder as any).customer.last_name].filter(Boolean).join(" ")
         : undefined
+      const orderMeta = (fullOrder?.metadata || {}) as Record<string, any>
       const tpl = orderDeliveredTemplate({
         name: customerName,
         email,
         orderId: order.id,
+        orderRef: typeof orderMeta.order_ref === "string" ? orderMeta.order_ref : undefined,
         displayId: order.display_id,
       })
       sendMail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text }).catch((err) =>
