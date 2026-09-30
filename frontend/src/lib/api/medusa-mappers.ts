@@ -195,6 +195,7 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
 
   return {
     id: String(raw?.id ?? ""),
+    orderRef: typeof (metadata as any)?.order_ref === "string" ? (metadata as any).order_ref : undefined,
     displayId: raw?.display_id ? String(raw.display_id) : undefined,
     cartId: String(raw?.cart_id ?? cartIdFallback ?? ""),
     customerId: raw?.customer_id ? String(raw.customer_id) : undefined,

@@ -155,6 +155,7 @@ export interface ShippingAddress {
 
 export interface Order {
   id: string;
+  orderRef?: string;
   displayId?: string;
   cartId: string;
   customerId?: string;

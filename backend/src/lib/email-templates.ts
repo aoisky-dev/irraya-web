@@ -75,11 +75,12 @@ export function orderPlacedUserTemplate(opts: {
   name?: string
   email: string
   orderId: string
+  orderRef?: string
   displayId?: number
   items: Array<{ title: string; quantity: number; unitPriceInPaise: number }>
   totalInPaise: number
 }) {
-  const ref = opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase()
+  const ref = opts.orderRef || (opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase())
   const rows = opts.items.map(i => `
     <tr>
       <td>${i.title} × ${i.quantity}</td>
@@ -115,13 +116,14 @@ export function orderPlacedUserTemplate(opts: {
 // ---------------------------------------------------------------------------
 export function orderPlacedAdminTemplate(opts: {
   orderId: string
+  orderRef?: string
   displayId?: number
   customerName?: string
   customerEmail?: string
   items: Array<{ title: string; quantity: number; unitPriceInPaise: number }>
   totalInPaise: number
 }) {
-  const ref = opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase()
+  const ref = opts.orderRef || (opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase())
   const rows = opts.items.map(i => `
     <tr>
       <td>${i.title} × ${i.quantity}</td>

@@ -19,11 +19,13 @@ export async function getMyOrders(token: string): Promise<Order[]> {
     const response = await medusaRequest<{ orders?: unknown[]; order?: unknown[] }>(
       // "+metadata" ADDS to Medusa's default field set; a bare "metadata"
       // would REPLACE the defaults and drop status/display_id/total/etc.
-      "/store/orders?limit=50&fields=*items,*payment_collections,*payment_collections.payment_sessions,+metadata",
+      "/store/orders?limit=50&order[created_at]=DESC&fields=*items,*payment_collections,*payment_collections.payment_sessions,+metadata",
       { headers: { Authorization: `Bearer ${token}` } }
     );
     const orders = response.orders ?? (Array.isArray(response.order) ? response.order : []);
-    return orders.map((o) => mapMedusaOrder(o));
+    return orders
+      .map((o) => mapMedusaOrder(o))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   } catch {
     // Fallback: try fetching via customer profile with expanded orders
     const response = await medusaRequest<{ customer?: { orders?: unknown[] } }>(

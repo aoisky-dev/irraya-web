@@ -1,5 +1,5 @@
 import { SubscriberArgs, type SubscriberConfig } from "@medusajs/framework"
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { sendMail, ADMIN_EMAIL } from "../lib/mailer"
 import { orderPlacedUserTemplate, orderPlacedAdminTemplate } from "../lib/email-templates"
 
@@ -13,6 +13,21 @@ function extractItems(order: any) {
   }))
 }
 
+/**
+ * Generate a branded, human-friendly order reference.
+ * Format: IRR-YYYYMM-NNNNN (e.g. IRR-202609-00042)
+ * - Brand prefix makes it instantly recognisable in support conversations
+ * - YYYYMM groups orders by month without exposing a global counter
+ * - Zero-padded display_id keeps it short and speakable
+ */
+function buildOrderRef(displayId: number | undefined, createdAt: string): string {
+  const date = new Date(createdAt)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const seq = displayId ? String(displayId).padStart(5, "0") : "00000"
+  return `IRR-${year}${month}-${seq}`
+}
+
 // ---------------------------------------------------------------------------
 // order.placed → email customer + admin
 // ---------------------------------------------------------------------------
@@ -23,11 +38,25 @@ export async function orderPlacedHandler({
   const query = container.resolve(ContainerRegistrationKeys.QUERY)
   const { data: orders } = await query.graph({
     entity: "order",
-    fields: ["id", "display_id", "email", "total", "items.*", "customer.*"],
+    fields: ["id", "display_id", "email", "total", "created_at", "metadata", "items.*", "customer.*"],
     filters: { id: data.id },
   })
   const order = orders?.[0]
   if (!order) return
+
+  // Generate and persist a branded order reference if not already set
+  const existingRef = (order as any).metadata?.order_ref as string | undefined
+  const orderRef = existingRef || buildOrderRef(order.display_id, (order as any).created_at || new Date().toISOString())
+  if (!existingRef) {
+    try {
+      const orderService = container.resolve(Modules.ORDER)
+      await orderService.updateOrders(order.id, {
+        metadata: { ...((order as any).metadata || {}), order_ref: orderRef }
+      })
+    } catch (err) {
+      console.warn("[order-notifications] Failed to persist order_ref:", err)
+    }
+  }
 
   const email = order.email || (order as any).customer?.email
   if (!email) return
@@ -43,14 +72,14 @@ export async function orderPlacedHandler({
     name: customerName,
     email,
     orderId: order.id,
-    displayId: order.display_id,
+    orderRef,
     items,
     totalInPaise,
   })
 
   const adminTpl = orderPlacedAdminTemplate({
     orderId: order.id,
-    displayId: order.display_id,
+    orderRef,
     customerName,
     customerEmail: email,
     items,
