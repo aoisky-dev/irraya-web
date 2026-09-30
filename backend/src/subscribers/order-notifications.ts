@@ -1,5 +1,5 @@
 import { SubscriberArgs, type SubscriberConfig } from "@medusajs/framework"
-import { Modules } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { sendMail, ADMIN_EMAIL } from "../lib/mailer"
 import { orderPlacedUserTemplate, orderPlacedAdminTemplate } from "../lib/email-templates"
 
@@ -20,10 +20,13 @@ export async function orderPlacedHandler({
   event: { data },
   container,
 }: SubscriberArgs<OrderEventData>) {
-  const orderService = container.resolve(Modules.ORDER)
-  const order = await orderService.retrieveOrder(data.id, {
-    relations: ["items", "customer"],
+  const query = container.resolve(ContainerRegistrationKeys.QUERY)
+  const { data: orders } = await query.graph({
+    entity: "order",
+    fields: ["id", "display_id", "email", "total", "items.*", "customer.*"],
+    filters: { id: data.id },
   })
+  const order = orders?.[0]
   if (!order) return
 
   const email = order.email || (order as any).customer?.email

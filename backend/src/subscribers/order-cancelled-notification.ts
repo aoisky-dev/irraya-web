@@ -1,5 +1,5 @@
 import { SubscriberArgs, type SubscriberConfig } from "@medusajs/framework"
-import { Modules } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { sendMail } from "../lib/mailer"
 import { orderCancelledTemplate } from "../lib/email-templates"
 
@@ -7,10 +7,13 @@ export default async function orderCancelledNotificationHandler({
   event: { data },
   container,
 }: SubscriberArgs<{ id: string }>) {
-  const orderService = container.resolve(Modules.ORDER)
-  const order = await orderService.retrieveOrder(data.id, {
-    relations: ["customer"],
+  const query = container.resolve(ContainerRegistrationKeys.QUERY)
+  const { data: orders } = await query.graph({
+    entity: "order",
+    fields: ["id", "display_id", "email", "total", "metadata", "customer.*"],
+    filters: { id: data.id },
   })
+  const order = orders?.[0]
   if (!order) return
 
   const email = order.email || (order as any).customer?.email

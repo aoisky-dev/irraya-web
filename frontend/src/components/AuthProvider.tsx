@@ -33,6 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .catch(() => {
           // Token invalid or expired
           localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem("irraya_cart_id");
+          localStorage.removeItem("irraya_cart_meta");
           setToken(null);
           setUser(null);
         })
@@ -50,6 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem("irraya_cart_id");
+    localStorage.removeItem("irraya_cart_meta");
     setToken(null);
     setUser(null);
     router.push("/login");

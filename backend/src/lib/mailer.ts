@@ -44,7 +44,13 @@ export async function sendMail(opts: MailOptions): Promise<void> {
     ? `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_FROM}>`
     : process.env.SMTP_FROM || "noreply@irraya.com"
 
-  await getTransporter().sendMail({ from, ...opts })
+  try {
+    await getTransporter().sendMail({ from, ...opts })
+    console.log(`[mailer] Successfully sent email to ${opts.to}: ${opts.subject}`)
+  } catch (err) {
+    console.error(`[mailer] Failed to send email to ${opts.to}: ${opts.subject}`, err)
+    throw err
+  }
 }
 
 export const ADMIN_EMAIL = (): string =>
