@@ -234,9 +234,7 @@ export function orderCancelledTemplate(opts: {
   requestedByUser?: boolean
 }) {
   const ref = opts.orderRef || (opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase())
-  const refundNote = opts.refundInitiated
-    ? `<p>A refund of <strong>${inr(opts.totalInPaise)}</strong> has been initiated and will reflect in your account within 5–7 business days.</p>`
-    : ""
+  const refundNote = `<p>A refund of <strong>${inr(opts.totalInPaise)}</strong> has been initiated and will be credited to your account within <strong>5–7 working days</strong>.</p>`
 
   const body = opts.requestedByUser
     ? `<p>Your cancellation request for order <span class="badge">${ref}</span> has been approved and the order has been cancelled.</p>
@@ -255,7 +253,7 @@ export function orderCancelledTemplate(opts: {
   return {
     subject: `Your Irraya order ${ref} has been cancelled`,
     html,
-    text: `Hi ${opts.name || opts.email}, your Irraya order ${ref} has been cancelled.${opts.refundInitiated ? ` Refund of ${inr(opts.totalInPaise)} initiated.` : ""}`,
+    text: `Hi ${opts.name || opts.email}, your Irraya order ${ref} has been cancelled. A refund of ${inr(opts.totalInPaise)} has been initiated and will be credited within 5–7 working days.`,
   }
 }
 

@@ -35,7 +35,7 @@ export default async function orderCancelledNotificationHandler({
     orderRef,
     displayId: order.display_id,
     totalInPaise: Math.round(Number(order.total || 0) * 100),
-    refundInitiated,
+    refundInitiated: true, // always mention refund on cancellation
     requestedByUser,
   })
 
