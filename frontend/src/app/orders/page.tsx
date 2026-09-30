@@ -315,9 +315,15 @@ export default function OrdersPage() {
             const firstItem = order.items[0];
             const otherItemsCount = order.items.length - 1;
             const orderLabel = order.orderRef || (order.displayId ? `#${order.displayId}` : order.id.slice(-8).toUpperCase());
+            const isDelivered = displayStatus === "delivered" || displayStatus === "fulfilled";
 
             return (
-              <div key={order.id} className="orders-card">
+              <div
+                key={order.id}
+                className="orders-card"
+                onClick={() => router.push(`/order/${order.id}?view=status`)}
+                style={{ cursor: "pointer" }}
+              >
                 {/* Product image */}
                 <div className="orders-card-image">
                   {firstItem?.image ? (
@@ -350,8 +356,11 @@ export default function OrdersPage() {
                         {otherItemsCount > 0 ? ` · ${otherItemsCount} more item${otherItemsCount > 1 ? "s" : ""}` : ""}
                       </p>
                     </div>
-                    <div className="orders-card-price">
-                      {formatMoney(order.totalInCents, order.currencyCode)}
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div className="orders-card-price">
+                        {formatMoney(order.totalInCents, order.currencyCode)}
+                      </div>
+                      <span style={{ color: "var(--text-muted)", fontSize: "1.3rem", lineHeight: 1, flexShrink: 0 }}>›</span>
                     </div>
                   </div>
 
@@ -382,7 +391,13 @@ export default function OrdersPage() {
                     <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "var(--space-sm)" }}>
                       Tracking:{" "}
                       {order.tracking.trackingUrl ? (
-                        <a href={order.tracking.trackingUrl} target="_blank" rel="noreferrer" style={{ color: "var(--accent-warm)", fontWeight: 600 }}>
+                        <a
+                          href={order.tracking.trackingUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: "var(--accent-warm)", fontWeight: 600 }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {order.tracking.carrier ? `${order.tracking.carrier} · ` : ""}{order.tracking.trackingNumber} ↗
                         </a>
                       ) : (
@@ -392,9 +407,31 @@ export default function OrdersPage() {
                   )}
 
                   <div className="orders-card-actions">
-                    <Link href={`/order/${order.id}?view=status`} className="btn btn-secondary">View Order</Link>
                     {order.eligibility?.canExchange && (
-                      <Link href={`/order/${order.id}?open=exchange`} className="btn btn-outline">Exchange</Link>
+                      <Link
+                        href={`/order/${order.id}?open=exchange`}
+                        className="btn btn-outline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Exchange
+                      </Link>
+                    )}
+                    {isDelivered && (
+                      <Link
+                        href={`/products/${order.items[0]?.handle || order.items[0]?.productId || ""}`}
+                        className="btn btn-outline"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          fontSize: "0.83rem",
+                          borderColor: "var(--accent-warm)",
+                          color: "var(--accent-warm)",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        ★ Rate &amp; Review
+                      </Link>
                     )}
                   </div>
                 </div>
