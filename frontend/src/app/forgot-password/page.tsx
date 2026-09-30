@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { forgotPassword, verifyOtp, resetPassword } from "@/lib/api/auth";
+import { forgotPassword, verifyOtp, resetPassword, ForgotPasswordError } from "@/lib/api/auth";
 
 type Step = "email" | "otp" | "password" | "done";
 
@@ -18,17 +18,22 @@ export default function ForgotPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [ssoProvider, setSsoProvider] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSsoProvider(null);
     setLoading(true);
     try {
       const res = await forgotPassword(email.trim().toLowerCase());
       setRequestId(res.requestId);
       setStep("otp");
     } catch (err: unknown) {
+      if (err instanceof ForgotPasswordError && err.provider) {
+        setSsoProvider(err.provider);
+      }
       setError(err instanceof Error ? err.message : "Failed to send reset code.");
     } finally {
       setLoading(false);
@@ -107,10 +112,20 @@ export default function ForgotPasswordPage() {
                   autoFocus
                 />
               </div>
-              {error && <p className="auth-error">{error}</p>}
-              <button type="submit" className="btn btn-full" disabled={loading}>
-                {loading ? "Sending…" : "Send reset code"}
-              </button>
+              {error && !ssoProvider && <p className="auth-error">{error}</p>}
+              {ssoProvider && (
+                <div style={{ padding: "14px 16px", borderRadius: 8, background: "rgba(37,99,235,0.07)", border: "1px solid rgba(37,99,235,0.2)", marginTop: "var(--space-sm)" }}>
+                  <p style={{ fontSize: "0.88rem", color: "var(--text-primary)", marginBottom: "var(--space-sm)" }}>{error}</p>
+                  <Link href="/login" className="btn btn-outline btn-full" style={{ fontSize: "0.88rem" }}>
+                    ← Sign in with {ssoProvider.charAt(0).toUpperCase() + ssoProvider.slice(1)}
+                  </Link>
+                </div>
+              )}
+              {!ssoProvider && (
+                <button type="submit" className="btn btn-full" disabled={loading}>
+                  {loading ? "Sending…" : "Send reset code"}
+                </button>
+              )}
               <p className="auth-footer-link">
                 <Link href="/login">← Back to login</Link>
               </p>

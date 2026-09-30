@@ -395,11 +395,25 @@ export async function deleteCustomerAddress(token: string, addressId: string): P
   });
 }
 
+export class ForgotPasswordError extends Error {
+  constructor(message: string, public readonly provider?: string) {
+    super(message);
+    this.name = "ForgotPasswordError";
+  }
+}
+
 export async function forgotPassword(email: string): Promise<{ requestId: string; expiresAt: number }> {
-  return medusaRequest("/store/auth/forgot-password", {
+  const res = await fetch(`${(await import("../config")).config.medusaBaseUrl}/store/auth/forgot-password`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
+    cache: "no-store",
   });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new ForgotPasswordError(data.message || "Failed to send reset code.", data.provider);
+  }
+  return data;
 }
 
 export async function verifyOtp(email: string, code: string, requestId?: string): Promise<{ verificationToken: string }> {
