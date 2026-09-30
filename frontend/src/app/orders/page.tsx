@@ -155,9 +155,8 @@ export default function OrdersPage() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-md)" }}>
         <div>
-          <span className="hero-tag">My Orders</span>
-          <h1 className="page-title" style={{ marginTop: "var(--space-xs)" }}>
-            Order History
+          <h1 className="page-title">
+            My Orders
             {orders.length > 0 && (
               <span style={{ marginLeft: "8px", fontWeight: 400, color: "var(--text-muted)", fontSize: "0.5em" }}>
                 ({orders.length})

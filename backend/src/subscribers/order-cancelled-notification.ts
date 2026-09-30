@@ -25,14 +25,18 @@ export default async function orderCancelledNotificationHandler({
 
   const metadata = (order.metadata || {}) as Record<string, any>
   const refundInitiated = !!metadata?.razorpay?.refund_id
+  const requestedByUser = metadata?.latest_customer_request?.type === "cancel"
+  const orderRef = typeof metadata?.order_ref === "string" ? metadata.order_ref : undefined
 
   const tpl = orderCancelledTemplate({
     name: customerName,
     email,
     orderId: order.id,
+    orderRef,
     displayId: order.display_id,
     totalInPaise: Math.round(Number(order.total || 0) * 100),
     refundInitiated,
+    requestedByUser,
   })
 
   await sendMail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text }).catch((err) =>

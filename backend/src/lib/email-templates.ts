@@ -225,21 +225,29 @@ export function orderCancelledTemplate(opts: {
   name?: string
   email: string
   orderId: string
+  orderRef?: string
   displayId?: number
   totalInPaise: number
   refundInitiated?: boolean
+  requestedByUser?: boolean
 }) {
-  const ref = opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase()
+  const ref = opts.orderRef || (opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase())
   const refundNote = opts.refundInitiated
     ? `<p>A refund of <strong>${inr(opts.totalInPaise)}</strong> has been initiated and will reflect in your account within 5–7 business days.</p>`
     : ""
 
+  const body = opts.requestedByUser
+    ? `<p>Your cancellation request for order <span class="badge">${ref}</span> has been approved and the order has been cancelled.</p>
+       ${refundNote}
+       <p>If you have any questions, contact us at <a href="mailto:info@irraya.com">info@irraya.com</a>.</p>`
+    : `<p>Your order <span class="badge">${ref}</span> has been cancelled.</p>
+       ${refundNote}
+       <p>If you did not expect this or have questions, please contact us at <a href="mailto:info@irraya.com">info@irraya.com</a> and we'll help you out.</p>`
+
   const html = base(`Order ${ref} cancelled — Irraya`, `
     <h1>Order cancelled</h1>
     <p>Hi ${opts.name || opts.email},</p>
-    <p>Your order <span class="badge">${ref}</span> has been cancelled as requested.</p>
-    ${refundNote}
-    <p>If you have any questions, contact us at <a href="mailto:info@irraya.com">info@irraya.com</a>.</p>
+    ${body}
   `)
 
   return {
