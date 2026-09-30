@@ -1,6 +1,8 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
 import { createOrderShipmentWorkflow, markOrderFulfillmentAsDeliveredWorkflow } from "@medusajs/core-flows"
+import { sendMail } from "../../../lib/mailer"
+import { orderDeliveredTemplate } from "../../../lib/email-templates"
 
 export const GET = async (
   req: MedusaRequest,
@@ -179,6 +181,25 @@ export const POST = async (
       } catch (err) {
         console.error("[shiprocket-webhook] Failed to mark fulfillment as delivered:", err)
       }
+    }
+
+    // Notify customer of delivery
+    const orderService = req.scope.resolve(Modules.ORDER)
+    const fullOrder = await orderService.retrieveOrder(order.id, { relations: ["customer"] }).catch(() => null)
+    const email = fullOrder?.email || (fullOrder as any)?.customer?.email
+    if (email) {
+      const customerName = (fullOrder as any)?.customer
+        ? [(fullOrder as any).customer.first_name, (fullOrder as any).customer.last_name].filter(Boolean).join(" ")
+        : undefined
+      const tpl = orderDeliveredTemplate({
+        name: customerName,
+        email,
+        orderId: order.id,
+        displayId: order.display_id,
+      })
+      sendMail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text }).catch((err) =>
+        console.error("[shiprocket-webhook] Failed to send delivered email:", err)
+      )
     }
   }
 

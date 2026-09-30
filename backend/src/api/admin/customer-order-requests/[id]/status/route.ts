@@ -2,7 +2,7 @@ import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { cancelOrderWorkflow } from "@medusajs/core-flows"
 import { createRazorpayRefund } from "../../../../../lib/razorpay"
 import { upsertRazorpayPaymentReference } from "../../../../../lib/razorpay-payment-references"
-import ShiprocketService from "../../../../../../modules/shiprocket/service"
+import ShiprocketService from "../../../../../modules/shiprocket/service"
 import pg from "pg"
 
 /** Convert Medusa paise amount to rupees for Shiprocket. */

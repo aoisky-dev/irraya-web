@@ -1,4 +1,6 @@
 import { createHash, createHmac, randomInt, randomUUID, timingSafeEqual } from "node:crypto"
+import { sendMail } from "./mailer"
+import { otpTemplate } from "./email-templates"
 
 export type VerificationChannel = "email" | "phone"
 
@@ -76,9 +78,14 @@ export async function createVerificationRequest(channel: VerificationChannel, ra
     attempts: 0
   })
 
-  // Detached delivery mode: no mail/SMS provider is configured yet.
-  // When providers are added, replace this console delivery with provider dispatch.
-  console.info(`[Irraya OTP] ${channel} ${value} code: ${code}`)
+  if (channel === "email") {
+    const tpl = otpTemplate({ email: value, code, expiresMinutes: Math.round(ttlSeconds() / 60) })
+    sendMail({ to: value, subject: tpl.subject, html: tpl.html, text: tpl.text }).catch((err) =>
+      console.error("[auth-verification] Failed to send OTP email:", err)
+    )
+  } else {
+    console.info(`[Irraya OTP] ${channel} ${value} code: ${code}`)
+  }
 
   return { requestId, expiresAt }
 }

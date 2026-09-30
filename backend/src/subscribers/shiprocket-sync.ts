@@ -1,6 +1,8 @@
 import { SubscriberArgs, type SubscriberConfig } from "@medusajs/framework"
 import { Modules } from "@medusajs/framework/utils"
 import ShiprocketService from "../modules/shiprocket/service"
+import { sendMail } from "../lib/mailer"
+import { orderShippedTemplate } from "../lib/email-templates"
 
 /** Shiprocket order_id must be unique and ≤ 50 characters. */
 function buildShiprocketOrderId(displayId: number | undefined, orderId: string, fulfillmentId: string | undefined): string {
@@ -76,7 +78,7 @@ export default async function shiprocketOrderFulfillmentCreatedHandler({
       selling_price: paisaToRupees(item.unit_price ?? item.line_item?.unit_price),
     })),
     payment_method: "Prepaid",
-    sub_total: paisaToRupees(order.item_total),
+    sub_total: paisaToRupees(Number(order.item_total)),
     length: 10,
     breadth: 10,
     height: 10,
@@ -97,6 +99,23 @@ export default async function shiprocketOrderFulfillmentCreatedHandler({
     }
   } catch (error) {
     console.error("Failed to sync order to Shiprocket", error)
+  }
+
+  // Notify customer that their order has been picked up for shipment
+  const email = order.email || (order as any).customer?.email
+  if (email) {
+    const customerName = (order as any).customer
+      ? [(order as any).customer.first_name, (order as any).customer.last_name].filter(Boolean).join(" ")
+      : undefined
+    const tpl = orderShippedTemplate({
+      name: customerName,
+      email,
+      orderId: order.id,
+      displayId: order.display_id,
+    })
+    sendMail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text }).catch((err) =>
+      console.error("[shiprocket-sync] Failed to send shipped email:", err)
+    )
   }
 }
 

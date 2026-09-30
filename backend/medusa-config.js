@@ -31,6 +31,15 @@ module.exports = defineConfig({
   },
   admin: {
     maxUploadFileSize: 2 * 1024 * 1024,
+    vite: (config) => {
+      return {
+        ...config,
+        server: {
+          ...config.server,
+          allowedHosts: ["api.irraya.com"],
+        },
+      }
+    }
   },
   modules: [
     {
