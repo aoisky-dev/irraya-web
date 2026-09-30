@@ -95,6 +95,36 @@ export async function adminRemoveProducts(
   });
 }
 
+// ---------------------------------------------------------------------------
+// Convenience helpers for the admin sale config page
+// (treats the first sale record as the global config)
+// ---------------------------------------------------------------------------
+
+/** Get the global sale config (first sale record). */
+export async function adminGetSaleConfig(token: string): Promise<SaleConfig> {
+  const sales = await adminListSales(token)
+  if (sales.length > 0) return sales[0]
+  // Return a sensible default if no sale record exists yet
+  return { id: 0, name: "Global Sale", active: false, discountPct: 0, label: "", productIds: [] }
+}
+
+/** Update (or create if none exists) the global sale config. */
+export async function adminSetSaleConfig(
+  token: string,
+  input: { active?: boolean; discountPct?: number; label?: string }
+): Promise<SaleConfig> {
+  const sales = await adminListSales(token)
+  if (sales.length > 0) {
+    return adminUpdateSale(token, sales[0].id, input)
+  }
+  return adminCreateSale(token, {
+    name: "Global Sale",
+    discountPct: input.discountPct ?? 0,
+    label: input.label,
+    active: input.active ?? false,
+  })
+}
+
 /** Compute sale price in paise. Returns undefined if no active sale for this product. */
 export function applySaleDiscount(
   priceInCents: number,
