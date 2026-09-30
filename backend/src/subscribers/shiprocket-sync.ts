@@ -61,15 +61,15 @@ export default async function shiprocketOrderFulfillmentCreatedHandler({
     billing_customer_name: order.shipping_address?.first_name || "Customer",
     billing_last_name: order.shipping_address?.last_name || "",
     billing_address: (order.shipping_address?.address_1 || "N/A").slice(0, 150),
+    billing_address_2: (order.shipping_address?.address_2 || "").slice(0, 150),
     billing_city: order.shipping_address?.city || "N/A",
     billing_pincode: order.shipping_address?.postal_code || "000000",
-    billing_state: order.shipping_address?.province || "N/A",
+    billing_state: order.shipping_address?.province || "Telangana",  // Shiprocket requires non-empty state
     billing_country: (order.shipping_address?.country_code || "IN").toUpperCase(),
     billing_email: order.email || "noreply@irraya.com",
-    billing_phone: order.shipping_address?.phone || "0000000000",
+    billing_phone: (order.shipping_address?.phone || "9999999999").replace(/\D/g, "").slice(-10),
     shipping_is_billing: true,
     order_items: fulfillmentItems.map((item: any) => ({
-      // item.title may be absent; fall back through line_item and product title
       name: item.title || item.line_item?.title || item.product_title || "Item",
       sku: item.variant_sku || item.sku || item.line_item?.variant_sku || "SKU",
       units: item.quantity,
@@ -83,9 +83,11 @@ export default async function shiprocketOrderFulfillmentCreatedHandler({
     weight: 0.5,
   }
 
+  logger.info(`[shiprocket-sync] Creating order with payload: ${JSON.stringify(payload)}`)
+
   try {
     const srOrder = await shiprocketService.createOrder(payload)
-    console.log("Shiprocket Order Created: ", srOrder)
+    logger.info(`[shiprocket-sync] Order created: ${JSON.stringify(srOrder)}`)
 
     if (srOrder && srOrder.order_id) {
       await orderModuleService.updateOrders(order.id, {
