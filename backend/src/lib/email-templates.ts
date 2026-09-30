@@ -101,7 +101,7 @@ export function orderPlacedUserTemplate(opts: {
       </tr>
     </table>
     <hr class="divider"/>
-    <p>We'll send you another email when your order ships. If you have any questions, reply to this email or contact us at <a href="mailto:info@irraya.com">info@irraya.com</a>.</p>
+    <p>We'll send you another email when your order ships. If you have any questions, please contact us at <a href="mailto:info@irraya.com">info@irraya.com</a>.</p>
   `)
 
   return {
@@ -254,5 +254,41 @@ export function orderCancelledTemplate(opts: {
     subject: `Your Irraya order ${ref} has been cancelled`,
     html,
     text: `Hi ${opts.name || opts.email}, your Irraya order ${ref} has been cancelled.${opts.refundInitiated ? ` Refund of ${inr(opts.totalInPaise)} initiated.` : ""}`,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Order Request — admin copy
+// ---------------------------------------------------------------------------
+export function orderRequestAdminTemplate(opts: {
+  orderId: string
+  orderRef?: string
+  displayId?: number
+  requestType: string
+  reason: string
+  notes?: string
+  customerEmail: string
+  customerName?: string
+}) {
+  const ref = opts.orderRef || (opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase())
+  const typeDisplay = opts.requestType.charAt(0).toUpperCase() + opts.requestType.slice(1)
+  
+  const html = base(`New ${typeDisplay} Request for ${ref}`, `
+    <h1>New ${typeDisplay} Request</h1>
+    <p>A customer has submitted a new <strong>${opts.requestType}</strong> request for order <span class="badge">${ref}</span>.</p>
+    
+    <table class="items-table">
+      <tr><td style="color:#666;width:100px;">Customer</td><td>${opts.customerName || "Unknown"} (<a href="mailto:${opts.customerEmail}">${opts.customerEmail}</a>)</td></tr>
+      <tr><td style="color:#666;">Reason</td><td>${opts.reason}</td></tr>
+      ${opts.notes ? `<tr><td style="color:#666;">Notes</td><td>${opts.notes}</td></tr>` : ""}
+    </table>
+    
+    <p style="margin-top:20px;"><a class="btn" href="https://api.irraya.com/app/orders/${opts.orderId}">View Order in Admin</a></p>
+  `)
+
+  return {
+    subject: `[Request] ${typeDisplay} request for ${ref}`,
+    html,
+    text: `New ${opts.requestType} request for ${ref} by ${opts.customerEmail}. Reason: ${opts.reason}`,
   }
 }

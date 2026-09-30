@@ -5,6 +5,11 @@ import path from "path";
 export default defineMiddlewares({
   routes: [
     {
+      matcher: "/store/payments/razorpay/webhook",
+      method: "POST",
+      bodyParser: { preserveRawBody: true },
+    },
+    {
       matcher: "/admin/uploads",
       method: "POST",
       bodyParser: {

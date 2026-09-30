@@ -1,6 +1,8 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { authenticateCustomer } from "../../../../../lib/customer-auth"
 import { createCustomerOrderRequest, listCustomerOrderRequests } from "../../../../../lib/customer-order-management"
+import { sendMail, ADMIN_EMAIL } from "../../../../../lib/mailer"
+import { orderRequestAdminTemplate } from "../../../../../lib/email-templates"
 
 type CreateOrderRequestBody = {
   order_id?: unknown
@@ -51,6 +53,43 @@ export async function POST(req: MedusaRequest<CreateOrderRequestBody>, res: Medu
       notes: normalizeString(body.notes),
       items: body.items
     })
+
+    // Fetch order details for email
+    try {
+      const query = req.scope.resolve("query")
+      const { data: orders } = await query.graph({
+        entity: "order",
+        fields: ["id", "display_id", "email", "metadata", "customer.*"],
+        filters: { id: request.order_id },
+      })
+      const order = orders?.[0]
+      if (order) {
+        const email = order.email || (order as any).customer?.email || "unknown"
+        const customerName = (order as any).customer
+          ? [(order as any).customer.first_name, (order as any).customer.last_name].filter(Boolean).join(" ")
+          : undefined
+        
+        const tpl = orderRequestAdminTemplate({
+          orderId: order.id,
+          orderRef: (order as any).metadata?.order_ref,
+          displayId: order.display_id,
+          requestType: request.request_type,
+          reason: request.reason,
+          notes: request.notes || undefined,
+          customerEmail: email,
+          customerName,
+        })
+        
+        await sendMail({
+          to: ADMIN_EMAIL(),
+          subject: tpl.subject,
+          html: tpl.html,
+          text: tpl.text,
+        })
+      }
+    } catch (err) {
+      console.error("Failed to send order request admin notification", err)
+    }
 
     res.status(201).json({
       request,

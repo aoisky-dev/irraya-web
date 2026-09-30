@@ -31,7 +31,7 @@ function buildOrderRef(displayId: number | undefined, createdAt: string): string
 // ---------------------------------------------------------------------------
 // order.placed → email customer + admin
 // ---------------------------------------------------------------------------
-export async function orderPlacedHandler({
+export default async function orderPlacedHandler({
   event: { data },
   container,
 }: SubscriberArgs<OrderEventData>) {

@@ -195,7 +195,15 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
 
   return {
     id: String(raw?.id ?? ""),
-    orderRef: typeof (metadata as any)?.order_ref === "string" ? (metadata as any).order_ref : undefined,
+    orderRef: typeof (metadata as any)?.order_ref === "string" 
+      ? (metadata as any).order_ref 
+      : (() => {
+          const date = raw?.created_at ? new Date(raw.created_at) : new Date();
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const idStr = String(raw?.display_id || 0).padStart(5, "0");
+          return `IRR-${year}${month}-${idStr}`;
+        })(),
     displayId: raw?.display_id ? String(raw.display_id) : undefined,
     cartId: String(raw?.cart_id ?? cartIdFallback ?? ""),
     customerId: raw?.customer_id ? String(raw.customer_id) : undefined,

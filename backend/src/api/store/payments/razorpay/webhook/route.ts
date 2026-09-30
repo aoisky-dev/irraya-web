@@ -86,18 +86,21 @@ async function autoCaptureByCartId(req: MedusaRequest, cartId: string): Promise<
     const { data: cartData } = await query.graph({
       entity: "cart",
       filters: { id: cartId },
-      fields: ["payment_collection.payments.id", "payment_collection.payments.status"],
+      fields: ["payment_collections.payments.id", "payment_collections.payments.status"],
     })
-    const payments = cartData?.[0]?.payment_collection?.payments ?? []
-    for (const p of payments) {
-      if (p.status === "authorized" || p.status === "not_paid" || p.status === "awaiting") {
-        try {
-          await capturePaymentWorkflow(req.scope).run({
-            input: { payment_id: p.id },
-          })
-          console.info(`[webhook] Captured Medusa payment ${p.id} for cart ${cartId}`)
-        } catch (err) {
-          console.warn(`[webhook] Could not capture payment ${p.id}:`, err)
+    const collections = cartData?.[0]?.payment_collections ?? []
+    for (const col of collections) {
+      const payments = col?.payments ?? []
+      for (const p of payments) {
+        if (p.status === "authorized" || p.status === "not_paid" || p.status === "awaiting") {
+          try {
+            await capturePaymentWorkflow(req.scope).run({
+              input: { payment_id: p.id },
+            })
+            console.info(`[webhook] Captured Medusa payment ${p.id} for cart ${cartId}`)
+          } catch (err) {
+            console.warn(`[webhook] Could not capture payment ${p.id}:`, err)
+          }
         }
       }
     }
@@ -140,6 +143,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse): Promise<voi
 
   try {
     if (!verifyRazorpayWebhookSignature(rawBody, signature)) {
+      console.warn(`[webhook] Signature verification failed. Signature: ${signature}, rawBody type: ${typeof rawBody}, length: ${rawBody?.length}`)
       res.status(400).json({ message: "Invalid Razorpay webhook signature." })
       return
     }

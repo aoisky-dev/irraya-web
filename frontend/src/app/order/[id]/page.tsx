@@ -253,10 +253,10 @@ export default function OrderConfirmationPage() {
             {isCancelled
               ? "Your order has been cancelled. Any payment will be refunded within 5–7 business days."
               : isCancelRequested
-                ? `Your cancellation request for order #${order?.displayId || params.id} is being reviewed.`
+                ? `Your cancellation request for order ${order?.orderRef || (order?.displayId ? `#${order.displayId}` : `#${params.id}`)} is being reviewed.`
                 : isExchangeInProgress
-                  ? `Your exchange request for order #${order?.displayId || params.id} is being processed.`
-                  : `Thank you! Your order #${order?.displayId || params.id} has been placed successfully.`}
+                  ? `Your exchange request for order ${order?.orderRef || (order?.displayId ? `#${order.displayId}` : `#${params.id}`)} is being processed.`
+                  : `Thank you! Your order ${order?.orderRef || (order?.displayId ? `#${order.displayId}` : `#${params.id}`)} has been placed successfully.`}
           </p>
           {!isCancelled && orderDate && (
             <p className="order-hero-email">Placed on {orderDate}</p>
@@ -277,7 +277,7 @@ export default function OrderConfirmationPage() {
       {/* Order Status heading when coming from account */}
       {viewStatus && (
         <div style={{ padding: "var(--space-xl) 16px var(--space-lg)", maxWidth: "1000px", margin: "0 auto" }}>
-          <span className="hero-tag">Order #{order?.displayId || params.id}</span>
+          <span className="hero-tag">Order {order?.orderRef || (order?.displayId ? `#${order.displayId}` : `#${params.id}`)}</span>
           <h1 className="page-title" style={{ marginTop: "var(--space-sm)" }}>Order Status</h1>
         </div>
       )}
@@ -310,7 +310,7 @@ export default function OrderConfirmationPage() {
                 <div className="order-detail-item">
                   <span className="order-detail-label">Order ID</span>
                   <span className="order-detail-value order-id-chip">
-                    #{order?.displayId || params.id}
+                    {order?.orderRef || (order?.displayId ? `#${order.displayId}` : `#${params.id}`)}
                   </span>
                 </div>
                 {orderDate && (
@@ -389,7 +389,7 @@ export default function OrderConfirmationPage() {
             <div className="order-support-card">
               <p className="order-support-title">Need help with your order?</p>
               <p className="order-support-text">
-                Contact our support team at <strong>support@irraya.in</strong> with your order ID <strong>#{order?.displayId || params.id}</strong> and we'll assist you promptly.
+                Contact our support team at <strong>support@irraya.in</strong> with your order ID <strong>{order?.orderRef || (order?.displayId ? `#${order.displayId}` : `#${params.id}`)}</strong> and we'll assist you promptly.
               </p>
               <Link href="/returns" className="order-support-link">View Exchange Policy →</Link>
             </div>

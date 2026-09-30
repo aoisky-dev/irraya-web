@@ -17,9 +17,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
 export async function getMyOrders(token: string): Promise<Order[]> {
   try {
     const response = await medusaRequest<{ orders?: unknown[]; order?: unknown[] }>(
-      // "+metadata" ADDS to Medusa's default field set; a bare "metadata"
-      // would REPLACE the defaults and drop status/display_id/total/etc.
-      "/store/orders?limit=50&order[created_at]=DESC&fields=*items,*payment_collections,*payment_collections.payment_sessions,+metadata",
+      "/store/orders?limit=50&order=-created_at&fields=*items,*payment_collections,+metadata",
       { headers: { Authorization: `Bearer ${token}` } }
     );
     const orders = response.orders ?? (Array.isArray(response.order) ? response.order : []);
@@ -29,10 +27,10 @@ export async function getMyOrders(token: string): Promise<Order[]> {
   } catch {
     // Fallback: try fetching via customer profile with expanded orders
     const response = await medusaRequest<{ customer?: { orders?: unknown[] } }>(
-      "/store/customers/me?fields=*orders",
+      "/store/customers/me?fields=*orders,+orders.items,+orders.payment_collections,+orders.metadata",
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    return (response.customer?.orders ?? []).map((o) => mapMedusaOrder(o));
+    return (response.customer?.orders ?? []).map((o) => mapMedusaOrder(o)).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 }
 

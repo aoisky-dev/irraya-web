@@ -8,7 +8,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { formatMoney } from "@/lib/format";
 import type { Order } from "@/lib/types";
 import { getMyOrders } from "@/lib/api/orders";
-import { IconPackage } from "@/components/Icons";
+import { IconPackage, IconSearch } from "@/components/Icons";
 
 // ---------------------------------------------------------------------------
 // Status display helpers
@@ -153,75 +153,141 @@ export default function OrdersPage() {
   return (
     <section className="account-shell">
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-md)" }}>
-        <div>
-          <h1 className="page-title">
-            My Orders
-            {orders.length > 0 && (
-              <span style={{ marginLeft: "8px", fontWeight: 400, color: "var(--text-muted)", fontSize: "0.5em" }}>
-                ({orders.length})
-              </span>
-            )}
-          </h1>
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: "var(--space-md)",
+        paddingBottom: "var(--space-md)",
+        borderBottom: "1px solid var(--border)",
+        marginBottom: "var(--space-xl)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <h1 className="page-title" style={{ margin: 0, lineHeight: 1 }}>My Orders</h1>
+          {orders.length > 0 && (
+            <span style={{
+              background: "var(--bg-secondary)",
+              color: "var(--text-primary)",
+              padding: "4px 12px",
+              borderRadius: "20px",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              border: "1px solid var(--border)"
+            }}>
+              {orders.length} {orders.length === 1 ? 'Order' : 'Orders'}
+            </span>
+          )}
         </div>
-        <Link href="/account" className="btn btn-outline">← Back to Account</Link>
+        <Link href="/account" className="btn btn-outline" style={{ fontSize: "0.85rem", padding: "8px 16px" }}>← Back to Account</Link>
       </div>
 
-      {/* Search + Sort bar */}
+      {/* Toolbar: Filters, Search & Sort */}
       {!isLoadingOrders && orders.length > 0 && (
-        <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap", marginTop: "var(--space-lg)" }}>
-          <input
-            type="search"
-            placeholder="Search by order ID or product…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{
-              flex: "1 1 220px", minWidth: 0,
-              padding: "9px 14px", borderRadius: "8px",
-              border: "1px solid var(--border)", background: "var(--bg-secondary)",
-              color: "var(--text-primary)", fontSize: "0.88rem",
-              outline: "none",
-            }}
-          />
-          <select
-            value={sort}
-            onChange={e => setSort(e.target.value as SortKey)}
-            style={{
-              padding: "9px 12px", borderRadius: "8px",
-              border: "1px solid var(--border)", background: "var(--bg-secondary)",
-              color: "var(--text-primary)", fontSize: "0.88rem",
-              cursor: "pointer",
-            }}
-          >
-            {SORT_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
-          </select>
-        </div>
-      )}
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-md)",
+          marginBottom: "var(--space-xl)",
+          background: "var(--bg-secondary)",
+          border: "1px solid var(--border)",
+          borderRadius: "12px",
+          padding: "var(--space-md)"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-md)" }}>
+            
+            {/* Filter tabs */}
+            <div style={{ display: "flex", gap: "8px", overflowX: "auto", flex: "1 1 auto", minWidth: "250px" }}>
+              {FILTER_TABS.map(tab => {
+                const count = orders.filter(o => matchesFilter(o, tab.key)).length;
+                const active = filter === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setFilter(tab.key)}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "20px",
+                      border: active ? "1px solid var(--text-primary)" : "1px solid transparent",
+                      background: active ? "var(--text-primary)" : "transparent",
+                      color: active ? "var(--bg-primary)" : "var(--text-primary)",
+                      fontWeight: active ? 600 : 500,
+                      fontSize: "0.85rem",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      whiteSpace: "nowrap",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}
+                  >
+                    {tab.label}
+                    {count > 0 && (
+                      <span style={{
+                        fontSize: "0.75rem",
+                        background: active ? "rgba(255,255,255,0.25)" : "var(--border)",
+                        color: active ? "inherit" : "var(--text-muted)",
+                        padding: "2px 8px",
+                        borderRadius: "10px",
+                        fontWeight: 600
+                      }}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
-      {/* Filter tabs */}
-      {!isLoadingOrders && orders.length > 0 && (
-        <div style={{ display: "flex", gap: "var(--space-xs)", marginTop: "var(--space-md)", borderBottom: "1px solid var(--border)", paddingBottom: "2px" }}>
-          {FILTER_TABS.map(tab => {
-            const count = orders.filter(o => matchesFilter(o, tab.key)).length;
-            const active = filter === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setFilter(tab.key)}
-                style={{
-                  padding: "6px 14px", borderRadius: "6px 6px 0 0", border: "none",
-                  background: active ? "var(--bg-primary)" : "transparent",
-                  color: active ? "var(--text-primary)" : "var(--text-muted)",
-                  fontWeight: active ? 700 : 400, fontSize: "0.84rem",
-                  cursor: "pointer", borderBottom: active ? "2px solid var(--text-primary)" : "2px solid transparent",
-                  transition: "all 0.15s",
-                }}
-              >
-                {tab.label}
-                <span style={{ marginLeft: "5px", fontSize: "0.72rem", opacity: 0.7 }}>({count})</span>
-              </button>
-            );
-          })}
+            {/* Search and Sort */}
+            <div style={{ display: "flex", gap: "12px", flex: "1 1 auto", justifyContent: "flex-end", minWidth: "300px" }}>
+              <div style={{ position: "relative", flex: "1 1 auto", maxWidth: "300px" }}>
+                <div style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }}>
+                  <IconSearch size={16} />
+                </div>
+                <input
+                  type="search"
+                  placeholder="Search orders..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px 10px 38px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border)",
+                    background: "var(--bg-primary)",
+                    color: "var(--text-primary)",
+                    fontSize: "0.88rem",
+                    outline: "none",
+                    transition: "border-color 0.2s"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "var(--text-primary)"}
+                  onBlur={(e) => e.target.style.borderColor = "var(--border)"}
+                />
+              </div>
+              <div style={{ position: "relative" }}>
+                <select
+                  value={sort}
+                  onChange={e => setSort(e.target.value as SortKey)}
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border)",
+                    background: "var(--bg-primary)",
+                    color: "var(--text-primary)",
+                    fontSize: "0.88rem",
+                    cursor: "pointer",
+                    outline: "none",
+                    minWidth: "160px"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "var(--text-primary)"}
+                  onBlur={(e) => e.target.style.borderColor = "var(--border)"}
+                >
+                  {SORT_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

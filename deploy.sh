@@ -7,7 +7,16 @@ REMOTE_DIR="~/irraya-web"
 
 echo "🚀 Starting deployment to $SERVER..."
 
-# 1. Sync the latest code to the server (excluding node_modules, .next, etc.)
+# 1. Sync the environment variables
+echo "⚙️ Syncing environment files..."
+cp ./backend/.env ./deploy/prod/backend.env
+if [ -f ./frontend/.env.production ]; then
+  cp ./frontend/.env.production ./deploy/prod/frontend.env
+elif [ -f ./frontend/.env.local ]; then
+  cp ./frontend/.env.local ./deploy/prod/frontend.env
+fi
+
+# 2. Sync the latest code to the server (excluding node_modules, .next, etc.)
 echo "📦 Syncing files..."
 rsync -avz \
     --exclude 'node_modules' \

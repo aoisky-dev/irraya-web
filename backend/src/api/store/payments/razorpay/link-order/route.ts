@@ -32,58 +32,65 @@ async function autoCaptureOrderPayments(req: MedusaRequest, orderId: string, car
     const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
     let paymentIds: string[] = []
 
-    // Strategy 1: Find payments via cart → payment_collection → payments
+    // Strategy 1: Find payments via cart → payment_collections → payments
     if (cartId) {
       try {
         const { data: cartData } = await query.graph({
           entity: "cart",
           filters: { id: cartId },
-          fields: ["payment_collection.payments.id", "payment_collection.payments.status"],
+          fields: ["payment_collections.status", "payment_collections.payments.id"],
         })
-        const payments = cartData?.[0]?.payment_collection?.payments ?? []
-        paymentIds = payments
-          .filter((p: any) => p.status === "authorized" || p.status === "not_paid" || p.status === "awaiting")
-          .map((p: any) => p.id)
-      } catch (err) {
-        console.warn("[link-order] Cart query failed:", err)
-      }
-    }
-
-    // Strategy 2: Find payments via order → payment_collection link
-    if (paymentIds.length === 0) {
-      try {
-        const { data: orderPayColData } = await query.graph({
-          entity: "order",
-          filters: { id: orderId },
-          fields: ["payment_collection.payments.id", "payment_collection.payments.status"],
-        })
-        const payments = orderPayColData?.[0]?.payment_collection?.payments ?? []
-        paymentIds = payments
-          .filter((p: any) => p.status === "authorized" || p.status === "not_paid" || p.status === "awaiting")
-          .map((p: any) => p.id)
-      } catch (err) {
-        console.warn("[link-order] Order query failed:", err)
-      }
-    }
-
-    // Strategy 3: Query order_payment_collection link table directly
-    if (paymentIds.length === 0) {
-      try {
-        const { data: linkData } = await query.graph({
-          entity: "order_payment_collection",
-          filters: { order_id: orderId },
-          fields: ["payment_collection.payments.id", "payment_collection.payments.status"],
-        })
-        for (const link of linkData ?? []) {
-          const payments = link?.payment_collection?.payments ?? []
-          for (const p of payments) {
-            if (p.status === "authorized" || p.status === "not_paid" || p.status === "awaiting") {
+        const collections = cartData?.[0]?.payment_collections ?? []
+        for (const col of collections) {
+          if (col.status === "authorized" || col.status === "not_paid" || col.status === "awaiting") {
+            const payments = col?.payments ?? []
+            for (const p of payments) {
               paymentIds.push(p.id)
             }
           }
         }
       } catch (err) {
-        console.warn("[link-order] Link query failed:", err)
+        console.warn("[link-order] Cart query failed:", err)
+      }
+    }
+
+    // Strategy 2: Find payments via order → payment_collections link
+    if (paymentIds.length === 0) {
+      try {
+        const { data: orderPayColData } = await query.graph({
+          entity: "order",
+          filters: { id: orderId },
+          fields: ["payment_collections.status", "payment_collections.payments.id"],
+        })
+        const collections = orderPayColData?.[0]?.payment_collections ?? []
+        for (const col of collections) {
+          if (col.status === "authorized" || col.status === "not_paid" || col.status === "awaiting") {
+            const payments = col?.payments ?? []
+            for (const p of payments) {
+              paymentIds.push(p.id)
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[link-order] Order query failed:", err)
+      }
+    }
+
+    // Strategy 3: Query payment table directly using cart_id if it exists
+    if (paymentIds.length === 0) {
+      try {
+        const { data: payments } = await query.graph({
+          entity: "payment",
+          filters: { cart_id: cartId },
+          fields: ["id", "payment_collection.status"],
+        })
+        for (const p of payments ?? []) {
+          if (p.payment_collection?.status === "authorized" || p.payment_collection?.status === "not_paid" || p.payment_collection?.status === "awaiting") {
+            paymentIds.push(p.id)
+          }
+        }
+      } catch (err) {
+        console.warn("[link-order] Payment query failed:", err)
       }
     }
 
