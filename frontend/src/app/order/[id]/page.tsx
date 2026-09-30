@@ -389,7 +389,7 @@ export default function OrderConfirmationPage() {
             <div className="order-support-card">
               <p className="order-support-title">Need help with your order?</p>
               <p className="order-support-text">
-                Contact our support team at <strong>support@irraya.in</strong> with your order ID <strong>{order?.orderRef || (order?.displayId ? `#${order.displayId}` : `#${params.id}`)}</strong> and we'll assist you promptly.
+                Contact our support team at <strong>info@irraya.com</strong> with your order ID <strong>{order?.orderRef || (order?.displayId ? `#${order.displayId}` : `#${params.id}`)}</strong> and we'll assist you promptly.
               </p>
               <Link href="/returns" className="order-support-link">View Exchange Policy →</Link>
             </div>
