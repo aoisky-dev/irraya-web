@@ -115,10 +115,18 @@ function CallbackHandler() {
   return <div style={{ padding: "2rem", textAlign: "center" }}>Authenticating with Google...</div>;
 }
 
-export default function GoogleCallbackPage() {
+function GoogleCallbackPageContent() {
   return (
     <Suspense fallback={<div style={{ padding: "2rem", textAlign: "center" }}>Loading...</div>}>
       <CallbackHandler />
+    </Suspense>
+  );
+}
+
+export default function GoogleCallbackPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <GoogleCallbackPageContent />
     </Suspense>
   );
 }

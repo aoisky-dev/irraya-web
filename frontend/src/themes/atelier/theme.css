@@ -89,7 +89,6 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
-  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-size: 16px;
@@ -4544,4 +4543,14 @@ label {
   .orders-card-image { height: 160px; }
   .orders-card-details { padding: 12px; }
   .orders-card-meta { font-size: 0.72rem; }
+}
+
+/* ─── PAGE TRANSITIONS ────────────────────────────────────── */
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-transition {
+  animation: pageFadeIn 0.15s ease-out forwards;
 }

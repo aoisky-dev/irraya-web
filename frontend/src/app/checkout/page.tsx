@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/components/CartProvider";
 import { useAuth } from "@/components/AuthProvider";
@@ -154,7 +154,7 @@ function CheckoutSteps({ current }: { current: number }) {
   );
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const searchParams = useSearchParams();
   const { cart, isLoading: isCartLoading, clearCart, itemMeta, applyPromo, removePromo } = useCart();
   const { user, token, isLoading: isAuthLoading, refreshUser } = useAuth();
@@ -822,5 +822,13 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="container" style={{ padding: "var(--space-4xl) 0", textAlign: "center" }}>Loading checkout...</div>}>
+      <CheckoutContent />
+    </Suspense>
   );
 }

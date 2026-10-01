@@ -136,10 +136,18 @@ function VerifyEmailContent() {
   );
 }
 
-export default function VerifyEmailPage() {
+function VerifyEmailPageContent() {
   return (
     <Suspense>
       <VerifyEmailContent />
+    </Suspense>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyEmailPageContent />
     </Suspense>
   );
 }

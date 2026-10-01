@@ -18,13 +18,16 @@ export async function getProducts(params?: Record<string, string | number>): Pro
     ...(params as Record<string, string>)
   });
   const qs = `?${queryParams.toString()}`;
-  const response = await medusaRequest<{ products?: unknown[] }>(`/store/products${qs}`);
+  const response = await medusaRequest<{ products?: unknown[] }>(`/store/products${qs}`, {
+    next: { revalidate: 60 }
+  });
   return (response.products ?? []).map(mapMedusaProduct);
 }
 
 export async function getProductByHandle(handle: string): Promise<Product | null> {
   const response = await medusaRequest<{ products?: unknown[] }>(
-    `/store/products?${new URLSearchParams({ handle, limit: "1", fields: defaultProductFields }).toString()}`
+    `/store/products?${new URLSearchParams({ handle, limit: "1", fields: defaultProductFields }).toString()}`,
+    { next: { revalidate: 60 } }
   );
   const raw = (response.products ?? [])[0];
   return raw ? mapMedusaProduct(raw) : null;
@@ -32,7 +35,8 @@ export async function getProductByHandle(handle: string): Promise<Product | null
 
 export async function getProductById(id: string): Promise<Product | null> {
   const response = await medusaRequest<{ product?: unknown }>(
-    `/store/products/${id}?${new URLSearchParams({ fields: defaultProductFields }).toString()}`
+    `/store/products/${id}?${new URLSearchParams({ fields: defaultProductFields }).toString()}`,
+    { next: { revalidate: 60 } }
   ).catch(() => null);
   return response?.product ? mapMedusaProduct(response.product) : null;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getProducts } from "@/lib/api/products";
 import { ProductCard } from "@/components/ProductCard";
@@ -8,7 +8,7 @@ import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { buildCatalogFacets, filterProducts, getSearchSuggestions, searchProducts, sortProducts, type CatalogSortOption } from "@/lib/catalog";
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const queryFromUrl = searchParams.get("q") ?? "";
@@ -118,5 +118,13 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="container" style={{ padding: "var(--space-2xl) 0" }}><div className="loading"><div className="spinner" />Loading search...</div></div>}>
+      <SearchContent />
+    </Suspense>
   );
 }

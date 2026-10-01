@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {  useEffect, useState , Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { formatMoney } from "@/lib/format";
@@ -79,7 +79,7 @@ function OrderNotFound() {
   );
 }
 
-export default function OrderConfirmationPage() {
+function OrderConfirmationContent() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const openParam = searchParams.get("open");   // "exchange" | "manage" | null
@@ -576,5 +576,13 @@ export default function OrderConfirmationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OrderConfirmationPage() {
+  return (
+    <Suspense fallback={<div className="container" style={{ padding: "var(--space-2xl) 0" }}>Loading order...</div>}>
+      <OrderConfirmationContent />
+    </Suspense>
   );
 }

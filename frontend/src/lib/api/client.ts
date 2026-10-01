@@ -24,7 +24,7 @@ export async function medusaRequest<T>(path: string, init?: RequestInit): Promis
         : {}),
       ...(init?.headers ?? {})
     },
-    cache: "no-store"
+    cache: init?.cache ?? (init?.next ? undefined : "no-store")
   });
 
   if (!response.ok) {
