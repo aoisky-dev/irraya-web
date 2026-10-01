@@ -9,7 +9,8 @@ function extractItems(order: any) {
   return (order.items || []).map((i: any) => ({
     title: i.product_title || i.title || "Item",
     quantity: i.quantity || 1,
-    unitPriceInPaise: Math.round((i.unit_price || 0) * 100),
+    // unit_price from Medusa order items is already in paise (smallest currency unit)
+    unitPriceInPaise: Math.round(Number(i.unit_price || 0)),
   }))
 }
 

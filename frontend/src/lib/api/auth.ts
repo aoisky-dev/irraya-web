@@ -402,6 +402,19 @@ export class ForgotPasswordError extends Error {
   }
 }
 
+/** Send an OTP for email verification (used after manual registration). */
+export async function sendEmailVerificationOtp(email: string): Promise<{ requestId: string; expiresAt: number }> {
+  const res = await fetch(`${(await import("../config")).config.medusaBaseUrl}/store/auth/otp/send`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ channel: "email", value: email }),
+    cache: "no-store",
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Failed to send verification code.");
+  return data;
+}
+
 export async function forgotPassword(email: string): Promise<{ requestId: string; expiresAt: number }> {
   const res = await fetch(`${(await import("../config")).config.medusaBaseUrl}/store/auth/forgot-password`, {
     method: "POST",

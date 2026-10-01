@@ -115,24 +115,31 @@ export async function deleteSale(id: number): Promise<boolean> {
 
 export async function assignProducts(saleId: number, productIds: string[]): Promise<{ assigned: string[]; alreadyInOtherSale: string[] }> {
   return withPooledClient("sales_schema", ensureSchema, async (client) => {
-    // Check which product IDs are already in a different sale
-    const existing = await client.query(
-      `select product_id, sale_id from sale_products where product_id = any($1)`,
-      [productIds]
-    )
-    const conflicts = existing.rows.filter((r: any) => r.sale_id !== saleId).map((r: any) => r.product_id)
-    const toAssign = productIds.filter(id => !conflicts.includes(id))
-
-    for (const productId of toAssign) {
-      await client.query(
-        `insert into sale_products (product_id, sale_id)
-         values ($1, $2)
-         on conflict (product_id) do update set sale_id = $2, assigned_at = now()`,
-        [productId, saleId]
+    await client.query("begin")
+    try {
+      // Lock existing rows to prevent concurrent assignment to different sales
+      const existing = await client.query(
+        `select product_id, sale_id from sale_products where product_id = any($1) for update`,
+        [productIds]
       )
-    }
+      const conflicts = existing.rows.filter((r: any) => r.sale_id !== saleId).map((r: any) => r.product_id)
+      const toAssign = productIds.filter(id => !conflicts.includes(id))
 
-    return { assigned: toAssign, alreadyInOtherSale: conflicts }
+      for (const productId of toAssign) {
+        await client.query(
+          `insert into sale_products (product_id, sale_id)
+           values ($1, $2)
+           on conflict (product_id) do update set sale_id = $2, assigned_at = now()`,
+          [productId, saleId]
+        )
+      }
+
+      await client.query("commit")
+      return { assigned: toAssign, alreadyInOtherSale: conflicts }
+    } catch (err) {
+      await client.query("rollback")
+      throw err
+    }
   })
 }
 

@@ -161,6 +161,19 @@ export async function POST(req: MedusaRequest<UpdateStatusBody>, res: MedusaResp
           })
 
           if (order) {
+            // Validate customer pickup address before creating return order
+            const addr = order.shipping_address
+            const missingAddrFields: string[] = []
+            if (!addr?.first_name) missingAddrFields.push("first_name")
+            if (!addr?.address_1) missingAddrFields.push("address_1")
+            if (!addr?.city) missingAddrFields.push("city")
+            if (!addr?.province) missingAddrFields.push("province")
+            if (!addr?.postal_code) missingAddrFields.push("postal_code")
+            if (!addr?.phone && !order.customer?.phone) missingAddrFields.push("phone")
+            if (missingAddrFields.length > 0) {
+              throw new Error(`Cannot create return order — customer address missing: ${missingAddrFields.join(", ")}`)
+            }
+
             const exchangeItems = (request.items || []).map((exchangeItem: any) => {
               const orderItem = order.items?.find((i: any) => i.id === exchangeItem.item_id || i.product_id === exchangeItem.product_id)
               return {
@@ -194,16 +207,16 @@ export async function POST(req: MedusaRequest<UpdateStatusBody>, res: MedusaResp
             const shiprocketPayload = {
               order_id: srReturnOrderId,
               order_date: new Date().toISOString().split("T")[0],
-              pickup_customer_name: order.shipping_address?.first_name || order.customer?.first_name || "Customer",
-              pickup_last_name: order.shipping_address?.last_name || order.customer?.last_name || "",
-              pickup_address: (order.shipping_address?.address_1 || "").slice(0, 150),
-              pickup_address_2: order.shipping_address?.address_2 || "",
-              pickup_city: order.shipping_address?.city || "",
-              pickup_state: order.shipping_address?.province || "",
-              pickup_country: (order.shipping_address?.country_code || "IN").toUpperCase(),
-              pickup_pincode: order.shipping_address?.postal_code || "",
+              pickup_customer_name: addr!.first_name,
+              pickup_last_name: addr!.last_name || "",
+              pickup_address: addr!.address_1!.slice(0, 150),
+              pickup_address_2: addr!.address_2 || "",
+              pickup_city: addr!.city,
+              pickup_state: addr!.province,
+              pickup_country: (addr!.country_code || "IN").toUpperCase(),
+              pickup_pincode: addr!.postal_code,
               pickup_email: order.email || order.customer?.email || "",
-              pickup_phone: order.shipping_address?.phone || order.customer?.phone || "",
+              pickup_phone: (addr!.phone || order.customer?.phone || "").replace(/\D/g, "").slice(-10),
               shipping_customer_name: warehouseName,
               shipping_last_name: "",
               shipping_address: warehouseAddress,

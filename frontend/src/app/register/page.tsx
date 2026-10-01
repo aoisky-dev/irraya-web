@@ -49,8 +49,17 @@ export default function RegisterPage() {
         passwordHash: password
       });
 
-      login(auth.token, auth.user);
-      router.push("/");
+      // Store token temporarily — login happens after OTP verification
+      try { sessionStorage.setItem("pending_auth_token", auth.token) } catch {}
+      try { sessionStorage.setItem("pending_auth_user", JSON.stringify(auth.user)) } catch {}
+
+      // Send OTP to verify email
+      const { requestId } = await (await import("@/lib/api/auth")).sendEmailVerificationOtp(normalizedEmail)
+        .catch(() => ({ requestId: "" }))
+
+      const params = new URLSearchParams({ email: normalizedEmail })
+      if (requestId) params.set("requestId", requestId)
+      router.push(`/verify-email?${params.toString()}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to continue");
     } finally {
@@ -62,7 +71,7 @@ export default function RegisterPage() {
     <div style={{ maxWidth: "400px", margin: "var(--space-4xl) auto" }}>
       <h1 className="section-title" style={{ textAlign: "center" }}>Create Account</h1>
       <p className="text-muted" style={{ textAlign: "center", marginBottom: "var(--space-2xl)" }}>
-        Join Irraya to track orders and save your wishlist. Verification will be enabled once email and SMS providers are configured.
+        Join Irraya to track orders and save your wishlist.
       </p>
 
       {error && (

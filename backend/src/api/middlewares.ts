@@ -60,6 +60,11 @@ export default defineMiddlewares({
       middlewares: [otpVerifyLimiter],
     },
     {
+      matcher: "/store/auth/otp",
+      method: "POST",
+      middlewares: [otpSendLimiter],
+    },
+    {
       matcher: "/store/auth/otp/verify",
       method: "POST",
       middlewares: [otpVerifyLimiter],
