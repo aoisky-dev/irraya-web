@@ -21,10 +21,10 @@ const publishableKey = firstNonEmpty(
 
 export const config = {
   storeName: "Irraya Fashion",
-  siteUrl: "https://irraya.com",
-  medusaBaseUrl: "https://api.irraya.com",
-  medusaPublishableApiKey: "pk_a256d78487e40d25a556864cdf4982c4c5eca64f09c0627436648e4993e798e2",
-  medusaAdminUrl: "https://api.irraya.com/app",
+  siteUrl: envValue(process.env.NEXT_PUBLIC_SITE_URL, "https://irraya.com"),
+  medusaBaseUrl: normalizeUrl(envValue(process.env.NEXT_PUBLIC_MEDUSA_BASE_URL, "https://api.irraya.com")),
+  medusaPublishableApiKey: publishableKey || "pk_a256d78487e40d25a556864cdf4982c4c5eca64f09c0627436648e4993e798e2",
+  medusaAdminUrl: envValue(process.env.NEXT_PUBLIC_MEDUSA_ADMIN_URL, "https://api.irraya.com/app"),
   // Used for the product-customization contact section and the feedback widget.
   contactEmail: firstNonEmpty(process.env.NEXT_PUBLIC_CONTACT_EMAIL, "info@irraya.com"),
   contactPhone: firstNonEmpty(process.env.NEXT_PUBLIC_CONTACT_PHONE, "+91 8500365656"),

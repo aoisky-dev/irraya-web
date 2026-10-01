@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { User } from "@/lib/types";
 import { getMe } from "@/lib/api/auth";
+import { setUnauthorizedHandler } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 
 interface AuthContextType {
@@ -48,6 +49,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(TOKEN_KEY, newToken);
     setToken(newToken);
     setUser(newUser);
+  }, []);
+
+  // Register logout as the global 401 handler so any expired-token API call
+  // automatically clears the session instead of silently failing.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      localStorage.removeItem(TOKEN_KEY);
+      setToken(null);
+      setUser(null);
+    });
   }, []);
 
   const logout = () => {

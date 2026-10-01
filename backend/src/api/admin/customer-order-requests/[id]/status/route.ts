@@ -3,13 +3,11 @@ import { cancelOrderWorkflow } from "@medusajs/core-flows"
 import { createRazorpayRefund } from "../../../../../lib/razorpay"
 import { upsertRazorpayPaymentReference } from "../../../../../lib/razorpay-payment-references"
 import ShiprocketService from "../../../../../modules/shiprocket/service"
-import pg from "pg"
+import { withPooledClient } from "../../../../../lib/db"
 
 /** Convert Medusa paise amount to rupees for Shiprocket. */
 const paisaToRupees = (paise: number | undefined | null): number =>
   Math.round((paise ?? 0)) / 100
-
-const { Client } = pg
 
 type UpdateStatusBody = {
   status: "approved" | "rejected" | "refunded" | "completed"
@@ -29,10 +27,8 @@ export async function POST(req: MedusaRequest<UpdateStatusBody>, res: MedusaResp
     return
   }
 
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
-
   try {
-    await client.connect()
+    await withPooledClient("customer_order_requests", async () => {}, async (client) => {
 
     const result = await client.query(
       `update customer_order_requests
@@ -111,20 +107,30 @@ export async function POST(req: MedusaRequest<UpdateStatusBody>, res: MedusaResp
           )
           const orderMetadata = orderResult.rows[0]?.metadata
           const razorpayPaymentId = orderMetadata?.razorpay?.payment_id
-          if (razorpayPaymentId) {
+          // Guard: skip if refund already initiated (prevents double-refund with razorpay-refund subscriber)
+          const existingRefundId = orderMetadata?.razorpay?.refund_id
+          if (razorpayPaymentId && !existingRefundId) {
             const refundResult = await createRazorpayRefund({
               paymentId: razorpayPaymentId,
               notes: { reason: "order_canceled", order_id: request.order_id }
             })
+            const refundId = typeof refundResult.id === "string" ? refundResult.id : undefined
+            // Persist refund_id to metadata atomically so subscriber sees it and skips
+            await client.query(
+              `update "order" set metadata = jsonb_set(coalesce(metadata, '{}'::jsonb), '{razorpay,refund_id}', to_jsonb($1::text), true), updated_at = now() where id = $2`,
+              [refundId ?? "", request.order_id]
+            )
             await upsertRazorpayPaymentReference({
               razorpayPaymentId,
-              razorpayRefundId: typeof refundResult.id === "string" ? refundResult.id : undefined,
+              razorpayRefundId: refundId,
               status: "refund_pending",
               lastEvent: "order.canceled.refund_initiated.fallback"
             })
             console.info(`[admin] Fallback Razorpay refund initiated for order ${request.order_id}`)
-          } else {
+          } else if (!razorpayPaymentId) {
             console.info(`[admin] No razorpay payment_id on order ${request.order_id}, skipping refund`)
+          } else {
+            console.info(`[admin] Refund already initiated for order ${request.order_id}, skipping`)
           }
         } catch (refundError) {
           console.error(`[admin] Failed to initiate fallback Razorpay refund for order ${request.order_id}:`, refundError)
@@ -231,9 +237,8 @@ export async function POST(req: MedusaRequest<UpdateStatusBody>, res: MedusaResp
     }
 
     res.status(200).json({ request })
+    }) // end withPooledClient
   } catch (error: unknown) {
     res.status(500).json({ message: error instanceof Error ? error.message : "Failed to update request." })
-  } finally {
-    await client.end().catch(() => undefined)
   }
 }

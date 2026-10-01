@@ -38,6 +38,7 @@ export type UpsertRazorpayPaymentReferenceInput = {
   status: RazorpayReferenceStatus
   failureReason?: string
   lastEvent?: string
+  webhookEventId?: string
   payload?: Record<string, unknown>
 }
 
@@ -59,10 +60,16 @@ async function ensureRazorpayPaymentReferencesTable(client: pg.PoolClient): Prom
       status text not null,
       failure_reason text,
       last_event text,
+      last_webhook_event_id text,
       payload jsonb,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     )
+  `)
+  // Add column if table already exists without it (migration safety)
+  await client.query(`
+    alter table razorpay_payment_references
+    add column if not exists last_webhook_event_id text
   `)
 
   await client.query(`create index if not exists idx_razorpay_payment_references_cart_id on razorpay_payment_references(cart_id)`)
@@ -88,13 +95,27 @@ export async function upsertRazorpayPaymentReference(
     throw new Error("A Razorpay order id or payment id is required to store a payment reference.")
   }
 
+  const webhookEventId = normalizeOptionalString(input.webhookEventId)
+
   return withClient(async (client) => {
+    // Idempotency: if we've already processed this exact webhook event, skip
+    if (webhookEventId) {
+      const existing = await client.query(
+        `select id from razorpay_payment_references where last_webhook_event_id = $1 limit 1`,
+        [webhookEventId]
+      )
+      if (existing.rows.length > 0) {
+        console.info(`[razorpay] Skipping duplicate webhook event ${webhookEventId}`)
+        return existing.rows[0] as RazorpayPaymentReference
+      }
+    }
+
     if (razorpayOrderId) {
       const result = await client.query<RazorpayPaymentReference>(
         `insert into razorpay_payment_references (
            cart_id, medusa_order_id, razorpay_order_id, razorpay_payment_id, razorpay_refund_id,
-           amount, currency, status, failure_reason, last_event, payload
-         ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
+           amount, currency, status, failure_reason, last_event, last_webhook_event_id, payload
+         ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)
          on conflict (razorpay_order_id) do update set
            cart_id = coalesce(excluded.cart_id, razorpay_payment_references.cart_id),
            medusa_order_id = coalesce(excluded.medusa_order_id, razorpay_payment_references.medusa_order_id),
@@ -105,6 +126,7 @@ export async function upsertRazorpayPaymentReference(
            status = excluded.status,
            failure_reason = coalesce(excluded.failure_reason, razorpay_payment_references.failure_reason),
            last_event = coalesce(excluded.last_event, razorpay_payment_references.last_event),
+           last_webhook_event_id = coalesce(excluded.last_webhook_event_id, razorpay_payment_references.last_webhook_event_id),
            payload = coalesce(excluded.payload, razorpay_payment_references.payload),
            updated_at = now()
          returning *`,
@@ -119,6 +141,7 @@ export async function upsertRazorpayPaymentReference(
           input.status,
           normalizeOptionalString(input.failureReason),
           normalizeOptionalString(input.lastEvent),
+          webhookEventId,
           input.payload ? JSON.stringify(input.payload) : null
         ]
       )

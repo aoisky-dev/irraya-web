@@ -1,10 +1,8 @@
 import crypto from "node:crypto"
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import pg from "pg"
 import scrypt from "scrypt-kdf"
 import { verifyVerificationToken } from "../../../../lib/auth-verification"
-
-const { Client } = pg
+import { withPooledClient } from "../../../../lib/db"
 
 type ResetPasswordBody = {
   verificationToken?: unknown
@@ -37,41 +35,35 @@ export async function POST(req: MedusaRequest<ResetPasswordBody>, res: MedusaRes
   }
 
   const email = payload.value.toLowerCase()
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
 
   try {
-    await client.connect()
+    await withPooledClient("provider_identity_reset", async () => {}, async (client) => {
+      const identityResult = await client.query(
+        `select id from provider_identity
+         where entity_id = $1 and provider = 'emailpass' and deleted_at is null
+         limit 1`,
+        [email]
+      )
 
-    const identityResult = await client.query(
-      `select id from provider_identity
-       where entity_id = $1
-         and provider = 'emailpass'
-         and deleted_at is null
-       limit 1`,
-      [email]
-    )
+      if (identityResult.rows.length === 0) {
+        res.status(200).json({ message: "Password reset successfully." })
+        return
+      }
 
-    if (identityResult.rows.length === 0) {
-      // Don't reveal whether the account exists
+      const identity = identityResult.rows[0]
+      const newHash = (await scrypt.kdf(newPassword, { logN: 15, r: 8, p: 1 })).toString("base64")
+
+      await client.query(
+        `update provider_identity
+         set provider_metadata = jsonb_set(coalesce(provider_metadata, '{}'::jsonb), '{password}', to_jsonb($1::text), true),
+             updated_at = now()
+         where id = $2`,
+        [newHash, identity.id]
+      )
+
       res.status(200).json({ message: "Password reset successfully." })
-      return
-    }
-
-    const identity = identityResult.rows[0]
-    const newHash = (await scrypt.kdf(newPassword, { logN: 15, r: 8, p: 1 })).toString("base64")
-
-    await client.query(
-      `update provider_identity
-       set provider_metadata = jsonb_set(coalesce(provider_metadata, '{}'::jsonb), '{password}', to_jsonb($1::text), true),
-           updated_at = now()
-       where id = $2`,
-      [newHash, identity.id]
-    )
-
-    res.status(200).json({ message: "Password reset successfully." })
+    })
   } catch (err: unknown) {
     res.status(500).json({ message: err instanceof Error ? err.message : "Failed to reset password." })
-  } finally {
-    await client.end().catch(() => undefined)
   }
 }

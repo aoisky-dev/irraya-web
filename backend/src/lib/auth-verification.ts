@@ -1,6 +1,7 @@
 import { createHash, createHmac, randomInt, randomUUID, timingSafeEqual } from "node:crypto"
 import { sendMail } from "./mailer"
 import { otpTemplate } from "./email-templates"
+import { getRedis } from "./redis"
 
 export type VerificationChannel = "email" | "phone"
 
@@ -18,12 +19,12 @@ type VerificationTokenPayload = {
   exp: number
 }
 
-const store = new Map<string, VerificationRecord>()
-
 const ttlSeconds = (): number => Number.parseInt(process.env.OTP_TTL_SECONDS || "600", 10)
 const maxAttempts = (): number => Number.parseInt(process.env.OTP_MAX_ATTEMPTS || "5", 10)
 const tokenTtlSeconds = (): number => Number.parseInt(process.env.VERIFICATION_TOKEN_TTL_SECONDS || "900", 10)
 const signingSecret = (): string => process.env.VERIFICATION_TOKEN_SECRET || process.env.JWT_SECRET || "dev_verification_secret"
+
+const redisKey = (requestId: string) => `otp:${requestId}`
 
 export function normalizeVerificationValue(channel: VerificationChannel, value: string): string {
   const trimmed = value.trim()
@@ -69,17 +70,21 @@ export async function createVerificationRequest(channel: VerificationChannel, ra
   const code = String(randomInt(0, 1_000_000)).padStart(6, "0")
   const requestId = `otp_${randomUUID()}`
   const expiresAt = Date.now() + ttlSeconds() * 1000
+  const ttl = ttlSeconds()
 
-  store.set(requestId, {
+  const record: VerificationRecord = {
     channel,
     value,
     codeHash: hashCode(requestId, code),
     expiresAt,
-    attempts: 0
-  })
+    attempts: 0,
+  }
+
+  // Store in Redis with TTL — survives restarts and works across multiple instances
+  await getRedis().setex(redisKey(requestId), ttl, JSON.stringify(record))
 
   if (channel === "email") {
-    const tpl = otpTemplate({ email: value, code, expiresMinutes: Math.round(ttlSeconds() / 60) })
+    const tpl = otpTemplate({ email: value, code, expiresMinutes: Math.round(ttl / 60) })
     sendMail({ to: value, subject: tpl.subject, html: tpl.html, text: tpl.text }).catch((err) =>
       console.error("[auth-verification] Failed to send OTP email:", err)
     )
@@ -98,48 +103,51 @@ export async function confirmVerificationCode(input: {
 }): Promise<{ verificationToken: string }> {
   const value = normalizeVerificationValue(input.channel, input.value)
   const now = Date.now()
+  const redis = getRedis()
 
-  const candidates = input.requestId
-    ? [[input.requestId, store.get(input.requestId)] as const]
-    : Array.from(store.entries()).filter(([, record]) => record.channel === input.channel && record.value === value)
-
-  for (const [requestId, record] of candidates) {
-    if (!record) continue
-
-    if (record.expiresAt <= now) {
-      store.delete(requestId)
-      continue
-    }
-
-    if (record.channel !== input.channel || record.value !== value) {
-      continue
-    }
-
-    if (record.attempts >= maxAttempts()) {
-      store.delete(requestId)
-      throw new Error("Too many verification attempts. Request a new code.")
-    }
-
-    record.attempts += 1
-
-    const expected = Buffer.from(record.codeHash)
-    const provided = Buffer.from(hashCode(requestId, input.code.trim()))
-    const matches = expected.length === provided.length && timingSafeEqual(expected, provided)
-
-    if (!matches) {
-      throw new Error("Invalid verification code.")
-    }
-
-    store.delete(requestId)
-    return {
-      verificationToken: signPayload({
-        channel: input.channel,
-        value,
-        exp: now + tokenTtlSeconds() * 1000
-      })
-    }
+  if (!input.requestId) {
+    throw new Error("Verification request not found or expired.")
   }
 
-  throw new Error("Verification request not found or expired.")
-}
+  const raw = await redis.get(redisKey(input.requestId))
+  if (!raw) throw new Error("Verification request not found or expired.")
 
+  const record: VerificationRecord = JSON.parse(raw)
+
+  if (record.expiresAt <= now) {
+    await redis.del(redisKey(input.requestId))
+    throw new Error("Verification request not found or expired.")
+  }
+
+  if (record.channel !== input.channel || record.value !== value) {
+    throw new Error("Verification request not found or expired.")
+  }
+
+  if (record.attempts >= maxAttempts()) {
+    await redis.del(redisKey(input.requestId))
+    throw new Error("Too many verification attempts. Request a new code.")
+  }
+
+  record.attempts += 1
+
+  const expected = Buffer.from(record.codeHash)
+  const provided = Buffer.from(hashCode(input.requestId, input.code.trim()))
+  const matches = expected.length === provided.length && timingSafeEqual(expected, provided)
+
+  if (!matches) {
+    // Persist incremented attempt count back to Redis
+    const remaining = Math.ceil((record.expiresAt - now) / 1000)
+    await redis.setex(redisKey(input.requestId), Math.max(1, remaining), JSON.stringify(record))
+    throw new Error("Invalid verification code.")
+  }
+
+  await redis.del(redisKey(input.requestId))
+
+  return {
+    verificationToken: signPayload({
+      channel: input.channel,
+      value,
+      exp: now + tokenTtlSeconds() * 1000,
+    }),
+  }
+}

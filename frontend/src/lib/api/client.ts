@@ -7,6 +7,13 @@ export class ApiError extends Error {
   }
 }
 
+// Singleton logout callback — set by AuthProvider on mount so medusaRequest
+// can trigger logout when a 401 is received (expired token).
+let _onUnauthorized: (() => void) | null = null
+export function setUnauthorizedHandler(fn: () => void): void {
+  _onUnauthorized = fn
+}
+
 export async function medusaRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${config.medusaBaseUrl}${path}`, {
     ...init,
@@ -30,6 +37,11 @@ export async function medusaRequest<T>(path: string, init?: RequestInit): Promis
       message = parsedMessage || reason;
     } catch {
       // Keep plain-text response body.
+    }
+
+    // Auto-logout on 401 — token expired or invalidated
+    if (response.status === 401 && _onUnauthorized) {
+      _onUnauthorized();
     }
 
     throw new ApiError(message || "Medusa request failed", response.status);

@@ -13,18 +13,23 @@ export default async function razorpayOrderCanceledHandler({
   try {
     const order = await orderModuleService.retrieveOrder(data.id)
 
-    const razorpayData = order.metadata?.razorpay as { payment_id?: string, amount?: number } | undefined
+    const razorpayData = order.metadata?.razorpay as { payment_id?: string; refund_id?: string; amount?: number } | undefined
 
     if (!razorpayData || !razorpayData.payment_id) {
       logger.info(`Order ${data.id} missing or no razorpay payment_id found in metadata, skipping refund`)
       return
     }
 
+    // Idempotency guard — refund already initiated (e.g. by the status/route fallback path)
+    if (razorpayData.refund_id) {
+      logger.info(`Order ${data.id} already has refund_id ${razorpayData.refund_id}, skipping duplicate refund`)
+      return
+    }
+
     const paymentId = razorpayData.payment_id
-    
+
     logger.info(`Initiating Razorpay refund for payment: ${paymentId}`)
 
-    // Initiate refund for the full amount. If amount is not passed, Razorpay refunds full amount.
     const refundResult = await createRazorpayRefund({
       paymentId: paymentId,
       notes: {

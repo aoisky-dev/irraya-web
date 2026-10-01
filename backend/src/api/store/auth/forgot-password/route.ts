@@ -1,8 +1,6 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import pg from "pg"
+import { withPooledClient } from "../../../../lib/db"
 import { createVerificationRequest } from "../../../../lib/auth-verification"
-
-const { Client } = pg
 
 type ForgotPasswordBody = { email?: unknown }
 
@@ -10,6 +8,10 @@ const SSO_PROVIDER_LABELS: Record<string, string> = {
   google: "Google",
   github: "GitHub",
   apple: "Apple",
+}
+
+async function ensureProviderIdentityTable(client: import("pg").PoolClient): Promise<void> {
+  // provider_identity is a Medusa core table — always exists, no DDL needed
 }
 
 export async function POST(req: MedusaRequest<ForgotPasswordBody>, res: MedusaResponse): Promise<void> {
@@ -21,21 +23,18 @@ export async function POST(req: MedusaRequest<ForgotPasswordBody>, res: MedusaRe
     return
   }
 
-  // Check which providers this email is registered with before doing anything
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
   try {
-    await client.connect()
-    const result = await client.query(
-      `select provider from provider_identity
-       where entity_id = $1 and deleted_at is null`,
-      [email]
-    )
-    const providers: string[] = result.rows.map((r: any) => r.provider)
+    const providers = await withPooledClient("provider_identity_check", ensureProviderIdentityTable, async (client) => {
+      const result = await client.query(
+        `select provider from provider_identity where entity_id = $1 and deleted_at is null`,
+        [email]
+      )
+      return result.rows.map((r: any) => r.provider as string)
+    })
 
     const hasEmailPass = providers.includes("emailpass")
     const ssoProviders = providers.filter(p => p !== "emailpass")
 
-    // SSO-only account — no password exists, reset would silently do nothing
     if (!hasEmailPass && ssoProviders.length > 0) {
       const label = SSO_PROVIDER_LABELS[ssoProviders[0]] ?? ssoProviders[0]
       res.status(400).json({
@@ -45,7 +44,7 @@ export async function POST(req: MedusaRequest<ForgotPasswordBody>, res: MedusaRe
       return
     }
 
-    // No account at all — respond with success to avoid email enumeration
+    // No account — respond with success to avoid email enumeration
     if (providers.length === 0) {
       res.status(200).json({ message: "If an account exists for this email, a reset code has been sent." })
       return
@@ -55,7 +54,5 @@ export async function POST(req: MedusaRequest<ForgotPasswordBody>, res: MedusaRe
     res.status(200).json({ requestId, expiresAt, message: "If an account exists for this email, a reset code has been sent." })
   } catch (err: unknown) {
     res.status(500).json({ message: err instanceof Error ? err.message : "Failed to send reset code." })
-  } finally {
-    await client.end().catch(() => undefined)
   }
 }

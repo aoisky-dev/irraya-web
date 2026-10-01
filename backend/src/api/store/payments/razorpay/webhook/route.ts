@@ -150,6 +150,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse): Promise<voi
 
     const payload = parseWebhookPayload(rawBody, req.body)
     const event = normalizeString(payload.event)
+    // Razorpay includes a unique event_id per webhook delivery — use it for idempotency
+    const webhookEventId = normalizeString((payload as any).event_id || (payload as any).id)
     const payment = payload.payload?.payment?.entity
     const refund = payload.payload?.refund?.entity
     const order = payload.payload?.order?.entity
@@ -172,6 +174,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse): Promise<voi
 
     const status = statusForEvent(event, payment, refund)
     const reference = await upsertRazorpayPaymentReference({
+      webhookEventId: webhookEventId || undefined,
       cartId: cartId || undefined,
       razorpayOrderId: razorpayOrderId || undefined,
       razorpayPaymentId: razorpayPaymentId || undefined,
