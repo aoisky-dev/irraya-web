@@ -218,7 +218,8 @@ export async function registerWithAuth(data: RegisterInput): Promise<AuthResult>
     const loginResult = await login(loginIdentifier, data.passwordHash);
     return loginResult;
   } catch (loginErr) {
-    if (lastError.toLowerCase().includes("exists") || lastError.toLowerCase().includes("already")) {
+    const errStr = lastError.toLowerCase();
+    if (errStr.includes("exists") || errStr.includes("already") || errStr.includes("unauthorized")) {
       throw new Error("This email is already registered. Please login, or use Google SSO if you signed up with Google.");
     }
     throw new Error(lastError || "This email is already registered or the account creation failed.");
