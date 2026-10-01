@@ -77,7 +77,7 @@ export function FeedbackWidget() {
           width: "52px",
           height: "52px",
           borderRadius: "50%",
-          background: "var(--text-primary, #1a1a1a)",
+          background: "#712119",
           color: "var(--bg-primary, #fff)",
           border: "none",
           display: isOpen ? "none" : "flex",

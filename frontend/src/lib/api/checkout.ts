@@ -38,6 +38,7 @@ export async function prepareCartForCheckout(cartId: string, form: {
   lastName: string;
   email: string;
   address: string;
+  address2?: string;
   city: string;
   state: string;
   zipCode: string;
@@ -55,6 +56,7 @@ export async function prepareCartForCheckout(cartId: string, form: {
         first_name: form.firstName,
         last_name: form.lastName,
         address_1: form.address,
+        address_2: form.address2,
         city: form.city,
         province: form.state,
         country_code: "in",
@@ -65,6 +67,7 @@ export async function prepareCartForCheckout(cartId: string, form: {
         first_name: form.firstName,
         last_name: form.lastName,
         address_1: form.address,
+        address_2: form.address2,
         city: form.city,
         province: form.state,
         country_code: "in",

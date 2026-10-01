@@ -215,7 +215,7 @@ h1, h2, h3, h4, h5 {
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: #712119;
   position: relative;
   padding-bottom: 2px;
   transition: color var(--duration) var(--ease);
@@ -230,7 +230,7 @@ h1, h2, h3, h4, h5 {
   transition: width var(--duration) var(--ease-out);
 }
 
-.header-left a:hover { color: var(--text-primary); }
+.header-left a:hover { opacity: 0.7; }
 .header-left a:hover::after { width: 100%; }
 
 /* Center brand */
@@ -279,7 +279,7 @@ h1, h2, h3, h4, h5 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted);
+  color: #712119;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   position: relative;
@@ -287,7 +287,8 @@ h1, h2, h3, h4, h5 {
 }
 
 .icon-link:hover {
-  color: var(--text-primary);
+  color: #712119;
+  opacity: 0.7;
   background: var(--bg-secondary);
   border-color: var(--border-light);
 }
@@ -348,7 +349,7 @@ h1, h2, h3, h4, h5 {
 .hamburger span {
   display: block;
   height: 1.5px;
-  background: var(--text-primary);
+  background: #712119;
   border-radius: 0;
   transition: all var(--duration) var(--ease);
   transform-origin: center;
@@ -369,7 +370,7 @@ h1, h2, h3, h4, h5 {
 .mobile-nav a {
   display: block;
   padding: var(--space-md) var(--space-lg);
-  color: var(--text-secondary);
+  color: #712119;
   font-family: var(--font-body);
   font-size: 0.85rem;
   font-weight: 500;

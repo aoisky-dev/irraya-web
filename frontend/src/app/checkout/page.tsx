@@ -176,7 +176,7 @@ export default function CheckoutPage() {
   const [checkoutPhoneError, setCheckoutPhoneError] = useState("");
   const [form, setForm] = useState({
     firstName: "", lastName: "", email: "",
-    address: "", city: "", state: "", zipCode: "", phone: "", country: "India"
+    address: "", address2: "", city: "", state: "", zipCode: "", phone: "", country: "India"
   });
 
   useEffect(() => {
@@ -189,6 +189,7 @@ export default function CheckoutPage() {
         lastName: prev.lastName || user.lastName || defaultAddress?.last_name || "",
         email: prev.email || user.email || "",
         address: prev.address || defaultAddress?.address_1 || "",
+        address2: prev.address2 || defaultAddress?.address_2 || "",
         city: prev.city || defaultAddress?.city || "",
         state: prev.state || defaultAddress?.province || "",
         zipCode: prev.zipCode || defaultAddress?.postal_code || "",
@@ -214,6 +215,7 @@ export default function CheckoutPage() {
       firstName: addr.first_name || user?.firstName || "",
       lastName: addr.last_name || user?.lastName || "",
       address: addr.address_1 || "",
+      address2: addr.address_2 || "",
       city: addr.city || "",
       state: addr.province || "",
       zipCode: addr.postal_code || "",
@@ -230,6 +232,7 @@ export default function CheckoutPage() {
       firstName: user?.firstName || "",
       lastName: user?.lastName || "",
       address: "",
+      address2: "",
       city: "",
       state: "",
       zipCode: "",
@@ -362,7 +365,7 @@ export default function CheckoutPage() {
           if (!isDuplicate) {
             await saveCustomerAddress(token, {
               first_name: form.firstName, last_name: form.lastName,
-              address_1: form.address, city: form.city,
+              address_1: form.address, address_2: form.address2, city: form.city,
               province: form.state,
               country_code: "in", postal_code: form.zipCode,
               phone: form.phone || undefined
@@ -578,6 +581,11 @@ export default function CheckoutPage() {
                   <label className="form-label" htmlFor="address">Street Address <span className="required">*</span></label>
                   <input id="address" className="form-input" type="text" placeholder="House no., street, locality"
                     value={form.address} onChange={(e) => updateField("address", e.target.value)} />
+                </div>
+                <div className="form-group full">
+                  <label className="form-label" htmlFor="address2">Landmark (Optional)</label>
+                  <input id="address2" className="form-input" type="text" placeholder="E.g. Near Apollo Hospital"
+                    value={form.address2} onChange={(e) => updateField("address2", e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label className="form-label" htmlFor="city">City <span className="required">*</span></label>

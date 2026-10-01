@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatMoney } from "@/lib/format";
+import ReactMarkdown from "react-markdown";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductCard } from "@/components/ProductCard";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -307,7 +308,9 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
             </div>
           )}
 
-          <p className="pdp-desc">{product.description}</p>
+          <div className="pdp-desc markdown-content">
+            <ReactMarkdown>{product.description}</ReactMarkdown>
+          </div>
 
           {/* Stock status */}
           {selectedVariant && (

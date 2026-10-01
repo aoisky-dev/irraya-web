@@ -5,12 +5,18 @@ import ShiprocketService from "../modules/shiprocket/service"
 export default async function shiprocketOrderCanceledHandler({
   event: { data },
   container,
-}: SubscriberArgs<{ id: string }>) {
+}: SubscriberArgs<any>) {
   const orderModuleService = container.resolve(Modules.ORDER)
   const logger = container.resolve("logger")
   const shiprocketService = new ShiprocketService({ logger })
 
-  const order = await orderModuleService.retrieveOrder(data.id)
+  const orderId = data.id || data.order_id;
+  if (!orderId) {
+    logger.warn(`No order ID found in event payload: ${JSON.stringify(data)}`)
+    return;
+  }
+
+  const order = await orderModuleService.retrieveOrder(orderId)
 
   if (!order || !order.metadata?.shiprocket_order_id) {
     logger.info("Order missing or no shiprocket_order_id found in metadata, skipping cancellation")
@@ -34,5 +40,5 @@ export default async function shiprocketOrderCanceledHandler({
 }
 
 export const config: SubscriberConfig = {
-  event: "order.canceled",
+  event: ["order.canceled", "order.fulfillment_canceled"],
 }
