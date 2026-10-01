@@ -12,17 +12,29 @@ import nodemailer, { type Transporter } from "nodemailer"
 
 let _transporter: Transporter | null = null
 
+function createTransporter(): Transporter {
+  const t = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || "mail.smtp2go.com",
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER || "",
+      pass: process.env.SMTP_PASS || "",
+    },
+    pool: true,
+    maxConnections: 3,
+  })
+  // Verify connection on creation so failures are caught early
+  t.verify().catch((err) => {
+    console.warn("[mailer] SMTP connection verify failed (will retry on next send):", err.message)
+    _transporter = null // reset so the next send creates a fresh transporter
+  })
+  return t
+}
+
 function getTransporter(): Transporter {
   if (!_transporter) {
-    _transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "mail.smtp2go.com",
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER || "",
-        pass: process.env.SMTP_PASS || "",
-      },
-    })
+    _transporter = createTransporter()
   }
   return _transporter
 }
@@ -49,6 +61,8 @@ export async function sendMail(opts: MailOptions): Promise<void> {
     console.log(`[mailer] Successfully sent email to ${opts.to}: ${opts.subject}`)
   } catch (err) {
     console.error(`[mailer] Failed to send email to ${opts.to}: ${opts.subject}`, err)
+    // Reset transporter so the next send attempt gets a fresh connection
+    _transporter = null
     throw err
   }
 }

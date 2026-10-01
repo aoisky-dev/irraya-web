@@ -12,6 +12,7 @@
     "start": "medusa start",
     "check:env": "node ./scripts/validate-env.mjs",
     "migrate": "medusa db:migrate",
+    "migrate:custom": "npx tsx src/scripts/migrate-custom-tables.ts",
     "seed:catalog": "node ./scripts/seed-catalog.mjs",
     "seed:catalog:dry-run": "node ./scripts/seed-catalog.mjs --dry-run",
     "bootstrap": "node ./scripts/bootstrap.mjs",

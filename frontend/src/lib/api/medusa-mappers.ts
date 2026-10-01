@@ -83,7 +83,7 @@ const mapCartItem = (raw: any): CartItem => ({
   quantity: Math.max(0, Math.round(toNumber(raw?.quantity, 0))),
   unitPriceInCents: Math.max(
     0,
-    Math.round(toNumber(raw?.unit_price ?? raw?.total / Math.max(toNumber(raw?.quantity, 1), 1), 0)) * 100
+    Math.round(toNumber(raw?.unit_price ?? (Number.isFinite(raw?.total) ? raw.total / Math.max(toNumber(raw?.quantity, 1), 1) : 0), 0)) * 100
   ),
   handle: normalizeText(raw?.product_handle ?? raw?.product?.handle ?? raw?.variant?.product?.handle, "") || undefined
 });
@@ -195,14 +195,12 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
 
   return {
     id: String(raw?.id ?? ""),
-    orderRef: typeof (metadata as any)?.order_ref === "string" 
-      ? (metadata as any).order_ref 
+    orderRef: typeof (metadata as any)?.order_ref === "string"
+      ? (metadata as any).order_ref
       : (() => {
-          const date = raw?.created_at ? new Date(raw.created_at) : new Date();
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, "0");
-          const idStr = String(raw?.display_id || 0).padStart(5, "0");
-          return `IRR-${year}${month}-${idStr}`;
+          // Fall back to display_id for orders placed before order_ref was introduced
+          if (raw?.display_id) return `#${raw.display_id}`;
+          return raw?.id ? String(raw.id).slice(-8).toUpperCase() : undefined;
         })(),
     displayId: raw?.display_id ? String(raw.display_id) : undefined,
     cartId: String(raw?.cart_id ?? cartIdFallback ?? ""),
