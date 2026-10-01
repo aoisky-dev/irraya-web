@@ -214,8 +214,15 @@ export async function registerWithAuth(data: RegisterInput): Promise<AuthResult>
     throw new Error(lastError || "Account was created but login identifier is missing.");
   }
 
-  const loginResult = await login(loginIdentifier, data.passwordHash);
-  return loginResult;
+  try {
+    const loginResult = await login(loginIdentifier, data.passwordHash);
+    return loginResult;
+  } catch (loginErr) {
+    if (lastError.toLowerCase().includes("exists") || lastError.toLowerCase().includes("already")) {
+      throw new Error("This email is already registered. Please login, or use Google SSO if you signed up with Google.");
+    }
+    throw new Error(lastError || "This email is already registered or the account creation failed.");
+  }
 }
 
 export async function login(identifier: string, passwordHash: string): Promise<{ token: string; user: User }> {
