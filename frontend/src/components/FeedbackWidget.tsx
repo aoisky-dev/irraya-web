@@ -66,7 +66,17 @@ export function FeedbackWidget() {
 
   return (
     <>
+      <style>{`
+        .feedback-floating-btn {
+          background: var(--accent-warm, #712119);
+          transition: background 0.25s ease;
+        }
+        .feedback-floating-btn:hover {
+          background: var(--text-primary, #1a1a1a) !important;
+        }
+      `}</style>
       <button
+        className="feedback-floating-btn"
         onClick={() => setIsOpen(true)}
         aria-label="Share feedback"
         style={{
@@ -77,7 +87,6 @@ export function FeedbackWidget() {
           width: "52px",
           height: "52px",
           borderRadius: "50%",
-          background: "#712119",
           color: "var(--bg-primary, #fff)",
           border: "none",
           display: isOpen ? "none" : "flex",

@@ -45,18 +45,18 @@ export function Header() {
           {/* Right actions */}
           <div className="header-right">
             <Link href="/search" className="icon-link desktop-only" aria-label="Search">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <circle cx="11" cy="11" r="7"/>
                 <line x1="16.65" y1="16.65" x2="21" y2="21"/>
               </svg>
             </Link>
             <Link href="/wishlist" className="icon-link" aria-label="Wishlist">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
               </svg>
             </Link>
             <Link href="/cart" className="icon-link icon-with-badge" aria-label={`Shopping bag${itemCount > 0 ? `, ${itemCount} items` : ""}`}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
                 <line x1="3" y1="6" x2="21" y2="6"/>
                 <path d="M16 10a4 4 0 0 1-8 0"/>
@@ -64,7 +64,7 @@ export function Header() {
               {itemCount > 0 && <span className="cart-badge">{itemCount}</span>}
             </Link>
             <Link href={profileHref} className="icon-link desktop-only" aria-label={user ? "My account" : "Sign in"}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <circle cx="12" cy="8" r="4"/>
                 <path d="M4 21c1.7-3.5 4.4-5 8-5s6.3 1.5 8 5"/>
               </svg>
@@ -83,7 +83,7 @@ export function Header() {
               </span>
             </button>
             <Link href="/search" className="icon-link mobile-only" aria-label="Search">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <circle cx="11" cy="11" r="7"/>
                 <line x1="16.65" y1="16.65" x2="21" y2="21"/>
               </svg>
