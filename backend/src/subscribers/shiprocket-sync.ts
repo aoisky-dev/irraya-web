@@ -114,8 +114,8 @@ export default async function shiprocketOrderFulfillmentCreatedHandler({
       // Find matching order line item for pricing
       const orderItem = order.items?.find((i: any) => (i.item_id === item.line_item_id) || (i.item?.id === item.line_item_id) || (i.id === item.id))
       const unitPrice = orderItem?.item?.unit_price ?? orderItem?.unit_price ?? item.unit_price ?? 0
-      const title = orderItem?.item?.product_title ?? orderItem?.item?.title ?? item.product_title ?? item.title ?? "Item"
-      const sku = orderItem?.item?.variant_sku ?? item.variant_sku ?? item.sku ?? "SKU"
+      const title = orderItem?.item?.product_title || orderItem?.item?.title || item.product_title || item.title || "Item"
+      const sku = orderItem?.item?.variant_sku || item.variant_sku || item.sku || "SKU"
       
       return {
         name: title,
