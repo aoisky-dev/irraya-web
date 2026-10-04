@@ -419,14 +419,12 @@ export default function OrdersPage() {
                     {isDelivered && (
                       <Link
                         href={`/products/${order.items[0]?.handle || order.items[0]?.productId || ""}`}
-                        className="btn btn-outline"
+                        className="btn btn-review"
                         style={{
                           display: "flex",
                           alignItems: "center",
                           gap: "5px",
                           fontSize: "0.83rem",
-                          borderColor: "var(--accent-warm)",
-                          color: "var(--accent-warm)",
                         }}
                         onClick={(e) => e.stopPropagation()}
                       >

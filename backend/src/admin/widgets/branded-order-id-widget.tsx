@@ -21,7 +21,7 @@ export default function BrandedOrderIdWidget(props: any) {
     <Container className="p-4 mb-4 flex items-center justify-between">
       <div className="flex gap-2 items-center">
         <Text size="base" weight="plus" className="text-ui-fg-subtle">
-          Branded ID:
+          Order ID:
         </Text>
         <Heading level="h2">{orderRef}</Heading>
       </div>
