@@ -535,12 +535,12 @@ h1, h2, h3, h4, h5 {
 
 .btn-outline {
   background: transparent;
-  color: var(--text-primary);
-  border: 1.5px solid var(--text-primary);
+  color: var(--accent-warm);
+  border: 1.5px solid var(--accent-warm);
 }
 
 .btn-outline:hover {
-  background: var(--text-primary);
+  background: var(--accent-warm);
   color: var(--text-inverse);
 }
 

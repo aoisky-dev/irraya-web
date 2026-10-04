@@ -195,7 +195,7 @@ export function ReviewList({ productId, initialReviews }: ReviewListProps) {
           </div>
 
           <div style={{ display: "flex", gap: "var(--space-md)", marginTop: "var(--space-lg)" }}>
-            <button type="submit" className="btn" disabled={isSubmitting || !token}>
+            <button type="submit" className="btn btn-outline" disabled={isSubmitting || !token}>
               {isSubmitting ? "Submitting…" : "Submit Review"}
             </button>
             <button type="button" className="btn btn-outline" onClick={() => setIsFormOpen(false)}>Cancel</button>
