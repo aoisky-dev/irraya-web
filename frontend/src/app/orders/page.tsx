@@ -179,7 +179,7 @@ export default function OrdersPage() {
             </span>
           )}
         </div>
-        <Link href="/account" className="btn btn-outline" style={{ fontSize: "0.85rem", padding: "8px 16px" }}>← Back to Account</Link>
+        <Link href="/account" className="btn" style={{ fontSize: "0.85rem", padding: "8px 16px" }}>← Back to Account</Link>
       </div>
 
       {/* Toolbar: Filters, Search & Sort */}
