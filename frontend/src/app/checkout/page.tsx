@@ -593,7 +593,7 @@ function CheckoutContent() {
                     value={form.city} onChange={(e) => updateField("city", e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label" htmlFor="state">State</label>
+                  <label className="form-label" htmlFor="state">State <span className="required">*</span></label>
                   <select id="state" className="form-input" value={form.state} onChange={(e) => updateField("state", e.target.value)}>
                     <option value="">Select State</option>
                     {["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Andaman & Nicobar Islands","Chandigarh","Dadra & Nagar Haveli and Daman & Diu","Delhi","Jammu & Kashmir","Ladakh","Lakshadweep","Puducherry"].map((s) => (
