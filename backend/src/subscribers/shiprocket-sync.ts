@@ -12,11 +12,7 @@ function buildShiprocketOrderId(displayId: number | undefined, orderId: string, 
   return full.slice(0, 50)
 }
 
-/** Convert Medusa monetary amount (paise) to rupees for Shiprocket. */
-function paisaToRupees(paise: number | undefined | null): number {
-  if (!paise || !Number.isFinite(paise)) return 0
-  return Math.round(paise) / 100
-}
+
 
 export default async function shiprocketOrderFulfillmentCreatedHandler({
   event: { data },
@@ -121,11 +117,11 @@ export default async function shiprocketOrderFulfillmentCreatedHandler({
         name: title,
         sku: sku,
         units: item.quantity,
-        selling_price: Math.max(1, paisaToRupees(unitPrice)),
+        selling_price: Math.max(1, Number(unitPrice)),
       }
     }),
     payment_method: "Prepaid",
-    sub_total: Math.max(1, paisaToRupees(Number(orderTotalPaise))),
+    sub_total: Math.max(1, Number(orderTotalPaise)),
     length: 10,
     breadth: 10,
     height: 10,
