@@ -102,7 +102,8 @@ export default async function HomePage() {
         <ScrollableCollectionRow collections={collections} />
       </section>
 
-      {/* Featured Products */}
+      {/* Featured Products (Temporarily Disabled) */}
+      {/* 
       <section style={{ marginTop: "var(--space-xl)" }}>
         <div className="section-header">
           <h2 className="section-title">Featured Products</h2>
@@ -117,6 +118,7 @@ export default async function HomePage() {
           </div>
         )}
       </section>
+      */}
 
       {/* Trending Collection */}
       <section style={{ marginTop: "var(--space-xl)" }}>
