@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getProducts } from "@/lib/api/products";
 import { config } from "@/lib/config";
-import { IconMail, IconPhone, IconWhatsApp } from "@/components/Icons";
 
 const fmt = (v: string) =>
   v.split("-").filter(Boolean).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(" ");
@@ -44,36 +43,12 @@ export async function Footer() {
               <Link href="/account">My Account</Link>
               <Link href="/cart">Shopping Bag</Link>
               <Link href="/returns">Exchange Policy</Link>
+              <Link href="/about">Contact</Link>
             </div>
-            <div className="footer-col" style={{ gap: "12px" }}>
-              <h4>Contact & Follow</h4>
-              <a
-                href={`mailto:${config.contactEmail}`}
-                className="btn btn-outline"
-                style={{ display: "inline-flex", alignItems: "center", gap: "8px", width: "fit-content", padding: "6px 12px", fontSize: "0.8rem" }}
-              >
-                <IconMail size={16} /> Email Us
-              </a>
-              <a
-                href={`tel:${config.contactPhone.replace(/\s+/g, "")}`}
-                className="btn btn-outline"
-                style={{ display: "inline-flex", alignItems: "center", gap: "8px", width: "fit-content", padding: "6px 12px", fontSize: "0.8rem" }}
-              >
-                <IconPhone size={16} /> {config.contactPhone}
-              </a>
-              <a
-                href={`https://wa.me/${config.whatsAppNumber}?text=${encodeURIComponent(`Hi IRRAYA, I need some assistance.`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-outline"
-                style={{ display: "inline-flex", alignItems: "center", gap: "8px", width: "fit-content", padding: "6px 12px", fontSize: "0.8rem" }}
-              >
-                <IconWhatsApp size={16} /> WhatsApp
-              </a>
-              <div style={{ display: "flex", gap: "16px", marginTop: "4px" }}>
-                <Link href="https://www.instagram.com/irraya.co" target="_blank" rel="noopener noreferrer">Instagram</Link>
-                <Link href="/">Pinterest</Link>
-              </div>
+            <div className="footer-col">
+              <h4>Follow</h4>
+              <Link href="https://www.instagram.com/irraya.co" target="_blank" rel="noopener noreferrer">Instagram</Link>
+              <Link href={`https://wa.me/${config.whatsAppNumber}`} target="_blank" rel="noopener noreferrer">WhatsApp</Link>
             </div>
           </div>
 
