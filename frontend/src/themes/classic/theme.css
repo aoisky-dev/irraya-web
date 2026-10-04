@@ -565,15 +565,7 @@ h1, h2, h3, h4, h5 {
 }
 
 /* ─── BUTTONS ───────────────────────────────────────────── */
-.btn-review {
-  background: transparent;
-  color: var(--accent-warm);
-  border: 1px solid var(--accent-warm);
-}
-.btn-review:hover {
-  background: var(--accent-warm) !important;
-  color: #ffffff !important;
-}
+
 .btn {
   display: inline-flex;
   align-items: center;

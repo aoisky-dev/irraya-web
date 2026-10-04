@@ -419,7 +419,7 @@ export default function OrdersPage() {
                     {isDelivered && (
                       <Link
                         href={`/products/${order.items[0]?.handle || order.items[0]?.productId || ""}`}
-                        className="btn btn-review"
+                        className="btn"
                         style={{
                           display: "flex",
                           alignItems: "center",
