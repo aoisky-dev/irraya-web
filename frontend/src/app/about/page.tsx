@@ -45,7 +45,7 @@ export default function AboutPage() {
       <div className="about-hero">
         <h2 className="section-title" style={{ marginBottom: "var(--space-lg)" }}>Our Story</h2>
         <p style={{ color: "var(--text-secondary)", lineHeight: 1.8, fontSize: "1rem" }}>
-          Founded in 2024, Irraya started with a simple idea: create fashion
+          Founded in 2026, Irraya started with a simple idea: create fashion
           essentials that you can feel good about wearing. From our first
           collection of premium basics to the expanding range you see today,
           we&apos;ve stayed true to our commitment to quality craftsmanship,
