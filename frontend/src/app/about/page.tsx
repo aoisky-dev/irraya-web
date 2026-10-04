@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { IconHeart, IconStar, IconDiamond, IconMail, IconPhone, IconBrandWhatsapp } from "@/components/Icons";
+import { IconHeart, IconStar, IconDiamond, IconMail, IconPhone, IconWhatsApp } from "@/components/Icons";
 import { config } from "@/lib/config";
 
 export default function AboutPage() {
@@ -110,7 +110,7 @@ export default function AboutPage() {
             className="btn btn-outline"
             style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
           >
-            <IconBrandWhatsapp size={16} /> WhatsApp
+            <IconWhatsApp size={16} /> WhatsApp
           </a>
         </div>
       </div>

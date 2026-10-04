@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getProducts } from "@/lib/api/products";
 import { config } from "@/lib/config";
-import { IconMail, IconPhone, IconBrandWhatsapp } from "@/components/Icons";
+import { IconMail, IconPhone, IconWhatsApp } from "@/components/Icons";
 
 const fmt = (v: string) =>
   v.split("-").filter(Boolean).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(" ");
@@ -68,7 +68,7 @@ export async function Footer() {
                 className="btn btn-outline"
                 style={{ display: "inline-flex", alignItems: "center", gap: "8px", width: "fit-content", padding: "6px 12px", fontSize: "0.8rem" }}
               >
-                <IconBrandWhatsapp size={16} /> WhatsApp
+                <IconWhatsApp size={16} /> WhatsApp
               </a>
               <div style={{ display: "flex", gap: "16px", marginTop: "4px" }}>
                 <Link href="https://www.instagram.com/irraya.co" target="_blank" rel="noopener noreferrer">Instagram</Link>
