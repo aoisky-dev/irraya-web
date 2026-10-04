@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { IconHeart, IconStar, IconDiamond } from "@/components/Icons";
+import { IconHeart, IconStar, IconDiamond, IconMail, IconPhone, IconBrandWhatsapp } from "@/components/Icons";
+import { config } from "@/lib/config";
 
 export default function AboutPage() {
   return (
@@ -83,13 +84,35 @@ export default function AboutPage() {
       <hr className="divider" style={{ margin: "var(--space-xl) 0" }} />
 
       <div className="about-hero" style={{ paddingTop: 0 }}>
-        <h2 className="section-title" style={{ marginBottom: "var(--space-md)" }}>Contact Us</h2>
-        <p style={{ color: "var(--text-secondary)", lineHeight: 1.8, fontSize: "1rem", maxWidth: "600px", margin: "0 auto" }}>
+        <h2 className="section-title" style={{ marginBottom: "var(--space-xs)" }}>Contact Us</h2>
+        <p style={{ color: "var(--text-secondary)", lineHeight: 1.8, fontSize: "1rem", maxWidth: "600px", margin: "0 auto", marginBottom: "var(--space-lg)" }}>
           Have a question or need assistance? We're here to help.
-          <br /><br />
-          <strong>Email:</strong> <a href="mailto:info@irraya.com" style={{ textDecoration: "underline" }}>info@irraya.com</a><br />
-          <strong>Phone:</strong> <a href="tel:8500365656" style={{ textDecoration: "underline" }}>8500365656</a>
         </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-md)", justifyContent: "center" }}>
+          <a
+            href={`mailto:${config.contactEmail}`}
+            className="btn btn-outline"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+          >
+            <IconMail size={16} /> {config.contactEmail}
+          </a>
+          <a
+            href={`tel:${config.contactPhone.replace(/\s+/g, "")}`}
+            className="btn btn-outline"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+          >
+            <IconPhone size={16} /> {config.contactPhone}
+          </a>
+          <a
+            href={`https://wa.me/${config.whatsAppNumber}?text=${encodeURIComponent(`Hi IRRAYA, I need some assistance.`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-outline"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+          >
+            <IconBrandWhatsapp size={16} /> WhatsApp
+          </a>
+        </div>
       </div>
     </section>
   );
