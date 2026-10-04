@@ -196,7 +196,7 @@ function OrderConfirmationContent() {
   const standardTimeline = [
     { key: "ordered",    label: "Order Placed",     icon: <IconClipboard size={16} />,  active: true },
     { key: "processing", label: "Processing",       icon: <IconSettings size={16} />,   active: Boolean(order) && order?.status !== "cancelled" },
-    { key: "shipped",    label: "Shipped",          icon: <IconPackage size={16} />,    active: ["shipped", "out_for_delivery", "delivered"].includes(order?.tracking?.status ?? "") || order?.status === "fulfilled" },
+    { key: "shipped",    label: "Shipped",          icon: <IconPackage size={16} />,    active: ["shipped", "out_for_delivery", "delivered"].includes(order?.tracking?.status ?? "") },
     { key: "delivery",   label: "Out for Delivery", icon: <IconTruck size={16} />,      active: ["out_for_delivery", "delivered"].includes(order?.tracking?.status ?? "") },
     { key: "delivered",  label: "Delivered",        icon: <IconCheckCircle size={16} />, active: order?.tracking?.status === "delivered" },
   ];
