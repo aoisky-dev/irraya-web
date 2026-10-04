@@ -44,13 +44,35 @@ export default function AboutPage() {
 
       <div className="about-hero">
         <h2 className="section-title" style={{ marginBottom: "var(--space-lg)" }}>Our Story</h2>
-        <p style={{ color: "var(--text-secondary)", lineHeight: 1.8, fontSize: "1rem" }}>
-          Founded in 2026, Irraya started with a simple idea: create fashion
-          essentials that you can feel good about wearing. From our first
-          collection of premium basics to the expanding range you see today,
-          we&apos;ve stayed true to our commitment to quality craftsmanship,
-          sustainable materials, and timeless design.
-        </p>
+        <div style={{ color: "var(--text-secondary)", lineHeight: 1.8, fontSize: "1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <p>
+            <strong>IRRAYA</strong> began in <strong>2026</strong>, from a simple love for art and the beauty of things made by hand.
+          </p>
+          <p>
+            For me, art has always been more than just something to create. It is a way of expressing emotions, finding beauty in little details, and turning a simple idea into something meaningful. My love for <em>hand-painted art, handcrafted details, textures, colours, and traditional techniques</em> slowly made me wonder — <strong>why can&apos;t this feeling of art be part of what we wear every day?</strong>
+          </p>
+          <p>
+            That thought became <strong>IRRAYA</strong>.
+          </p>
+          <p>
+            IRRAYA was created with the idea of bringing the beauty of art into everyday clothing. We explore <em>hand-painted elements, hand block printing, embroidery, textures</em> and other handcrafted details, combining them with comfortable, contemporary silhouettes.
+          </p>
+          <p>
+            We believe everyday clothing doesn&apos;t have to be ordinary or boring. It can carry a little piece of art, a story, a texture, or a detail that makes you feel <strong>special</strong>.
+          </p>
+          <p>
+            Our journey began with womenswear and continues to grow towards creating thoughtful everyday pieces for both women and men — pieces that are comfortable enough for everyday life, yet expressive enough to feel like something more than just clothing.
+          </p>
+          <p>
+            We don&apos;t want everything to look perfectly identical. The <strong>charm of handmade work</strong> lies in the little variations that make each piece feel personal.
+          </p>
+          <p>
+            <strong>IRRAYA</strong> is where my love for art meets my love for clothing — creating everyday wear with a touch of the <em>handmade, the thoughtful, and the artistic</em>.
+          </p>
+          <p>
+            Started in <strong>2026</strong>, IRRAYA is only the beginning of that journey.
+          </p>
+        </div>
         <div style={{ marginTop: "var(--space-xl)" }}>
           <Link href="/products" className="btn">
             Explore Our Collection
