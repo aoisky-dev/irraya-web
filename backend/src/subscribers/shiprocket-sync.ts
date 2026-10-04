@@ -24,15 +24,28 @@ export default async function shiprocketOrderFulfillmentCreatedHandler({
 }: SubscriberArgs<{ order_id: string, fulfillment_id: string }>) {
   const orderModuleService = container.resolve(Modules.ORDER)
   const fulfillmentModuleService = container.resolve(Modules.FULFILLMENT)
+  const query = container.resolve("query")
   const logger = container.resolve("logger")
   const shiprocketService = new ShiprocketService({ logger })
 
   const orderId = data.order_id || (data as any).id
   if (!orderId) return
 
-  const order = await orderModuleService.retrieveOrder(orderId, {
-    relations: ["shipping_address", "customer"],
+  const { data: orders } = await query.graph({
+    entity: "order",
+    fields: [
+      "id", "display_id", "email", "created_at", "metadata",
+      "summary.*",
+      "shipping_address.*",
+      "customer.*",
+      "items.*",
+      "items.item.*",
+      "fulfillments.*",
+      "fulfillments.items.*"
+    ],
+    filters: { id: orderId }
   })
+  const order = orders?.[0]
 
   if (!order) return
 
@@ -53,21 +66,24 @@ export default async function shiprocketOrderFulfillmentCreatedHandler({
 
   let fulfillmentItems: any[] = []
   if (data.fulfillment_id) {
-    try {
-      const fulfillment = await fulfillmentModuleService.retrieveFulfillment(data.fulfillment_id, {
-        relations: ["items"]
-      })
+    const fulfillment = order.fulfillments?.find((f: any) => f.id === data.fulfillment_id)
+    if (fulfillment) {
       fulfillmentItems = fulfillment.items || []
-    } catch (e) {
-      console.warn("Could not retrieve fulfillment items", e)
     }
   }
 
   // Fallback to order items if fulfillment retrieval fails or items missing
   if (fulfillmentItems.length === 0) {
-    const fullOrder = await orderModuleService.retrieveOrder(orderId, { relations: ["items"] })
-    fulfillmentItems = fullOrder.items || []
+    fulfillmentItems = order.items?.map((i: any) => ({
+      ...i,
+      line_item_id: i.item_id || i.item?.id,
+      quantity: i.quantity
+    })) || []
   }
+
+  // Order Total
+  // Using original_order_total or current_order_total from the summary object
+  const orderTotalPaise = order.summary?.original_order_total ?? order.summary?.current_order_total ?? order.total ?? 0
 
   const payload = {
     order_id: buildShiprocketOrderId(order.display_id, order.id, data.fulfillment_id),
@@ -94,14 +110,22 @@ export default async function shiprocketOrderFulfillmentCreatedHandler({
     shipping_country: (addr!.country_code || "IN").toUpperCase(),
     shipping_email: order.email || "noreply@irraya.com",
     shipping_phone: addr!.phone!.replace(/\D/g, "").slice(-10),
-    order_items: fulfillmentItems.map((item: any) => ({
-      name: item.product_title || item.line_item?.product_title || item.title || item.line_item?.title || "Item",
-      sku: item.variant_sku || item.sku || item.line_item?.variant_sku || "SKU",
-      units: item.quantity,
-      selling_price: paisaToRupees(item.unit_price ?? item.line_item?.unit_price),
-    })),
+    order_items: fulfillmentItems.map((item: any) => {
+      // Find matching order line item for pricing
+      const orderItem = order.items?.find((i: any) => (i.item_id === item.line_item_id) || (i.item?.id === item.line_item_id) || (i.id === item.id))
+      const unitPrice = orderItem?.item?.unit_price ?? orderItem?.unit_price ?? item.unit_price ?? 0
+      const title = orderItem?.item?.product_title ?? orderItem?.item?.title ?? item.product_title ?? item.title ?? "Item"
+      const sku = orderItem?.item?.variant_sku ?? item.variant_sku ?? item.sku ?? "SKU"
+      
+      return {
+        name: title,
+        sku: sku,
+        units: item.quantity,
+        selling_price: Math.max(1, paisaToRupees(unitPrice)),
+      }
+    }),
     payment_method: "Prepaid",
-    sub_total: paisaToRupees(Number(order.item_total)),
+    sub_total: Math.max(1, paisaToRupees(Number(orderTotalPaise))),
     length: 10,
     breadth: 10,
     height: 10,
