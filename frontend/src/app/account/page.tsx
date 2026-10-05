@@ -147,16 +147,7 @@ function AddressFormModal({
           </button>
         </div>
       </div>
-      {/* Confirm Action Modal */}
-      <ConfirmModal 
-        isOpen={confirmState.isOpen} 
-        message={confirmState.message} 
-        onConfirm={() => {
-          confirmState.onConfirm();
-          setConfirmState({ ...confirmState, isOpen: false });
-        }} 
-        onCancel={() => setConfirmState({ ...confirmState, isOpen: false })} 
-      />
+
     </div>
   );
 }
@@ -472,6 +463,17 @@ export default function AccountPage() {
           isSaving={isSavingAddress}
         />
       )}
+
+      {/* Confirm Action Modal */}
+      <ConfirmModal 
+        isOpen={confirmState.isOpen} 
+        message={confirmState.message} 
+        onConfirm={() => {
+          confirmState.onConfirm();
+          setConfirmState({ ...confirmState, isOpen: false });
+        }} 
+        onCancel={() => setConfirmState({ ...confirmState, isOpen: false })} 
+      />
     </section>
   );
 }
