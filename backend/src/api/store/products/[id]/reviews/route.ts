@@ -56,8 +56,8 @@ export async function POST(req: MedusaRequest<CreateReviewBody>, res: MedusaResp
     return
   }
 
-  if (!rating || !text) {
-    res.status(400).json({ message: "Rating and review text are required." })
+  if (!rating) {
+    res.status(400).json({ message: "Rating is required." })
     return
   }
 

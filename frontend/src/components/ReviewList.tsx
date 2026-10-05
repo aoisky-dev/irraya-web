@@ -198,7 +198,7 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
                     <StarRating rating={editForm.rating} onSelect={(r) => setEditForm({ ...editForm, rating: r })} interactive size={24} />
                   </div>
                   <textarea
-                    required rows={4}
+                    rows={4}
                     value={editForm.text}
                     onChange={(e) => setEditForm({ ...editForm, text: e.target.value })}
                     style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "4px", resize: "vertical", marginBottom: "var(--space-sm)" }}
@@ -210,9 +210,11 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
                 </form>
               ) : (
                 <>
-                  <p style={{ fontSize: "0.9rem", lineHeight: 1.6, color: "var(--text-secondary)" }}>
-                    {review.text}
-                  </p>
+                  {review.text && (
+                    <p style={{ fontSize: "0.9rem", lineHeight: 1.6, color: "var(--text-secondary)" }}>
+                      {review.text}
+                    </p>
+                  )}
                   {review.imageUrls && review.imageUrls.length > 0 && (
                     <div style={{ display: "flex", gap: "var(--space-sm)", marginTop: "var(--space-sm)", flexWrap: "wrap" }}>
                       {review.imageUrls.map((url) => (
@@ -235,9 +237,9 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
 
       {/* Write review button — only shown to customers with a delivered order */}
       {canReview && productHandle && (
-        <div style={{ marginTop: "var(--space-xl)", textAlign: "center" }}>
+        <div style={{ marginTop: "var(--space-xl)", textAlign: "left" }}>
           <Link href={`/products/${productHandle}/review`} className="btn btn-outline">
-            Write a Review
+            Rate & Review
           </Link>
         </div>
       )}

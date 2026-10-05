@@ -65,10 +65,6 @@ export function ReviewFormClient({ product }: { product: Product }) {
       setError("Please sign in to write a review.");
       return;
     }
-    if (!newReview.text.trim()) {
-      setError("Please write your review.");
-      return;
-    }
 
     setIsSubmitting(true);
     setError("");
@@ -156,8 +152,8 @@ export function ReviewFormClient({ product }: { product: Product }) {
 
           <div className="form-grid" style={{ gap: "var(--space-md)" }}>
             <div className="form-group full">
-              <label className="form-label">Your Review</label>
-              <textarea className="form-input" required rows={6} value={newReview.text}
+              <label className="form-label">Your Review (Optional)</label>
+              <textarea className="form-input" rows={6} value={newReview.text}
                 onChange={(e) => setNewReview({ ...newReview, text: e.target.value })}
                 placeholder="What did you like about this product? How was the fit and quality?"
                 style={{ resize: "vertical" }} />
