@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import { useToast } from "@/components/ToastProvider";
 import { verifyOtp, sendEmailVerificationOtp, getMe, registerWithAuth } from "@/lib/api/auth";
 import type { User } from "@/lib/types";
 
@@ -10,6 +11,7 @@ function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
+  const { addToast } = useToast();
 
   const email = searchParams.get("email") || "";
   const initialRequestId = searchParams.get("requestId") || "";
@@ -62,6 +64,7 @@ function VerifyEmailContent() {
         sessionStorage.removeItem("pending_auth_user");
         if (user) {
           login(token, user);
+          addToast("Account created successfully! Welcome to Irraya.", "success");
           router.push("/");
           return;
         }
