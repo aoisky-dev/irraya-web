@@ -11,7 +11,7 @@ import {
   deleteCustomerAddress,
   type AddressInput
 } from "@/lib/api/auth";
-import { IconPackage, IconHeart, IconCornerDownLeft } from "@/components/Icons";
+import { IconPackage, IconHeart, IconCornerDownLeft, IconMoreVertical } from "@/components/Icons";
 
 const INDIAN_STATES = [
   "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat",
@@ -391,9 +391,9 @@ export default function AccountPage() {
                       <div style={{ position: "absolute", top: "var(--space-md)", right: "var(--space-md)" }}>
                         <button 
                           onClick={() => setOpenAddressMenuId(openAddressMenuId === addr.id ? null : addr.id!)}
-                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "var(--text-muted)", padding: "4px 8px", lineHeight: 1 }}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "var(--text-muted)", padding: "4px 8px", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
                         >
-                          &#8942;
+                          <IconMoreVertical size={18} />
                         </button>
                         {openAddressMenuId === addr.id && (
                           <>

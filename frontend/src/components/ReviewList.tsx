@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { Review } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { getProductReviews, checkCanReview, editProductReview, deleteProductReview, type ReviewSummary } from "@/lib/api/reviews";
-import { IconCheck } from "@/components/Icons";
+import { IconCheck, IconMoreVertical } from "@/components/Icons";
 import { ConfirmModal } from "./ConfirmModal";
 
 interface ReviewListProps {
@@ -205,9 +205,9 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
                       <div style={{ position: "relative" }}>
                         <button 
                           onClick={() => setOpenMenuId(openMenuId === review.id ? null : review.id)}
-                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "var(--text-muted)", padding: "4px 8px", lineHeight: 1 }}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "var(--text-muted)", padding: "4px 8px", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
                         >
-                          &#8942;
+                          <IconMoreVertical size={18} />
                         </button>
                         {openMenuId === review.id && (
                           <>

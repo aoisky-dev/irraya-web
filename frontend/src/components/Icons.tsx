@@ -249,6 +249,16 @@ export function IconCornerDownLeft({ size, className, style }: IconProps) {
   );
 }
 
+export function IconMoreVertical({ size, className, style }: IconProps) {
+  return (
+    <svg {...defaults(size)} className={className} style={style}>
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="12" cy="5" r="1" />
+      <circle cx="12" cy="19" r="1" />
+    </svg>
+  );
+}
+
 export function IconArrowRight({ size, className, style }: IconProps) {
   return (
     <svg {...defaults(size)} className={className} style={style}>
