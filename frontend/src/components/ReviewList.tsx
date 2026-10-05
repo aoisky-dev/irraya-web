@@ -164,11 +164,11 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
         const writtenReviews = reviews.filter(r => r.text.trim() || (r.imageUrls && r.imageUrls.length > 0));
         
         if (writtenReviews.length === 0) {
-          return reviews.length > 0 ? (
-             <p className="text-muted">No written reviews yet. Be the first to add one!</p>
-          ) : (
-             <p className="text-muted">No reviews yet. Be the first to review this product!</p>
-          );
+          if (reviews.length > 0) {
+            return <p className="text-muted">No written reviews yet.{canReview ? " Be the first to add one!" : ""}</p>;
+          } else {
+            return <p className="text-muted">No reviews yet.{canReview ? " Be the first to review this product!" : ""}</p>;
+          }
         }
 
         return (
