@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ProductCard } from "@/components/ProductCard";
-import { NewsletterForm } from "@/components/NewsletterForm";
+// import { NewsletterForm } from "@/components/NewsletterForm";
 import { getProducts } from "@/lib/api/products";
 import { ScrollableProductRow } from "@/components/ScrollableProductRow";
 import { ScrollableCollectionRow } from "@/components/ScrollableCollectionRow";
@@ -155,6 +155,7 @@ export default async function HomePage() {
       </section>
 
       {/* Newsletter */}
+      {/* 
       <section className="newsletter-section">
         <div className="newsletter-content">
           <h2 className="section-title" style={{ marginBottom: "var(--space-sm)" }}>Stay in the Loop</h2>
@@ -164,6 +165,7 @@ export default async function HomePage() {
           <NewsletterForm />
         </div>
       </section>
+      */}
     </>
   );
 }
