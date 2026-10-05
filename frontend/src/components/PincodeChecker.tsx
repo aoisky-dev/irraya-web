@@ -35,10 +35,14 @@ export function PincodeChecker() {
         )[0];
         
         const etdStr = fastestCourier.etd;
-        let displayStr = `Estimated delivery by ${etdStr}`;
         const etdDate = new Date(etdStr);
+        // Add +2 days buffer to the courier's ETD estimate
         if (!isNaN(etdDate.getTime())) {
-          const formatDate = (d: Date) => d.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' });
+          etdDate.setDate(etdDate.getDate() + 2);
+        }
+        const formatDate = (d: Date) => d.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' });
+        let displayStr = `Estimated delivery by ${etdStr}`;
+        if (!isNaN(etdDate.getTime())) {
           displayStr = `Estimated delivery by ${formatDate(etdDate)}`;
         }
         

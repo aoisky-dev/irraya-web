@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import type { Review } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
-import { getProductReviews, submitProductReview, type ReviewSummary } from "@/lib/api/reviews";
+import { getProductReviews, submitProductReview, checkCanReview, type ReviewSummary } from "@/lib/api/reviews";
 import { IconCheck } from "@/components/Icons";
 
 interface ReviewListProps {
@@ -60,6 +60,7 @@ export function ReviewList({ productId, initialReviews }: ReviewListProps) {
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [summary, setSummary] = useState<ReviewSummary | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [canReview, setCanReview] = useState(false);
   const [newReview, setNewReview] = useState({
     rating: 5,
     text: "",
@@ -81,6 +82,12 @@ export function ReviewList({ productId, initialReviews }: ReviewListProps) {
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Unable to load reviews."))
       .finally(() => setIsLoading(false));
   }, [initialReviews, productId]);
+
+  // Check if this user can review (must have a delivered order for this product)
+  useEffect(() => {
+    if (!token) { setCanReview(false); return; }
+    checkCanReview(token, productId).then(setCanReview).catch(() => setCanReview(false));
+  }, [token, productId]);
 
   // Compute rating distribution
   const ratingCounts = [0, 0, 0, 0, 0];
@@ -147,12 +154,17 @@ export function ReviewList({ productId, initialReviews }: ReviewListProps) {
           ))}
         </div>
 
-        {/* Write review button */}
+        {/* Write review button — only shown to customers with a delivered order */}
         <div style={{ display: "flex", alignItems: "center" }}>
-          {!isFormOpen && (
+          {canReview && !isFormOpen && (
             <button className="btn btn-outline" onClick={() => setIsFormOpen(true)}>
               Write a Review
             </button>
+          )}
+          {token && !canReview && !isFormOpen && (
+            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", maxWidth: "220px", lineHeight: 1.4 }}>
+              Only customers who have received this product can leave a review.
+            </p>
           )}
         </div>
       </div>

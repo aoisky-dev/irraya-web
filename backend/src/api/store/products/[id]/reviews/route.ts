@@ -62,7 +62,13 @@ export async function POST(req: MedusaRequest<CreateReviewBody>, res: MedusaResp
   }
 
   try {
+    // Only customers with a *delivered* order for this product can leave a review
     const verifiedPurchase = await hasVerifiedPurchase(customer.customerId, productId)
+    if (!verifiedPurchase) {
+      res.status(403).json({ message: "You can only review products that have been delivered to you." })
+      return
+    }
+
     const review = await createProductReview({
       productId,
       customerId: customer.customerId,
@@ -70,15 +76,14 @@ export async function POST(req: MedusaRequest<CreateReviewBody>, res: MedusaResp
       rating,
       text,
       imageUrls: normalizeImageUrls(body.image_urls),
-      verifiedPurchase
+      verifiedPurchase: true
     })
 
     res.status(201).json({
       review,
-      message: "Review submitted and pending moderation."
+      message: "Review submitted successfully. Thank you!"
     })
   } catch (error: unknown) {
     res.status(500).json({ message: error instanceof Error ? error.message : "Failed to submit review." })
   }
 }
-

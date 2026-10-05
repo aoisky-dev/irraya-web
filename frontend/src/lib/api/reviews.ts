@@ -50,6 +50,18 @@ export async function getProductReviews(productId: string): Promise<{ reviews: R
   };
 }
 
+export async function checkCanReview(token: string, productId: string): Promise<boolean> {
+  try {
+    const response = await medusaRequest<{ canReview?: boolean }>(
+      `/store/products/${productId}/reviews/can-review`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.canReview === true;
+  } catch {
+    return false;
+  }
+}
+
 export async function submitProductReview(input: {
   token: string;
   productId: string;
@@ -75,7 +87,6 @@ export async function submitProductReview(input: {
 
   return {
     review: mapReview(response.review),
-    message: response.message || "Review submitted and pending moderation."
+    message: response.message || "Review submitted successfully. Thank you!"
   };
 }
-

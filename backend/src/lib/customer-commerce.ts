@@ -198,6 +198,7 @@ export async function listCompareItems(customerId: string): Promise<SavedProduct
 export async function hasVerifiedPurchase(customerId: string, productId: string): Promise<boolean> {
   return withClient(async (client) => {
     try {
+      // Only count as verified if the order's shipment is marked as delivered
       const result = await client.query(
         `select 1
          from "order" o
@@ -205,6 +206,7 @@ export async function hasVerifiedPurchase(customerId: string, productId: string)
          where o.customer_id = $1
            and oli.product_id = $2
            and o.deleted_at is null
+           and (o.metadata->'shipment'->>'status' = 'delivered')
          limit 1`,
         [customerId, productId]
       )
@@ -225,9 +227,12 @@ export async function createProductReview(input: {
   verifiedPurchase?: boolean
 }): Promise<StoredReview> {
   return withClient(async (client) => {
+    // Verified purchasers (i.e. delivered orders) get auto-approved.
+    // Everyone else is rejected — only buyers who received the item can review.
+    const status = input.verifiedPurchase ? 'approved' : 'rejected'
     const result = await client.query<StoredReview>(
       `insert into product_reviews (product_id, customer_id, author_name, rating, text, image_urls, status, verified_purchase)
-       values ($1, $2, $3, $4, $5, $6, 'pending', $7)
+       values ($1, $2, $3, $4, $5, $6, $7, $8)
        returning *`,
       [
         input.productId,
@@ -236,6 +241,7 @@ export async function createProductReview(input: {
         Math.min(Math.max(Math.round(input.rating), 1), 5),
         input.text,
         input.imageUrls ?? [],
+        status,
         Boolean(input.verifiedPurchase)
       ]
     )
