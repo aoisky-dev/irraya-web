@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import {
   saveCustomerAddress,
   updateCustomerAddress,
@@ -146,6 +147,16 @@ function AddressFormModal({
           </button>
         </div>
       </div>
+      {/* Confirm Action Modal */}
+      <ConfirmModal 
+        isOpen={confirmState.isOpen} 
+        message={confirmState.message} 
+        onConfirm={() => {
+          confirmState.onConfirm();
+          setConfirmState({ ...confirmState, isOpen: false });
+        }} 
+        onCancel={() => setConfirmState({ ...confirmState, isOpen: false })} 
+      />
     </div>
   );
 }
@@ -164,6 +175,7 @@ export default function AccountPage() {
   const [addressSuccess, setAddressSuccess] = useState("");
   const [deletingAddressId, setDeletingAddressId] = useState<string | null>(null);
   const [openAddressMenuId, setOpenAddressMenuId] = useState<string | null>(null);
+  const [confirmState, setConfirmState] = useState<{isOpen: boolean, message: string, onConfirm: () => void}>({isOpen: false, message: "", onConfirm: () => {}});
 
   useEffect(() => { setIsClient(true); }, []);
 
@@ -393,24 +405,37 @@ export default function AccountPage() {
                           &#8942;
                         </button>
                         {openAddressMenuId === addr.id && (
-                          <div style={{ 
-                            position: "absolute", top: "100%", right: 0, marginTop: "4px", background: "var(--bg-primary)", 
-                            border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 10, minWidth: "120px"
-                          }}>
-                            <button 
-                              onClick={() => { setOpenAddressMenuId(null); openEditAddress(addr); }} 
-                              style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 16px", background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid var(--border-light)", fontSize: "0.85rem", color: "var(--text-primary)" }}
-                            >
-                              Edit
-                            </button>
-                            <button 
-                              onClick={() => { setOpenAddressMenuId(null); if (confirm("Delete this address?")) handleDeleteAddress(addr.id!); }} 
-                              disabled={deletingAddressId === addr.id}
-                              style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 16px", background: "none", border: "none", cursor: deletingAddressId === addr.id ? "default" : "pointer", color: "var(--error)", fontSize: "0.85rem" }}
-                            >
-                              {deletingAddressId === addr.id ? "Deleting..." : "Delete"}
-                            </button>
-                          </div>
+                          <>
+                            <div 
+                              onClick={() => setOpenAddressMenuId(null)} 
+                              style={{ position: "fixed", inset: 0, zIndex: 9 }} 
+                            />
+                            <div style={{ 
+                              position: "absolute", top: "100%", right: 0, marginTop: "4px", background: "var(--bg-primary)", 
+                              border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 10, minWidth: "120px"
+                            }}>
+                              <button 
+                                onClick={() => { setOpenAddressMenuId(null); openEditAddress(addr); }} 
+                                style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 16px", background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid var(--border-light)", fontSize: "0.85rem", color: "var(--text-primary)" }}
+                              >
+                                Edit
+                              </button>
+                              <button 
+                                onClick={() => { 
+                                  setOpenAddressMenuId(null); 
+                                  setConfirmState({
+                                    isOpen: true,
+                                    message: "Are you sure you want to delete this address?",
+                                    onConfirm: () => handleDeleteAddress(addr.id!)
+                                  });
+                                }} 
+                                disabled={deletingAddressId === addr.id}
+                                style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 16px", background: "none", border: "none", cursor: deletingAddressId === addr.id ? "default" : "pointer", color: "var(--error)", fontSize: "0.85rem" }}
+                              >
+                                {deletingAddressId === addr.id ? "Deleting..." : "Delete"}
+                              </button>
+                            </div>
+                          </>
                         )}
                       </div>
                     )}

@@ -6,6 +6,7 @@ import type { Review } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { getProductReviews, checkCanReview, editProductReview, deleteProductReview, type ReviewSummary } from "@/lib/api/reviews";
 import { IconCheck } from "@/components/Icons";
+import { ConfirmModal } from "./ConfirmModal";
 
 interface ReviewListProps {
   productId: string;
@@ -67,6 +68,7 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [confirmState, setConfirmState] = useState<{isOpen: boolean, message: string, onConfirm: () => void}>({isOpen: false, message: "", onConfirm: () => {}});
   const [editForm, setEditForm] = useState({ rating: 5, text: "" });
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -95,7 +97,6 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
 
   const handleDelete = async (reviewId: string) => {
     if (!token) return;
-    if (!confirm("Are you sure you want to delete this review?")) return;
     setIsUpdating(true);
     try {
       await deleteProductReview({ token, productId, reviewId });
@@ -209,13 +210,26 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
                           &#8942;
                         </button>
                         {openMenuId === review.id && (
-                          <div style={{ 
-                            position: "absolute", top: "100%", right: 0, marginTop: "4px", background: "var(--bg-primary)", 
-                            border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 10, minWidth: "120px"
-                          }}>
-                            <button onClick={() => startEdit(review)} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 16px", background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid var(--border-light)" }}>Edit</button>
-                            <button onClick={() => { setOpenMenuId(null); handleDelete(review.id); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 16px", background: "none", border: "none", cursor: "pointer", color: "var(--error)" }}>Delete</button>
-                          </div>
+                          <>
+                            <div 
+                              onClick={() => setOpenMenuId(null)} 
+                              style={{ position: "fixed", inset: 0, zIndex: 9 }} 
+                            />
+                            <div style={{ 
+                              position: "absolute", top: "100%", right: 0, marginTop: "4px", background: "var(--bg-primary)", 
+                              border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 10, minWidth: "120px"
+                            }}>
+                              <button onClick={() => startEdit(review)} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 16px", background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid var(--border-light)" }}>Edit</button>
+                              <button onClick={() => { 
+                                setOpenMenuId(null); 
+                                setConfirmState({
+                                  isOpen: true, 
+                                  message: "Are you sure you want to delete this review?", 
+                                  onConfirm: () => handleDelete(review.id) 
+                                }); 
+                              }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 16px", background: "none", border: "none", cursor: "pointer", color: "var(--error)" }}>Delete</button>
+                            </div>
+                          </>
                         )}
                       </div>
                     )}
@@ -270,6 +284,16 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
           </Link>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={confirmState.isOpen} 
+        message={confirmState.message} 
+        onConfirm={() => {
+          confirmState.onConfirm();
+          setConfirmState({ ...confirmState, isOpen: false });
+        }} 
+        onCancel={() => setConfirmState({ ...confirmState, isOpen: false })} 
+      />
     </div>
   );
 }
