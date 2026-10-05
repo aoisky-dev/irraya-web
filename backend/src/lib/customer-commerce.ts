@@ -202,7 +202,8 @@ export async function hasVerifiedPurchase(customerId: string, productId: string)
       const result = await client.query(
         `select 1
          from "order" o
-         join order_line_item oli on oli.order_id = o.id
+         join order_item oi on oi.order_id = o.id
+         join order_line_item oli on oli.id = oi.item_id
          where o.customer_id = $1
            and oli.product_id = $2
            and o.deleted_at is null

@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import type { Review } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
-import { getProductReviews, submitProductReview, checkCanReview, type ReviewSummary } from "@/lib/api/reviews";
+import { getProductReviews, checkCanReview, type ReviewSummary } from "@/lib/api/reviews";
 import { IconCheck } from "@/components/Icons";
 
 interface ReviewListProps {
   productId: string;
-  initialReviews: Review[];
+  productHandle?: string;
+  initialReviews?: Review[];
 }
 
 function StarRating({ rating, onSelect, interactive = false, size = 18 }: {
@@ -55,20 +57,12 @@ function RatingBar({ star, count, total }: { star: number; count: number; total:
   );
 }
 
-export function ReviewList({ productId, initialReviews }: ReviewListProps) {
-  const { token, user } = useAuth();
+export function ReviewList({ productId, productHandle, initialReviews = [] }: ReviewListProps) {
+  const { token } = useAuth();
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [summary, setSummary] = useState<ReviewSummary | null>(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
   const [canReview, setCanReview] = useState(false);
-  const [newReview, setNewReview] = useState({
-    rating: 5,
-    text: "",
-    authorName: user ? `${user.firstName} ${user.lastName}`.trim() || user.email : "",
-  });
   const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -97,41 +91,6 @@ export function ReviewList({ productId, initialReviews }: ReviewListProps) {
   const avgRating = summary?.averageRating ||
     (reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) {
-      setError("Please sign in to write a review.");
-      return;
-    }
-    if (!newReview.text.trim()) {
-      setError("Please write your review.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError("");
-    setMessage("");
-
-    try {
-      const { review, message } = await submitProductReview({
-        token,
-        productId,
-        authorName: (newReview.authorName.trim() || user?.firstName || "Customer"),
-        rating: newReview.rating,
-        text: newReview.text.trim(),
-      });
-
-      setReviews((prev) => [review, ...prev]);
-      setMessage(message);
-      setIsFormOpen(false);
-      setNewReview({ rating: 5, text: "", authorName: user ? `${user.firstName} ${user.lastName}`.trim() || user.email : "" });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to submit review.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div>
       {/* Summary bar */}
@@ -156,12 +115,12 @@ export function ReviewList({ productId, initialReviews }: ReviewListProps) {
 
         {/* Write review button — only shown to customers with a delivered order */}
         <div style={{ display: "flex", alignItems: "center" }}>
-          {canReview && !isFormOpen && (
-            <button className="btn btn-outline" onClick={() => setIsFormOpen(true)}>
+          {canReview && productHandle && (
+            <Link href={`/products/${productHandle}/review`} className="btn btn-outline">
               Write a Review
-            </button>
+            </Link>
           )}
-          {token && !canReview && !isFormOpen && (
+          {token && !canReview && (
             <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", maxWidth: "220px", lineHeight: 1.4 }}>
               Only customers who have received this product can leave a review.
             </p>
@@ -170,50 +129,7 @@ export function ReviewList({ productId, initialReviews }: ReviewListProps) {
       </div>
 
       {isLoading && <p className="text-muted" style={{ marginBottom: "var(--space-md)" }}>Loading reviews...</p>}
-      {message && <p style={{ color: "var(--success, green)", marginBottom: "var(--space-md)" }}>{message}</p>}
       {error && <p style={{ color: "var(--error)", marginBottom: "var(--space-md)" }}>{error}</p>}
-
-      {/* Review form */}
-      {isFormOpen && (
-        <form onSubmit={handleSubmit} style={{ background: "var(--bg-primary)", padding: "var(--space-xl)", borderRadius: "var(--radius-md, 0)", marginBottom: "var(--space-xl)", border: "1px solid var(--border)" }}>
-          <h4 style={{ marginBottom: "var(--space-lg)", fontFamily: "var(--font-display)", fontWeight: 700 }}>Write a Review</h4>
-          {!token && <p style={{ color: "var(--error)", marginBottom: "var(--space-md)", fontSize: "0.85rem" }}>Please sign in before submitting a review.</p>}
-
-          {/* Star rating — clickable */}
-          <div style={{ marginBottom: "var(--space-lg)" }}>
-            <label className="form-label" style={{ display: "block", marginBottom: "var(--space-sm)" }}>Your Rating</label>
-            <StarRating
-              rating={newReview.rating}
-              onSelect={(star) => setNewReview({ ...newReview, rating: star })}
-              interactive
-              size={28}
-            />
-          </div>
-
-          <div className="form-grid" style={{ gap: "12px" }}>
-            <div className="form-group full">
-              <label className="form-label">Your Name</label>
-              <input className="form-input" type="text" required value={newReview.authorName}
-                onChange={(e) => setNewReview({ ...newReview, authorName: e.target.value })} />
-            </div>
-
-            <div className="form-group full">
-              <label className="form-label">Your Review</label>
-              <textarea className="form-input" required rows={4} value={newReview.text}
-                onChange={(e) => setNewReview({ ...newReview, text: e.target.value })}
-                placeholder="Share your experience with this product…"
-                style={{ resize: "vertical" }} />
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: "var(--space-md)", marginTop: "var(--space-lg)" }}>
-            <button type="submit" className="btn btn-outline" disabled={isSubmitting || !token}>
-              {isSubmitting ? "Submitting…" : "Submit Review"}
-            </button>
-            <button type="button" className="btn btn-outline" onClick={() => setIsFormOpen(false)}>Cancel</button>
-          </div>
-        </form>
-      )}
 
       {/* Review list */}
       {reviews.length === 0 ? (

@@ -576,7 +576,7 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
             </div>
           )}
         </div>
-        <ReviewList productId={product.id} initialReviews={[]} />
+        <ReviewList productId={product.id} productHandle={product.handle} initialReviews={[]} />
       </section>
 
       {/* Related Products */}
