@@ -220,14 +220,6 @@ export async function hasVerifiedPurchase(customerId: string, productId: string)
   })
 }
 
-export async function createProductReview(input: {
-  productId: string
-  customerId: string
-  authorName: string
-  rating: number
-  text: string
-  imageUrls?: string[]
-}
 
 export async function customerHasReviewed(customerId: string, productId: string): Promise<boolean> {
   return withClient(async (client) => {
