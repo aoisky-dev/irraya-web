@@ -35,6 +35,7 @@ export type ProductStatus = "draft" | "published" | "archived";
 export interface Review {
   id: string;
   productId: string;
+  customerId?: string;
   authorName: string;
   rating: number;
   text: string;

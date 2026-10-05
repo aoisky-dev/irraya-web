@@ -4,6 +4,7 @@ import { medusaRequest } from "./client";
 type ReviewApiRow = {
   id?: unknown;
   product_id?: unknown;
+  customer_id?: unknown;
   author_name?: unknown;
   rating?: unknown;
   text?: unknown;
@@ -27,6 +28,7 @@ const toNumber = (value: unknown, fallback = 0): number => {
 const mapReview = (row: ReviewApiRow): Review => ({
   id: String(row.id ?? ""),
   productId: String(row.product_id ?? ""),
+  customerId: row.customer_id ? String(row.customer_id) : undefined,
   authorName: String(row.author_name ?? "Irraya customer"),
   rating: Math.min(Math.max(Math.round(toNumber(row.rating, 5)), 1), 5),
   text: String(row.text ?? ""),
@@ -89,4 +91,41 @@ export async function submitProductReview(input: {
     review: mapReview(response.review),
     message: response.message || "Review submitted successfully. Thank you!"
   };
+}
+export async function editProductReview(params: {
+  token: string;
+  productId: string;
+  reviewId: string;
+  rating?: number;
+  text?: string;
+}): Promise<{ message: string; review?: Review }> {
+  const { token, productId, reviewId, rating, text } = params;
+  const res = await medusaRequest<{ message: string; review?: ReviewApiRow }>(
+    `/store/products/${productId}/reviews/${reviewId}`,
+    {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ rating, text })
+    }
+  );
+  return {
+    message: res.message || "Review updated.",
+    review: res.review ? mapReview(res.review) : undefined
+  };
+}
+
+export async function deleteProductReview(params: {
+  token: string;
+  productId: string;
+  reviewId: string;
+}): Promise<{ message: string }> {
+  const { token, productId, reviewId } = params;
+  const res = await medusaRequest<{ message: string }>(
+    `/store/products/${productId}/reviews/${reviewId}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  return { message: res.message || "Review deleted." };
 }

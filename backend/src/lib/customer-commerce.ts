@@ -294,6 +294,45 @@ export async function listReviewsForModeration(status?: string): Promise<StoredR
     return result.rows
   })
 }
+export async function updateProductReview(reviewId: number, customerId: string, updates: { rating?: number; text?: string }): Promise<StoredReview | null> {
+  return withClient(async (client) => {
+    const fields: string[] = []
+    const values: any[] = [reviewId, customerId]
+    let paramIndex = 3
+
+    if (updates.rating !== undefined) {
+      fields.push(`rating = $${paramIndex++}`)
+      values.push(updates.rating)
+    }
+    if (updates.text !== undefined) {
+      fields.push(`text = $${paramIndex++}`)
+      values.push(updates.text)
+    }
+
+    if (fields.length === 0) return null
+
+    fields.push(`updated_at = now()`)
+
+    const result = await client.query<StoredReview>(
+      `update product_reviews
+       set ${fields.join(', ')}
+       where id = $1 and customer_id = $2
+       returning *`,
+      values
+    )
+    return result.rows[0] ?? null
+  })
+}
+
+export async function deleteProductReview(reviewId: number, customerId: string): Promise<boolean> {
+  return withClient(async (client) => {
+    const result = await client.query(
+      `delete from product_reviews where id = $1 and customer_id = $2`,
+      [reviewId, customerId]
+    )
+    return (result.rowCount ?? 0) > 0
+  })
+}
 
 export async function moderateReview(input: { reviewId: number; status: ReviewStatus; note?: string }): Promise<StoredReview | null> {
   return withClient(async (client) => {

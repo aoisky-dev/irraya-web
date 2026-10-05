@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Review } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
-import { getProductReviews, checkCanReview, type ReviewSummary } from "@/lib/api/reviews";
+import { getProductReviews, checkCanReview, editProductReview, deleteProductReview, type ReviewSummary } from "@/lib/api/reviews";
 import { IconCheck } from "@/components/Icons";
 
 interface ReviewListProps {
@@ -58,12 +58,53 @@ function RatingBar({ star, count, total }: { star: number; count: number; total:
 }
 
 export function ReviewList({ productId, productHandle, initialReviews = [] }: ReviewListProps) {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [summary, setSummary] = useState<ReviewSummary | null>(null);
   const [canReview, setCanReview] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ rating: 5, text: "" });
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const startEdit = (r: Review) => {
+    setEditingId(r.id);
+    setEditForm({ rating: r.rating, text: r.text });
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent, reviewId: string) => {
+    e.preventDefault();
+    if (!token) return;
+    setIsUpdating(true);
+    try {
+      const { review: updated } = await editProductReview({ token, productId, reviewId, rating: editForm.rating, text: editForm.text });
+      if (updated) {
+        setReviews(prev => prev.map(r => r.id === reviewId ? updated : r));
+      }
+      setEditingId(null);
+    } catch (err: any) {
+      setError(err.message || "Failed to update.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDelete = async (reviewId: string) => {
+    if (!token) return;
+    if (!confirm("Are you sure you want to delete this review?")) return;
+    setIsUpdating(true);
+    try {
+      await deleteProductReview({ token, productId, reviewId });
+      setReviews(prev => prev.filter(r => r.id !== reviewId));
+    } catch (err: any) {
+      setError(err.message || "Failed to delete.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
 
   useEffect(() => {
     setIsLoading(true);
@@ -151,15 +192,41 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
               {review.status === "pending" && (
                 <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "var(--space-sm)", fontStyle: "italic" }}>Pending moderation</p>
               )}
-              <p style={{ fontSize: "0.9rem", lineHeight: 1.6, color: "var(--text-secondary)" }}>
-                {review.text}
-              </p>
-              {review.imageUrls && review.imageUrls.length > 0 && (
-                <div style={{ display: "flex", gap: "var(--space-sm)", marginTop: "var(--space-sm)", flexWrap: "wrap" }}>
-                  {review.imageUrls.map((url) => (
-                    <img key={url} src={url} alt="Review" style={{ width: "72px", height: "72px", objectFit: "cover", border: "1px solid var(--border)" }} />
-                  ))}
-                </div>
+              {editingId === review.id ? (
+                <form onSubmit={(e) => handleEditSubmit(e, review.id)} style={{ marginTop: "var(--space-md)" }}>
+                  <div style={{ marginBottom: "var(--space-md)" }}>
+                    <StarRating rating={editForm.rating} onSelect={(r) => setEditForm({ ...editForm, rating: r })} interactive size={24} />
+                  </div>
+                  <textarea
+                    required rows={4}
+                    value={editForm.text}
+                    onChange={(e) => setEditForm({ ...editForm, text: e.target.value })}
+                    style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "4px", resize: "vertical", marginBottom: "var(--space-sm)" }}
+                  />
+                  <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+                    <button type="submit" className="btn btn-primary" disabled={isUpdating} style={{ padding: "4px 12px", fontSize: "0.85rem", height: "auto" }}>Save</button>
+                    <button type="button" className="btn btn-outline" disabled={isUpdating} onClick={() => setEditingId(null)} style={{ padding: "4px 12px", fontSize: "0.85rem", height: "auto" }}>Cancel</button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <p style={{ fontSize: "0.9rem", lineHeight: 1.6, color: "var(--text-secondary)" }}>
+                    {review.text}
+                  </p>
+                  {review.imageUrls && review.imageUrls.length > 0 && (
+                    <div style={{ display: "flex", gap: "var(--space-sm)", marginTop: "var(--space-sm)", flexWrap: "wrap" }}>
+                      {review.imageUrls.map((url) => (
+                        <img key={url} src={url} alt="Review" style={{ width: "72px", height: "72px", objectFit: "cover", border: "1px solid var(--border)" }} />
+                      ))}
+                    </div>
+                  )}
+                  {user && user.id === review.customerId && (
+                    <div style={{ display: "flex", gap: "12px", marginTop: "var(--space-md)", borderTop: "1px solid var(--border-light, var(--border))", paddingTop: "var(--space-sm)" }}>
+                      <button onClick={() => startEdit(review)} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>Edit</button>
+                      <button onClick={() => handleDelete(review.id)} style={{ background: "none", border: "none", color: "var(--error)", fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>Delete</button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ))}
