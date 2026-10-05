@@ -283,7 +283,16 @@ export default function AccountPage() {
             <p className="text-secondary">{user.email}</p>
           </div>
         </div>
-        <button className="btn btn-outline" onClick={logout}>Sign Out</button>
+        <button 
+          className="btn btn-outline" 
+          onClick={() => setConfirmState({
+            isOpen: true,
+            message: "Are you sure you want to sign out?",
+            onConfirm: () => logout()
+          })}
+        >
+          Sign Out
+        </button>
       </div>
 
       <div className="account-layout">
