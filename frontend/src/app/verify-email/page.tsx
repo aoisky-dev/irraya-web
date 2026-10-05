@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import { verifyOtp, sendEmailVerificationOtp, getMe } from "@/lib/api/auth";
+import { verifyOtp, sendEmailVerificationOtp, getMe, registerWithAuth } from "@/lib/api/auth";
 import type { User } from "@/lib/types";
 
 function VerifyEmailContent() {
@@ -32,14 +32,27 @@ function VerifyEmailContent() {
     try {
       await verifyOtp(email, otp.trim(), requestId || undefined);
 
-      // Retrieve pending auth token stored during registration
       let token: string | null = null;
       let user: User | null = null;
+      
       try {
-        token = sessionStorage.getItem("pending_auth_token");
-        const raw = sessionStorage.getItem("pending_auth_user");
-        if (raw) user = JSON.parse(raw) as User;
-      } catch {}
+        const rawReg = sessionStorage.getItem("pending_registration");
+        if (rawReg) {
+          const regData = JSON.parse(rawReg);
+          const auth = await registerWithAuth(regData);
+          token = auth.token;
+          user = auth.user;
+          sessionStorage.removeItem("pending_registration");
+        } else {
+          // Fallback if they were already registered but just verifying (e.g., from old flow)
+          token = sessionStorage.getItem("pending_auth_token");
+          const rawUser = sessionStorage.getItem("pending_auth_user");
+          if (rawUser) user = JSON.parse(rawUser) as User;
+        }
+      } catch (e) {
+        console.error("Registration error after OTP:", e);
+        throw new Error("Email verified, but account creation failed. Please try registering again.");
+      }
 
       if (token) {
         if (!user) {
@@ -54,7 +67,7 @@ function VerifyEmailContent() {
         }
       }
 
-      // Fallback if token wasn't stored — show success and redirect to login
+      // Fallback if token wasn't generated — show success and redirect to login
       setDone(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Invalid or expired code.");

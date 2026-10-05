@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import { registerWithAuth } from "@/lib/api/auth";
+import { sendEmailVerificationOtp } from "@/lib/api/auth";
 import { assertValidPassword, PASSWORD_REQUIREMENTS_MESSAGE, sanitizeDisplayName, sanitizeEmail, sanitizePhoneInput } from "@/lib/auth/validation";
 
 export default function RegisterPage() {
@@ -41,21 +41,19 @@ export default function RegisterPage() {
 
       assertValidPassword(password);
 
-      const auth = await registerWithAuth({
+      // Send OTP to verify email before creating account
+      const { requestId } = await sendEmailVerificationOtp(normalizedEmail);
+
+      const pendingData = {
         email: normalizedEmail,
         phone: normalizedPhone,
         firstName: sanitizedFirstName,
         lastName: sanitizedLastName,
         passwordHash: password
-      });
+      };
 
-      // Store token temporarily — login happens after OTP verification
-      try { sessionStorage.setItem("pending_auth_token", auth.token) } catch {}
-      try { sessionStorage.setItem("pending_auth_user", JSON.stringify(auth.user)) } catch {}
-
-      // Send OTP to verify email
-      const { requestId } = await (await import("@/lib/api/auth")).sendEmailVerificationOtp(normalizedEmail)
-        .catch(() => ({ requestId: "" }))
+      // Store form data temporarily — registration happens after OTP verification
+      try { sessionStorage.setItem("pending_registration", JSON.stringify(pendingData)) } catch {}
 
       const params = new URLSearchParams({ email: normalizedEmail })
       if (requestId) params.set("requestId", requestId)
