@@ -326,7 +326,8 @@ export default function AccountPage() {
                 setProfileForm({ first_name: user.firstName, last_name: user.lastName, phone: user.phone || "" });
                 setShowProfileForm(true);
               }}
-              style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.85rem", cursor: "pointer", textDecoration: "underline" }}
+              className="btn btn-outline"
+              style={{ padding: "0.25rem 0.75rem", fontSize: "0.8rem", height: "auto" }}
             >
               Edit
             </button>

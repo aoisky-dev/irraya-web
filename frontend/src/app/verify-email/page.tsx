@@ -140,12 +140,18 @@ function VerifyEmailContent() {
           <button type="submit" className="btn btn-full" disabled={loading || otp.length < 6}>
             {loading ? "Verifying…" : "Verify email"}
           </button>
-          <p className="auth-footer-link">
-            Didn't get it?{" "}
-            <button type="button" className="link-button" onClick={handleResend} disabled={resending}>
-              {resending ? "Sending…" : "Resend code"}
+          <div style={{ marginTop: "var(--space-xl)", textAlign: "center", display: "flex", flexDirection: "column", gap: "var(--space-sm)", alignItems: "center" }}>
+            <p className="text-secondary" style={{ fontSize: "0.9rem" }}>Didn't receive the email?</p>
+            <button 
+              type="button" 
+              className="btn btn-outline" 
+              onClick={handleResend} 
+              disabled={resending}
+              style={{ fontSize: "0.85rem", padding: "0.4rem 1rem", height: "auto", borderRadius: "100px" }}
+            >
+              {resending ? "Sending..." : "Resend Verification Code"}
             </button>
-          </p>
+          </div>
         </form>
       </div>
     </section>
