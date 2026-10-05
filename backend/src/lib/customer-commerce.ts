@@ -227,9 +227,37 @@ export async function createProductReview(input: {
   rating: number
   text: string
   imageUrls?: string[]
+}
+
+export async function customerHasReviewed(customerId: string, productId: string): Promise<boolean> {
+  return withClient(async (client) => {
+    const result = await client.query(
+      `select 1 from product_reviews where customer_id = $1 and product_id = $2 limit 1`,
+      [customerId, productId]
+    )
+    return (result.rowCount ?? 0) > 0
+  })
+}
+
+export async function createProductReview(input: {
+  productId: string
+  customerId: string
+  authorName: string
+  rating: number
+  text: string
+  imageUrls?: string[]
   verifiedPurchase?: boolean
 }): Promise<StoredReview> {
   return withClient(async (client) => {
+    // Check if the user already reviewed this product
+    const existing = await client.query(
+      `select id from product_reviews where customer_id = $1 and product_id = $2`,
+      [input.customerId, input.productId]
+    )
+    if ((existing.rowCount ?? 0) > 0) {
+      throw new Error("You have already submitted a review for this product.")
+    }
+
     // Verified purchasers (i.e. delivered orders) get auto-approved.
     // Everyone else is rejected — only buyers who received the item can review.
     const status = input.verifiedPurchase ? 'approved' : 'rejected'

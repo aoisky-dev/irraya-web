@@ -160,11 +160,20 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
       {error && <p style={{ color: "var(--error)", marginBottom: "var(--space-md)" }}>{error}</p>}
 
       {/* Review list */}
-      {reviews.length === 0 ? (
-        <p className="text-muted">No reviews yet. Be the first to review this product!</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-lg)" }}>
-          {reviews.map((review) => (
+      {(() => {
+        const writtenReviews = reviews.filter(r => r.text.trim() || (r.imageUrls && r.imageUrls.length > 0));
+        
+        if (writtenReviews.length === 0) {
+          return reviews.length > 0 ? (
+             <p className="text-muted">No written reviews yet. Be the first to add one!</p>
+          ) : (
+             <p className="text-muted">No reviews yet. Be the first to review this product!</p>
+          );
+        }
+
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-lg)" }}>
+            {writtenReviews.map((review) => (
             <div key={review.id} style={{ padding: "var(--space-lg)", background: "var(--bg-primary)", border: "1px solid var(--border-light, var(--border))" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-sm)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)" }}>
@@ -233,7 +242,8 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
             </div>
           ))}
         </div>
-      )}
+        );
+      })()}
 
       {/* Write review button — only shown to customers with a delivered order */}
       {canReview && productHandle && (
