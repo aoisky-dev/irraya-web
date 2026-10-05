@@ -66,12 +66,14 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
   const [error, setError] = useState("");
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ rating: 5, text: "" });
   const [isUpdating, setIsUpdating] = useState(false);
 
   const startEdit = (r: Review) => {
     setEditingId(r.id);
     setEditForm({ rating: r.rating, text: r.text });
+    setOpenMenuId(null);
   };
 
   const handleEditSubmit = async (e: React.FormEvent, reviewId: string) => {
@@ -196,7 +198,28 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
                       </p>
                     </div>
                   </div>
-                  <StarRating rating={review.rating} size={14} />
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-md)" }}>
+                    <StarRating rating={review.rating} size={14} />
+                    {user && user.id === review.customerId && (
+                      <div style={{ position: "relative" }}>
+                        <button 
+                          onClick={() => setOpenMenuId(openMenuId === review.id ? null : review.id)}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "var(--text-muted)", padding: "4px 8px", lineHeight: 1 }}
+                        >
+                          &#8942;
+                        </button>
+                        {openMenuId === review.id && (
+                          <div style={{ 
+                            position: "absolute", top: "100%", right: 0, marginTop: "4px", background: "var(--bg-primary)", 
+                            border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 10, minWidth: "120px"
+                          }}>
+                            <button onClick={() => startEdit(review)} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 16px", background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid var(--border-light)" }}>Edit</button>
+                            <button onClick={() => { setOpenMenuId(null); handleDelete(review.id); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 16px", background: "none", border: "none", cursor: "pointer", color: "var(--error)" }}>Delete</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {review.status === "pending" && (
                   <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "var(--space-sm)", fontStyle: "italic" }}>Pending moderation</p>
@@ -230,13 +253,6 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
                           <img key={url} src={url} alt="Review" style={{ width: "72px", height: "72px", objectFit: "cover", border: "1px solid var(--border)" }} />
                         ))}
                       </div>
-                    )}
-                    {user && user.id === review.customerId && (
-                      <div style={{ display: "flex", gap: "12px", marginTop: "var(--space-md)", borderTop: "1px solid var(--border-light, var(--border))", paddingTop: "var(--space-sm)" }}>
-                        <button onClick={() => startEdit(review)} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>Edit</button>
-                        <button onClick={() => handleDelete(review.id)} style={{ background: "none", border: "none", color: "var(--error)", fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>Delete</button>
-                      </div>
-                    )}
                   </>
                 )}
               </div>
