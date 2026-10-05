@@ -253,6 +253,7 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
                           <img key={url} src={url} alt="Review" style={{ width: "72px", height: "72px", objectFit: "cover", border: "1px solid var(--border)" }} />
                         ))}
                       </div>
+                    )}
                   </>
                 )}
               </div>
