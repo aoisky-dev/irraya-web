@@ -46,7 +46,6 @@ export function ReviewFormClient({ product }: { product: Product }) {
   const [newReview, setNewReview] = useState({
     rating: 5,
     text: "",
-    authorName: user ? `${user.firstName} ${user.lastName}`.trim() || user.email : "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -76,16 +75,18 @@ export function ReviewFormClient({ product }: { product: Product }) {
     setMessage("");
 
     try {
+      const computedAuthorName = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "Customer";
+
       const { message } = await submitProductReview({
         token,
         productId: product.id,
-        authorName: (newReview.authorName.trim() || user?.firstName || "Customer"),
+        authorName: computedAuthorName,
         rating: newReview.rating,
         text: newReview.text.trim(),
       });
 
       setMessage(message);
-      setNewReview({ rating: 5, text: "", authorName: user ? `${user.firstName} ${user.lastName}`.trim() || user.email : "" });
+      setNewReview({ rating: 5, text: "" });
       
       // Redirect back to product page after a short delay
       setTimeout(() => {
@@ -154,12 +155,6 @@ export function ReviewFormClient({ product }: { product: Product }) {
           </div>
 
           <div className="form-grid" style={{ gap: "var(--space-md)" }}>
-            <div className="form-group full">
-              <label className="form-label">Name to display</label>
-              <input className="form-input" type="text" required value={newReview.authorName}
-                onChange={(e) => setNewReview({ ...newReview, authorName: e.target.value })} />
-            </div>
-
             <div className="form-group full">
               <label className="form-label">Your Review</label>
               <textarea className="form-input" required rows={6} value={newReview.text}
