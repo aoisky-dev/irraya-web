@@ -113,19 +113,6 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
           ))}
         </div>
 
-        {/* Write review button — only shown to customers with a delivered order */}
-        <div style={{ display: "flex", alignItems: "center" }}>
-          {canReview && productHandle && (
-            <Link href={`/products/${productHandle}/review`} className="btn btn-outline">
-              Write a Review
-            </Link>
-          )}
-          {token && !canReview && (
-            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", maxWidth: "220px", lineHeight: 1.4 }}>
-              Only customers who have received this product can leave a review.
-            </p>
-          )}
-        </div>
       </div>
 
       {isLoading && <p className="text-muted" style={{ marginBottom: "var(--space-md)" }}>Loading reviews...</p>}
@@ -176,6 +163,15 @@ export function ReviewList({ productId, productHandle, initialReviews = [] }: Re
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Write review button — only shown to customers with a delivered order */}
+      {canReview && productHandle && (
+        <div style={{ marginTop: "var(--space-xl)", textAlign: "center" }}>
+          <Link href={`/products/${productHandle}/review`} className="btn btn-outline">
+            Write a Review
+          </Link>
         </div>
       )}
     </div>
