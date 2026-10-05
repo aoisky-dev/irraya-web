@@ -198,7 +198,7 @@ export async function listCompareItems(customerId: string): Promise<SavedProduct
 export async function hasVerifiedPurchase(customerId: string, productId: string): Promise<boolean> {
   return withClient(async (client) => {
     try {
-      // Only count as verified if the order's shipment is marked as delivered
+      // Any order containing this product counts — delivery not required
       const result = await client.query(
         `select 1
          from "order" o
@@ -206,7 +206,6 @@ export async function hasVerifiedPurchase(customerId: string, productId: string)
          where o.customer_id = $1
            and oli.product_id = $2
            and o.deleted_at is null
-           and (o.metadata->'shipment'->>'status' = 'delivered')
          limit 1`,
         [customerId, productId]
       )

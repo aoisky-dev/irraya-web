@@ -163,7 +163,7 @@ export function ReviewList({ productId, initialReviews }: ReviewListProps) {
           )}
           {token && !canReview && !isFormOpen && (
             <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", maxWidth: "220px", lineHeight: 1.4 }}>
-              Only customers who have received this product can leave a review.
+              Only customers who have purchased this product can leave a review.
             </p>
           )}
         </div>
