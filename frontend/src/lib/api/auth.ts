@@ -412,29 +412,21 @@ export class ForgotPasswordError extends Error {
 
 /** Send an OTP for email verification (used after manual registration). */
 export async function sendEmailVerificationOtp(email: string): Promise<{ requestId: string; expiresAt: number }> {
-  const res = await fetch(`${(await import("../config")).config.medusaBaseUrl}/store/auth/otp`, {
+  return medusaRequest("/store/auth/otp", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ channel: "email", value: email }),
-    cache: "no-store",
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Failed to send verification code.");
-  return data;
 }
 
 export async function forgotPassword(email: string): Promise<{ requestId: string; expiresAt: number }> {
-  const res = await fetch(`${(await import("../config")).config.medusaBaseUrl}/store/auth/forgot-password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
-    cache: "no-store",
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new ForgotPasswordError(data.message || "Failed to send reset code.", data.provider);
+  try {
+    return await medusaRequest("/store/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  } catch (err: any) {
+    throw new ForgotPasswordError(err.message || "Failed to send reset code.", "email");
   }
-  return data;
 }
 
 export async function verifyOtp(email: string, code: string, requestId?: string): Promise<{ verificationToken: string }> {
