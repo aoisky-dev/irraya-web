@@ -75,7 +75,7 @@ export function ReviewFormClient({ product }: { product: Product }) {
     setMessage("");
 
     try {
-      const computedAuthorName = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "Customer";
+      const computedAuthorName = user ? `${user.firstName} ${user.lastName}`.trim() : "Customer";
 
       const { message } = await submitProductReview({
         token,
