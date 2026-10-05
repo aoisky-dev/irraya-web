@@ -463,3 +463,20 @@ export async function getMe(token: string): Promise<User> {
 
   return mapCustomerToUser(response.customer);
 }
+
+export async function updateCustomerProfile(token: string, payload: { first_name?: string, last_name?: string, phone?: string }): Promise<User> {
+  const response = await medusaRequest<{ customer?: MedusaCustomer }>(
+    "/store/customers/me",
+    { 
+      method: "POST", 
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload)
+    }
+  );
+
+  if (!response.customer) {
+    throw new Error("Failed to update customer profile.");
+  }
+
+  return mapCustomerToUser(response.customer);
+}

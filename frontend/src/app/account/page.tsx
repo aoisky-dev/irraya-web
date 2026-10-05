@@ -9,6 +9,7 @@ import {
   saveCustomerAddress,
   updateCustomerAddress,
   deleteCustomerAddress,
+  updateCustomerProfile,
   type AddressInput
 } from "@/lib/api/auth";
 import { IconPackage, IconHeart, IconCornerDownLeft, IconMoreVertical } from "@/components/Icons";
@@ -168,6 +169,11 @@ export default function AccountPage() {
   const [openAddressMenuId, setOpenAddressMenuId] = useState<string | null>(null);
   const [confirmState, setConfirmState] = useState<{isOpen: boolean, message: string, onConfirm: () => void}>({isOpen: false, message: "", onConfirm: () => {}});
 
+  // Profile edit state
+  const [showProfileForm, setShowProfileForm] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ first_name: "", last_name: "", phone: "" });
+
   useEffect(() => { setIsClient(true); }, []);
 
   useEffect(() => {
@@ -242,6 +248,21 @@ export default function AccountPage() {
     }
   };
 
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setIsSavingProfile(true);
+    try {
+      await updateCustomerProfile(token, profileForm);
+      await refreshUser();
+      setShowProfileForm(false);
+    } catch (err: any) {
+      alert(err.message || "Failed to update profile.");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
   const handleDeleteAddress = async (addressId: string) => {
     if (!token) return;
     setDeletingAddressId(addressId);
@@ -298,7 +319,18 @@ export default function AccountPage() {
       <div className="account-layout">
         {/* Sidebar — Profile Info */}
         <aside className="account-panel account-profile-panel">
-          <h3 className="account-panel-title">Profile</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-md)" }}>
+            <h3 className="account-panel-title" style={{ margin: 0 }}>Profile</h3>
+            <button 
+              onClick={() => {
+                setProfileForm({ first_name: user.firstName, last_name: user.lastName, phone: user.phone || "" });
+                setShowProfileForm(true);
+              }}
+              style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.85rem", cursor: "pointer", textDecoration: "underline" }}
+            >
+              Edit
+            </button>
+          </div>
           <div className="account-field">
             <span className="account-field-label">Full Name</span>
             <strong>{user.firstName} {user.lastName}</strong>
@@ -471,6 +503,51 @@ export default function AccountPage() {
           onClose={() => setEditingAddressId(null)}
           isSaving={isSavingAddress}
         />
+      )}
+
+      {/* Edit Profile Modal */}
+      {showProfileForm && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.5)", zIndex: 9999,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--space-md)"
+        }}>
+          <div style={{
+            background: "var(--bg-primary)", padding: "var(--space-xl)", borderRadius: "var(--radius-md)",
+            width: "100%", maxWidth: "400px", boxShadow: "0 10px 25px rgba(0,0,0,0.1)"
+          }}>
+            <h2 className="section-title" style={{ marginBottom: "var(--space-xl)" }}>Edit Profile</h2>
+            <form onSubmit={handleUpdateProfile} style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+              <div>
+                <label className="label">First Name *</label>
+                <input 
+                  type="text" className="input" required 
+                  value={profileForm.first_name} onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })} 
+                />
+              </div>
+              <div>
+                <label className="label">Last Name *</label>
+                <input 
+                  type="text" className="input" required 
+                  value={profileForm.last_name} onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })} 
+                />
+              </div>
+              <div>
+                <label className="label">Phone Number</label>
+                <input 
+                  type="tel" className="input" 
+                  value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} 
+                />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-sm)", marginTop: "var(--space-md)" }}>
+                <button type="button" className="btn btn-outline" onClick={() => setShowProfileForm(false)} disabled={isSavingProfile}>Cancel</button>
+                <button type="submit" className="btn" disabled={isSavingProfile || !profileForm.first_name || !profileForm.last_name}>
+                  {isSavingProfile ? "Saving..." : "Save Profile"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Confirm Action Modal */}
