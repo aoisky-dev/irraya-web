@@ -416,8 +416,7 @@ export default function OrdersPage() {
                         Exchange
                       </Link>
                     )}
-                    {/* The Rate & Review button is now shown for any completed/in-progress order that isn't cancelled. */}
-                    {displayStatus !== "cancelled" && (
+                    {isDelivered && (
                       <Link
                         href={`/products/${order.items[0]?.handle || order.items[0]?.productId || ""}`}
                         className="btn btn-outline"
