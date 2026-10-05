@@ -335,11 +335,17 @@ function OrderConfirmationContent() {
                 )}
                 {!isCancelled && (
                   <div className="order-detail-item">
-                    <span className="order-detail-label">Estimated Delivery</span>
+                    <span className="order-detail-label">
+                      {displayStatus === "delivered" ? "Delivered On" : "Estimated Delivery"}
+                    </span>
                     <span className="order-detail-value" style={{ fontWeight: 600 }}>
-                      {order?.tracking?.estimatedDelivery
-                        ? new Date(order.tracking.estimatedDelivery).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
-                        : "5–7 Business Days"}
+                      {displayStatus === "delivered"
+                        ? order?.metadata?.shipment?.delivered_at
+                          ? new Date(order.metadata.shipment.delivered_at).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
+                          : "Recently"
+                        : order?.tracking?.estimatedDelivery
+                          ? new Date(order.tracking.estimatedDelivery).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
+                          : "5–7 Business Days"}
                     </span>
                   </div>
                 )}
