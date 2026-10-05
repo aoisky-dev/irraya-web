@@ -199,6 +199,7 @@ export async function hasVerifiedPurchase(customerId: string, productId: string)
   return withClient(async (client) => {
     try {
       // Only count as verified if the order's shipment is marked as delivered
+      // AND it has been at least 2 days since delivery
       const result = await client.query(
         `select 1
          from "order" o
@@ -208,6 +209,7 @@ export async function hasVerifiedPurchase(customerId: string, productId: string)
            and oli.product_id = $2
            and o.deleted_at is null
            and (o.metadata->'shipment'->>'status' = 'delivered')
+           and (o.metadata->'shipment'->>'delivered_at')::timestamp <= now() - interval '2 days'
          limit 1`,
         [customerId, productId]
       )
