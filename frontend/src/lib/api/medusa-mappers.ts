@@ -234,6 +234,7 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
       status: (metadata as Record<string, any>).latest_customer_request.status,
       reason: (metadata as Record<string, any>).latest_customer_request.reason
     } : undefined,
+    metadata: (metadata as Record<string, any>),
     createdAt: raw?.created_at ? new Date(raw.created_at).toISOString() : new Date().toISOString()
   };
 };

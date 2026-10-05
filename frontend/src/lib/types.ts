@@ -169,6 +169,7 @@ export interface Order {
   tracking?: ShipmentTracking;
   eligibility?: OrderEligibility;
   latestRequest?: { type: string; status: string; reason?: string };
+  metadata?: Record<string, any>;
   createdAt: string;
 }
 
