@@ -631,7 +631,7 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
         }}>
           <button 
             onClick={() => { setZoomLevel(1); setIsFullScreen(false); }}
-            style={{ position: "absolute", top: "16px", right: "16px", background: "none", border: "none", color: "#000000", fontSize: "2.5rem", lineHeight: 1, cursor: "pointer", zIndex: 10000, padding: "10px" }}
+            style={{ position: "absolute", top: "16px", right: "16px", background: "rgba(255, 255, 255, 0.85)", backdropFilter: "blur(4px)", border: "1px solid rgba(0,0,0,0.1)", color: "#000000", fontSize: "2rem", width: "44px", height: "44px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 10000, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
             aria-label="Close fullscreen"
           >
             &times;

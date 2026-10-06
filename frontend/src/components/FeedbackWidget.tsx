@@ -81,7 +81,7 @@ export function FeedbackWidget() {
         aria-label="Share feedback"
         style={{
           position: "fixed",
-          right: "var(--space-xl, 24px)",
+          left: "var(--space-xl, 24px)",
           bottom: "var(--space-xl, 24px)",
           zIndex: 900,
           width: "52px",
@@ -105,7 +105,7 @@ export function FeedbackWidget() {
           aria-label="Share feedback"
           style={{
             position: "fixed",
-            right: "var(--space-xl, 24px)",
+            left: "var(--space-xl, 24px)",
             bottom: "var(--space-xl, 24px)",
             zIndex: 900,
             width: "min(340px, calc(100vw - 32px))",
