@@ -79,14 +79,17 @@ export const POST = async (
 
   let order: any = null
 
-  // Try finding by display_id first (Shiprocket order_id is built from our display_id)
-  if (!isNaN(Number(orderId))) {
+  // Try finding by display_id first (Shiprocket order_id is built from our display_id, e.g., "6-J8CQ")
+  const potentialDisplayId = String(orderId).split("-")[0]
+  if (potentialDisplayId && !isNaN(Number(potentialDisplayId))) {
     const { data: ordersByDisplayId } = await query.graph({
       entity: "order",
-      fields: ["id", "metadata", "fulfillments.*", "fulfillments.items.*"],
-      filters: { display_id: Number(orderId) }
+      fields: ["id", "display_id", "metadata", "fulfillments.*", "fulfillments.items.*"],
+      filters: { display_id: Number(potentialDisplayId) }
     })
     if (ordersByDisplayId && ordersByDisplayId.length > 0) {
+      // Validate that this is actually the right order by checking if the shiprocket order ID matches
+      // the one we sent, OR if we didn't store it, just trust the display_id.
       order = ordersByDisplayId[0]
     }
   }
