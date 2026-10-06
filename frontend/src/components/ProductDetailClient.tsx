@@ -159,16 +159,6 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
     );
   };
 
-  return (
-    <>
-      {/* Breadcrumb */}
-      <Breadcrumb items={[
-        { label: "Home", href: "/" },
-        { label: "Shop", href: "/products" },
-        { label: product.category, href: `/products?category=${encodeURIComponent(product.category)}` },
-        { label: product.title }
-      ]} />
-
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
@@ -190,6 +180,16 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
       setSelectedImage(prev => prev - 1);
     }
   };
+
+  return (
+    <>
+      {/* Breadcrumb */}
+      <Breadcrumb items={[
+        { label: "Home", href: "/" },
+        { label: "Shop", href: "/products" },
+        { label: product.category, href: `/products?category=${encodeURIComponent(product.category)}` },
+        { label: product.title }
+      ]} />
 
       <section className="pdp-layout">
         {/* Image Gallery */}
@@ -626,18 +626,23 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
       {/* Fullscreen Image Modal */}
       {isFullScreen && (
         <div style={{
-          position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100dvh",
           backgroundColor: "#ffffff", zIndex: 9999, display: "flex", flexDirection: "column"
         }}>
           <button 
             onClick={() => { setZoomLevel(1); setIsFullScreen(false); }}
-            style={{ position: "absolute", top: "20px", right: "20px", background: "none", border: "none", color: "#000000", fontSize: "3rem", lineHeight: 1, cursor: "pointer", zIndex: 10000, padding: "10px" }}
+            style={{ position: "absolute", top: "16px", right: "16px", background: "none", border: "none", color: "#000000", fontSize: "2.5rem", lineHeight: 1, cursor: "pointer", zIndex: 10000, padding: "10px" }}
             aria-label="Close fullscreen"
           >
             &times;
           </button>
           
-          <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+          <div 
+            style={{ flex: 1, position: "relative", overflow: "hidden" }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEndHandler}
+          >
             <div style={{ 
               display: "flex", 
               transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)", 
@@ -683,13 +688,16 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
                     width: selectedImage === index ? `${zoomLevel * 100}%` : "100%", 
                     height: selectedImage === index ? `${zoomLevel * 100}%` : "100%", 
                     minWidth: "100%", minHeight: "100%",
-                    position: "relative"
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
                   }}>
                     <Image
                       src={src}
                       alt={`${product.title} fullscreen — image ${index + 1}`}
                       fill
-                      style={{ objectFit: "contain", padding: zoomLevel === 1 ? "40px" : "0" }}
+                      style={{ objectFit: "contain", padding: zoomLevel === 1 ? "16px" : "0" }}
                       sizes="100vw"
                     />
                   </div>
