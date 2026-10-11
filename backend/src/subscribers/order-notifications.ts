@@ -2,6 +2,7 @@ import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { sendMail, ADMIN_EMAIL } from "../lib/mailer"
 import { orderPlacedUserTemplate, orderPlacedAdminTemplate } from "../lib/email-templates"
+import { getPool } from "../lib/db"
 
 type OrderEventData = { id: string }
 
@@ -96,6 +97,31 @@ export default async function orderPlacedHandler({
   await Promise.allSettled([
     sendMail({ to: email, subject: userTpl.subject, html: userTpl.html, text: userTpl.text }),
     sendMail({ to: ADMIN_EMAIL(), subject: adminTpl.subject, html: adminTpl.html, text: adminTpl.text }),
+    // Create a fulfillment request entry so the admin sees it in the Requests tab
+    (async () => {
+      const client = await getPool().connect()
+      try {
+        const customerId = (order as any).customer?.id || "guest"
+        const itemSummary = (order as any).items?.map((i: any) => `${i.product_title || i.title} ×${i.quantity}`).join(", ") || ""
+        await client.query(`
+          insert into customer_order_requests
+            (customer_id, order_id, request_type, status, reason, notes, items, created_at, updated_at)
+          select $1, $2, 'new_order', 'requested', $3, $4, '[]'::jsonb, now(), now()
+          where not exists (
+            select 1 from customer_order_requests where order_id = $2 and request_type = 'new_order'
+          )
+        `, [
+          customerId,
+          order.id,
+          `New order — ${orderRef}`,
+          itemSummary || null,
+        ])
+      } catch (err) {
+        console.warn("[order-notifications] Failed to create fulfillment request entry:", err)
+      } finally {
+        client.release()
+      }
+    })(),
   ])
 }
 

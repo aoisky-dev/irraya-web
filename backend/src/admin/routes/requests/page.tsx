@@ -4,7 +4,7 @@ import { Container, Heading, Text, Badge, Button, Select, toast } from "@medusaj
 import { useEffect, useState } from "react"
 
 type RequestStatus = "requested" | "under_review" | "approved" | "rejected" | "refunded" | "completed"
-type RequestType = "cancel" | "exchange" | "return"
+type RequestType = "cancel" | "exchange" | "return" | "new_order"
 
 type OrderRequest = {
   id: number
@@ -30,10 +30,12 @@ const TYPE_LABEL: Record<RequestType, string> = {
   cancel: "Cancellation",
   exchange: "Exchange",
   return: "Return",
+  new_order: "New Order",
 }
 
 const FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: "all", label: "All requests" },
+  { value: "all", label: "All" },
+  { value: "new_order", label: "New Orders" },
   { value: "requested", label: "Pending" },
   { value: "under_review", label: "Under Review" },
   { value: "approved", label: "Approved" },
@@ -84,8 +86,14 @@ export default function RequestsPage() {
     }
   }
 
-  const filtered = filter === "all" ? requests : requests.filter(r => r.status === filter)
-  const pendingCount = requests.filter(r => r.status === "requested" || r.status === "under_review").length
+  const filtered = filter === "all"
+    ? requests
+    : filter === "new_order"
+      ? requests.filter(r => r.request_type === "new_order")
+      : requests.filter(r => r.status === filter)
+
+  const newOrderCount = requests.filter(r => r.request_type === "new_order" && r.status === "requested").length
+  const pendingCount = requests.filter(r => r.request_type !== "new_order" && (r.status === "requested" || r.status === "under_review")).length
 
   return (
     <div className="flex flex-col gap-4 p-8">
@@ -98,8 +106,11 @@ export default function RequestsPage() {
           </Text>
         </div>
         <div className="flex items-center gap-3">
+          {newOrderCount > 0 && (
+            <Badge color="blue">{newOrderCount} new order{newOrderCount !== 1 ? "s" : ""} to fulfil</Badge>
+          )}
           {pendingCount > 0 && (
-            <Badge color="orange">{pendingCount} pending</Badge>
+            <Badge color="orange">{pendingCount} request{pendingCount !== 1 ? "s" : ""} pending</Badge>
           )}
           <Button variant="secondary" size="small" onClick={fetchRequests} isLoading={loading}>
             Refresh
@@ -170,19 +181,42 @@ export default function RequestsPage() {
                 {/* Reason + notes */}
                 <div className="bg-ui-bg-subtle rounded-lg p-3 flex flex-col gap-1">
                   <Text size="small">
-                    <span className="text-ui-fg-subtle">Reason: </span>
+                    <span className="text-ui-fg-subtle">{req.request_type === "new_order" ? "Order: " : "Reason: "}</span>
                     {req.reason}
                   </Text>
                   {req.notes && (
                     <Text size="small">
-                      <span className="text-ui-fg-subtle">Notes: </span>
+                      <span className="text-ui-fg-subtle">Items: </span>
                       {req.notes}
                     </Text>
                   )}
                 </div>
 
-                {/* Actions for pending requests */}
-                {(req.status === "requested" || req.status === "under_review") && (
+                {/* New order — fulfillment actions */}
+                {req.request_type === "new_order" && req.status !== "completed" && (
+                  <div className="flex gap-2 pt-1 flex-wrap">
+                    <a
+                      href={`/app/orders/${req.order_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-ui-fg-interactive text-sm font-medium hover:underline flex items-center gap-1"
+                      style={{ padding: "6px 12px", borderRadius: 6, background: "var(--color-bg-interactive)", color: "var(--color-fg-on-inverted)", textDecoration: "none", fontSize: 13 }}
+                    >
+                      Open Order &amp; Create Fulfillment →
+                    </a>
+                    <Button
+                      size="small"
+                      variant="secondary"
+                      onClick={() => updateStatus(req.id, "completed")}
+                      isLoading={updating === req.id}
+                    >
+                      Mark Fulfilled
+                    </Button>
+                  </div>
+                )}
+
+                {/* Actions for pending customer requests */}
+                {req.request_type !== "new_order" && (req.status === "requested" || req.status === "under_review") && (
                   <div className="flex gap-2 pt-1">
                     <Button
                       size="small"
@@ -207,6 +241,28 @@ export default function RequestsPage() {
                       isLoading={updating === req.id}
                     >
                       Reject
+                    </Button>
+                  </div>
+                )}
+
+                {/* Actions for approved requests */}
+                {req.status === "approved" && (
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      size="small"
+                      variant="secondary"
+                      onClick={() => updateStatus(req.id, "refunded")}
+                      isLoading={updating === req.id}
+                    >
+                      Mark Refunded
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="secondary"
+                      onClick={() => updateStatus(req.id, "completed")}
+                      isLoading={updating === req.id}
+                    >
+                      Mark Completed
                     </Button>
                   </div>
                 )}
