@@ -82,6 +82,17 @@ export default function OrderRequestsWidget(props: any) {
                 </Button>
               </div>
             )}
+
+            {req.status === "approved" && (
+              <div className="flex gap-2 mt-4">
+                <Button size="small" variant="secondary" onClick={() => updateStatus(req.id, "refunded")}>
+                  Mark Refunded
+                </Button>
+                <Button size="small" variant="secondary" onClick={() => updateStatus(req.id, "completed")}>
+                  Mark Completed
+                </Button>
+              </div>
+            )}
           </div>
         ))}
       </div>

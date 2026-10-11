@@ -491,21 +491,35 @@ function OrderConfirmationContent() {
                 </div>
 
                 <div className="order-summary-totals">
-                  <div className="order-summary-row">
-                    <span>Subtotal ({order.items.length} {order.items.length === 1 ? "item" : "items"})</span>
-                    <span>{formatMoney(order.subtotalInCents ?? order.totalInCents, order.currencyCode)}</span>
-                  </div>
                   {(() => {
+                    const originalSubtotal = order.items.reduce((sum, item) => {
+                      const orig = item.compareAtUnitPriceInCents && item.compareAtUnitPriceInCents > item.unitPriceInCents
+                        ? item.compareAtUnitPriceInCents
+                        : item.unitPriceInCents;
+                      return sum + orig * item.quantity;
+                    }, 0);
                     const saleSavings = order.items.reduce((sum, item) =>
                       item.compareAtUnitPriceInCents && item.compareAtUnitPriceInCents > item.unitPriceInCents
                         ? sum + (item.compareAtUnitPriceInCents - item.unitPriceInCents) * item.quantity
                         : sum, 0);
-                    return saleSavings > 0 ? (
-                      <div className="order-summary-row" style={{ color: "var(--accent-warm, #e11d48)" }}>
-                        <span>Sale discount</span>
-                        <span>−{formatMoney(saleSavings, order.currencyCode)}</span>
-                      </div>
-                    ) : null;
+                    const pct = originalSubtotal > 0 && saleSavings > 0
+                      ? Math.round((saleSavings / originalSubtotal) * 100)
+                      : 0;
+
+                    return (
+                      <>
+                        <div className="order-summary-row">
+                          <span>Subtotal ({order.items.length} {order.items.length === 1 ? "item" : "items"})</span>
+                          <span>{formatMoney(saleSavings > 0 ? originalSubtotal : (order.subtotalInCents ?? order.totalInCents), order.currencyCode)}</span>
+                        </div>
+                        {saleSavings > 0 && (
+                          <div className="order-summary-row" style={{ color: "var(--accent-warm, #e11d48)" }}>
+                            <span>Sale discount {pct > 0 ? `(${pct}%)` : ""}</span>
+                            <span>−{formatMoney(saleSavings, order.currencyCode)}</span>
+                          </div>
+                        )}
+                      </>
+                    );
                   })()}
                   {order.discountInCents && order.discountInCents > 0 ? (
                     <div className="order-summary-row" style={{ color: "var(--accent-warm, #e11d48)" }}>

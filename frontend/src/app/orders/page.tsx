@@ -31,6 +31,7 @@ const STATUS_MAP: Record<string, { color: string; bg: string; label: string }> =
   approved:     { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Approved" },
   rejected:     { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Rejected" },
   refunded:     { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Refunded" },
+  refund_pending: { color: "#d97706", bg: "rgba(217,119,6,0.1)", label: "Refund Pending" },
   completed:    { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Completed" },
   cancel_requested:      { color: "#d97706", bg: "rgba(217,119,6,0.1)", label: "Cancel Requested" },
   cancel_approved:       { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Cancelled" },
@@ -62,7 +63,11 @@ function getDisplayStatus(order: Order): string {
   if (order.status === "cancelled") return "cancelled";
   if (order.latestRequest) {
     const { type, status } = order.latestRequest;
-    if (type === "cancel" && ["approved", "completed", "refunded"].includes(status)) return "cancelled";
+    if (type === "cancel") {
+      if (["approved", "completed", "refunded"].includes(status)) return "cancelled";
+      if (["requested", "under_review"].includes(status)) return "cancel_requested";
+      if (status === "rejected") return "cancel_rejected";
+    }
     return `${type}_${status}`;
   }
   return order.tracking?.status || order.status;
@@ -90,7 +95,7 @@ function matchesFilter(order: Order, filter: FilterStatus): boolean {
   const ds = getDisplayStatus(order);
   if (filter === "all") return true;
   if (filter === "delivered") return ds === "delivered";
-  if (filter === "cancelled") return ds === "cancelled" || ds === "cancel_approved";
+  if (filter === "cancelled") return ["cancelled", "cancel_approved"].includes(ds);
   // active = everything else
   return !["delivered", "cancelled", "cancel_approved"].includes(ds);
 }

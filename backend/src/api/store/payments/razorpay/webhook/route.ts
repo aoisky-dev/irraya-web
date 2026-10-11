@@ -3,6 +3,7 @@ import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { capturePaymentWorkflow } from "@medusajs/core-flows"
 import { normalizeRazorpayAmount, normalizeRazorpayCurrency, verifyRazorpayWebhookSignature } from "../../../../../lib/razorpay"
 import { upsertRazorpayPaymentReference, type RazorpayReferenceStatus } from "../../../../../lib/razorpay-payment-references"
+import { withPooledClient } from "../../../../../lib/db"
 
 type RazorpayWebhookPayload = {
   event?: unknown
@@ -109,31 +110,71 @@ async function autoCaptureByCartId(req: MedusaRequest, cartId: string): Promise<
   }
 }
 
-async function syncRefundStatusToOrder(req: MedusaRequest, cartId: string, status: string): Promise<void> {
-  if (!cartId || (status !== "refunded" && status !== "partially_refunded")) return
+async function syncRefundStatusToOrder(
+  req: MedusaRequest,
+  input: {
+    cartId?: string
+    orderId?: string
+    razorpayPaymentId?: string
+    razorpayRefundId?: string
+    status: string
+  }
+): Promise<void> {
+  const { cartId, orderId, razorpayPaymentId, razorpayRefundId, status } = input
+  if (!["refunded", "partially_refunded", "refund_pending"].includes(status)) return
   try {
-    const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
-    const orderModuleService = req.scope.resolve("order")
-    const { data: orderData } = await query.graph({
-      entity: "order",
-      filters: { cart_id: cartId },
-      fields: ["id", "metadata"],
+    await withPooledClient("webhook_refund_sync", async () => {}, async (client: any) => {
+      let targetOrderId = orderId
+      if (!targetOrderId && cartId) {
+        const r = await client.query(`select id from "order" where cart_id = $1 limit 1`, [cartId])
+        targetOrderId = r.rows[0]?.id
+      }
+      if (!targetOrderId && razorpayPaymentId) {
+        const r = await client.query(
+          `select id from "order" where metadata->'razorpay'->>'payment_id' = $1 limit 1`,
+          [razorpayPaymentId]
+        )
+        targetOrderId = r.rows[0]?.id
+      }
+      if (!targetOrderId && razorpayRefundId) {
+        const r = await client.query(
+          `select medusa_order_id from razorpay_payment_references where razorpay_refund_id = $1 limit 1`,
+          [razorpayRefundId]
+        )
+        targetOrderId = r.rows[0]?.medusa_order_id
+      }
+
+      if (!targetOrderId) {
+        console.warn(`[webhook] Could not match order for refund sync (payment: ${razorpayPaymentId}, refund: ${razorpayRefundId}, cart: ${cartId})`)
+        return
+      }
+
+      const isFinalRefund = status === "refunded" || status === "partially_refunded"
+
+      await client.query(
+        `update "order"
+         set metadata = jsonb_set(
+           jsonb_set(coalesce(metadata, '{}'::jsonb), '{razorpay,status}', to_jsonb($1::text), true),
+           '{razorpay,refund_id}', coalesce(to_jsonb($2::text), metadata->'razorpay'->'refund_id', '""'::jsonb), true
+         ) || (case when $3 = true then jsonb_build_object('latest_customer_request', jsonb_set(coalesce(metadata->'latest_customer_request', '{}'::jsonb), '{status}', '"refunded"'::jsonb, true)) else '{}'::jsonb end),
+         updated_at = now()
+         where id = $4`,
+        [status, razorpayRefundId || "", isFinalRefund, targetOrderId]
+      )
+
+      await client.query(
+        `update customer_order_requests
+         set status = (case when $1 = true then 'refunded' else status end),
+             refund_reference = coalesce($2, refund_reference),
+             updated_at = now()
+         where order_id = $3 and request_type in ('cancel', 'return') and status != 'rejected'`,
+        [isFinalRefund, razorpayRefundId || null, targetOrderId]
+      )
+
+      console.info(`[webhook] Synced refund status ${status} to order ${targetOrderId}`)
     })
-    const order = orderData?.[0]
-    if (order) {
-      await orderModuleService.updateOrders(order.id, {
-        metadata: {
-          ...(order.metadata ?? {}),
-          razorpay: {
-            ...((order.metadata?.razorpay as any) ?? {}),
-            status
-          }
-        }
-      })
-      console.info(`[webhook] Synced refund status ${status} to order ${order.id}`)
-    }
   } catch (err) {
-    console.warn(`[webhook] Refund sync lookup failed for cart ${cartId}:`, err)
+    console.warn(`[webhook] Refund sync failed:`, err)
   }
 }
 
@@ -157,7 +198,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse): Promise<voi
     const order = payload.payload?.order?.entity
     const paymentNotes = getNotes(payment)
     const orderNotes = getNotes(order)
-    const cartId = normalizeString(paymentNotes.cart_id) || normalizeString(orderNotes.cart_id)
+    const refundNotes = getNotes(refund)
+    const cartId = normalizeString(paymentNotes.cart_id) || normalizeString(orderNotes.cart_id) || normalizeString(refundNotes.cart_id)
+    const orderIdFromNotes = normalizeString(paymentNotes.order_id) || normalizeString(orderNotes.order_id) || normalizeString(refundNotes.order_id)
     const razorpayOrderId = getNestedString(payment, "order_id") || getNestedString(order, "id")
     const razorpayPaymentId = getNestedString(payment, "id") || getNestedString(refund, "payment_id")
     const razorpayRefundId = getNestedString(refund, "id")
@@ -195,8 +238,14 @@ export async function POST(req: MedusaRequest, res: MedusaResponse): Promise<voi
     }
 
     // Sync refund status directly to the order metadata so frontend reads it
-    if (["refund.created", "refund.processed"].includes(event) && cartId) {
-      syncRefundStatusToOrder(req, cartId, status).catch(err =>
+    if (["refund.created", "refund.processed"].includes(event)) {
+      syncRefundStatusToOrder(req, {
+        cartId: cartId || undefined,
+        orderId: orderIdFromNotes || undefined,
+        razorpayPaymentId: razorpayPaymentId || undefined,
+        razorpayRefundId: razorpayRefundId || undefined,
+        status
+      }).catch(err =>
         console.warn("[webhook] Non-fatal refund sync error:", err)
       )
     }

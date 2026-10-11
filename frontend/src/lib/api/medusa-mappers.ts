@@ -199,36 +199,67 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
     countryCode: normalizeText(shippingAddr.country_code, "") || undefined,
   } : undefined;
 
-  return {
-    id: String(raw?.id ?? ""),
-    orderRef: typeof (metadata as any)?.order_ref === "string"
-      ? (metadata as any).order_ref
-      : (() => {
-          // Fall back to display_id for orders placed before order_ref was introduced
-          if (raw?.display_id) return `#${raw.display_id}`;
-          return raw?.id ? String(raw.id).slice(-8).toUpperCase() : undefined;
-        })(),
-    displayId: raw?.display_id ? String(raw.display_id) : undefined,
-    cartId: String(raw?.cart_id ?? cartIdFallback ?? ""),
-    customerId: raw?.customer_id ? String(raw.customer_id) : undefined,
-    status,
-    currencyCode: String(raw?.currency_code ?? "inr").toLowerCase() === "usd" ? "usd" : "inr",
-    items: Array.isArray(raw?.items) ? raw.items.map(mapOrderItem) : [],
-    subtotalInCents: Math.max(0, Math.round(toNumber(raw?.subtotal, 0))) * 100 || undefined,
-    discountInCents: raw?.discount_total ? Math.max(0, Math.round(toNumber(raw.discount_total, 0))) * 100 : undefined,
-    shippingInCents: raw?.shipping_total ? Math.max(0, Math.round(toNumber(raw.shipping_total, 0))) * 100 : undefined,
-    totalInCents: Math.max(0, Math.round(toNumber(raw?.total, 0))) * 100,
-    shippingAddress,
-    payment: razorpay?.order_id || razorpay?.payment_id ? {
-      id: String(razorpay?.payment_id ?? ""),
-      orderId: String(raw?.id ?? ""),
-      provider: "razorpay",
-      amountInCents: Math.max(0, Math.round(toNumber(razorpay?.amount, raw?.total ?? 0))) * 100,
-      status: paymentStatus === "captured" ? "captured" : paymentStatus === "failed" ? "failed" : ["refunded", "partially_refunded"].includes(paymentStatus) ? "refunded" : "authorized",
-      providerReference: String(razorpay?.order_id ?? ""),
-      providerOrderId: String(razorpay?.order_id ?? ""),
-      providerPaymentId: String(razorpay?.payment_id ?? "")
-    } : undefined,
+    const items = Array.isArray(raw?.items) ? raw.items.map(mapOrderItem) : [];
+    const itemsTotalInCents = items.reduce((sum: number, item: any) => sum + (item.unitPriceInCents * item.quantity), 0);
+
+    const rawSubtotal = toNumber(raw?.subtotal, 0);
+    const subtotalInCents = rawSubtotal > 0
+      ? Math.round(rawSubtotal * 100)
+      : (itemsTotalInCents > 0 ? itemsTotalInCents : undefined);
+
+    const discountInCents = raw?.discount_total ? Math.max(0, Math.round(toNumber(raw.discount_total, 0))) * 100 : undefined;
+    const shippingInCents = raw?.shipping_total ? Math.max(0, Math.round(toNumber(raw.shipping_total, 0))) * 100 : undefined;
+
+    // Medusa sets raw.total to 0 when an order is canceled.
+    // Preserve the original order total that was paid from summary, items, or razorpay metadata.
+    const rawTotal = toNumber(raw?.total, 0);
+    const summaryTotal = toNumber(raw?.summary?.original_order_total, toNumber(raw?.summary?.paid_total, 0));
+    const computedTotalInCents = (subtotalInCents ?? 0) - (discountInCents ?? 0) + (shippingInCents ?? 0);
+    const effectiveTotalInCents = rawTotal > 0
+      ? Math.round(rawTotal * 100)
+      : (summaryTotal > 0
+          ? Math.round(summaryTotal * 100)
+          : (computedTotalInCents > 0 ? computedTotalInCents : (razorpay?.amount ? Number(razorpay.amount) : 0)));
+    const totalInCents = Math.max(0, effectiveTotalInCents);
+
+    return {
+      id: String(raw?.id ?? ""),
+      orderRef: typeof (metadata as any)?.order_ref === "string"
+        ? (metadata as any).order_ref
+        : (() => {
+            // Fall back to display_id for orders placed before order_ref was introduced
+            if (raw?.display_id) return `#${raw.display_id}`;
+            return raw?.id ? String(raw.id).slice(-8).toUpperCase() : undefined;
+          })(),
+      displayId: raw?.display_id ? String(raw.display_id) : undefined,
+      cartId: String(raw?.cart_id ?? cartIdFallback ?? ""),
+      customerId: raw?.customer_id ? String(raw.customer_id) : undefined,
+      status,
+      currencyCode: String(raw?.currency_code ?? "inr").toLowerCase() === "usd" ? "usd" : "inr",
+      items,
+      subtotalInCents,
+      discountInCents,
+      shippingInCents,
+      totalInCents,
+      shippingAddress,
+      payment: razorpay?.order_id || razorpay?.payment_id ? {
+        id: String(razorpay?.payment_id ?? ""),
+        orderId: String(raw?.id ?? ""),
+        provider: "razorpay",
+        amountInCents: totalInCents,
+        status: paymentStatus === "captured"
+          ? "captured"
+          : paymentStatus === "failed"
+            ? "failed"
+            : paymentStatus === "refund_pending"
+              ? "refund_pending"
+              : ["refunded", "partially_refunded"].includes(paymentStatus)
+                ? "refunded"
+                : "authorized",
+        providerReference: String(razorpay?.order_id ?? ""),
+        providerOrderId: String(razorpay?.order_id ?? ""),
+        providerPaymentId: String(razorpay?.payment_id ?? "")
+      } : undefined,
     tracking: shipment.tracking_number || shipment.tracking_url || shipment.carrier || shipment.status ? {
       carrier: normalizeText(shipment.carrier, "") || undefined,
       trackingNumber: normalizeText(shipment.tracking_number, "") || undefined,

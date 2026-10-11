@@ -750,13 +750,39 @@ function CheckoutContent() {
 
             {/* Totals */}
             <div className="checkout-totals">
-              <div className="checkout-total-row">
-                <span>Subtotal</span>
-                <span>{formatMoney(cart.subtotalInCents, "inr")}</span>
-              </div>
+              {(() => {
+                const originalSubtotal = cart.items.reduce((sum, item) => {
+                  const orig = item.compareAtUnitPriceInCents && item.compareAtUnitPriceInCents > item.unitPriceInCents
+                    ? item.compareAtUnitPriceInCents
+                    : item.unitPriceInCents;
+                  return sum + orig * item.quantity;
+                }, 0);
+                const saleSavings = cart.items.reduce((sum, item) =>
+                  item.compareAtUnitPriceInCents && item.compareAtUnitPriceInCents > item.unitPriceInCents
+                    ? sum + (item.compareAtUnitPriceInCents - item.unitPriceInCents) * item.quantity
+                    : sum, 0);
+                const pct = originalSubtotal > 0 && saleSavings > 0
+                  ? Math.round((saleSavings / originalSubtotal) * 100)
+                  : 0;
+
+                return (
+                  <>
+                    <div className="checkout-total-row">
+                      <span>Subtotal</span>
+                      <span>{formatMoney(saleSavings > 0 ? originalSubtotal : cart.subtotalInCents, "inr")}</span>
+                    </div>
+                    {saleSavings > 0 && (
+                      <div className="checkout-total-row checkout-total-discount">
+                        <span>Sale discount {pct > 0 ? `(${pct}%)` : ""}</span>
+                        <span>−{formatMoney(saleSavings, "inr")}</span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
               {cart.discountInCents ? (
                 <div className="checkout-total-row checkout-total-discount">
-                  <span>Discount</span>
+                  <span>Coupon discount{cart.promoCode ? ` (${cart.promoCode})` : ""}</span>
                   <span>−{formatMoney(cart.discountInCents, "inr")}</span>
                 </div>
               ) : null}

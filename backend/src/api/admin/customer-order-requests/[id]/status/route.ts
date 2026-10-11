@@ -138,7 +138,27 @@ export async function POST(req: MedusaRequest<UpdateStatusBody>, res: MedusaResp
       }
     }
 
-    // If this is an exchange and it was approved, store the exchange status on the order
+    // If status is refunded, ensure razorpay status and references are marked refunded
+    if (status === "refunded") {
+      try {
+        await client.query(
+          `update "order"
+           set metadata = jsonb_set(coalesce(metadata, '{}'::jsonb), '{razorpay,status}', '"refunded"'::jsonb, true),
+               updated_at = now()
+           where id = $1`,
+          [request.order_id]
+        )
+        await client.query(
+          `update razorpay_payment_references
+           set status = 'refunded', updated_at = now()
+           where medusa_order_id = $1`,
+          [request.order_id]
+        )
+        console.info(`[admin] Marked order ${request.order_id} and razorpay references as refunded`)
+      } catch (err) {
+        console.warn(`[admin] Failed to sync refunded status for order ${request.order_id}:`, err)
+      }
+    }
     if (request.request_type === "exchange" && (status === "approved" || status === "completed")) {
       try {
         await client.query(

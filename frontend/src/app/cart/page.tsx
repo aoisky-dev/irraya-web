@@ -115,21 +115,35 @@ export default function CartPage() {
         {/* Order Summary */}
         <div className="cart-summary">
           <h2>Order Summary</h2>
-          <div className="summary-row">
-            <span className="text-secondary">Subtotal</span>
-            <span>{formatMoney(cart.subtotalInCents, cart.currencyCode)}</span>
-          </div>
           {(() => {
+            const originalSubtotal = cart.items.reduce((sum, item) => {
+              const orig = item.compareAtUnitPriceInCents && item.compareAtUnitPriceInCents > item.unitPriceInCents
+                ? item.compareAtUnitPriceInCents
+                : item.unitPriceInCents;
+              return sum + orig * item.quantity;
+            }, 0);
             const saleSavings = cart.items.reduce((sum, item) =>
               item.compareAtUnitPriceInCents && item.compareAtUnitPriceInCents > item.unitPriceInCents
                 ? sum + (item.compareAtUnitPriceInCents - item.unitPriceInCents) * item.quantity
                 : sum, 0);
-            return saleSavings > 0 ? (
-              <div className="summary-row" style={{ color: "var(--accent-warm, #e11d48)" }}>
-                <span>Sale discount</span>
-                <span>−{formatMoney(saleSavings, cart.currencyCode)}</span>
-              </div>
-            ) : null;
+            const pct = originalSubtotal > 0 && saleSavings > 0
+              ? Math.round((saleSavings / originalSubtotal) * 100)
+              : 0;
+
+            return (
+              <>
+                <div className="summary-row">
+                  <span className="text-secondary">Subtotal</span>
+                  <span>{formatMoney(saleSavings > 0 ? originalSubtotal : cart.subtotalInCents, cart.currencyCode)}</span>
+                </div>
+                {saleSavings > 0 && (
+                  <div className="summary-row" style={{ color: "var(--accent-warm, #e11d48)" }}>
+                    <span>Sale discount {pct > 0 ? `(${pct}%)` : ""}</span>
+                    <span>−{formatMoney(saleSavings, cart.currencyCode)}</span>
+                  </div>
+                )}
+              </>
+            );
           })()}
           {cart.discountInCents && cart.discountInCents > 0 ? (
             <div className="summary-row" style={{ color: "var(--accent-warm, #e11d48)" }}>
