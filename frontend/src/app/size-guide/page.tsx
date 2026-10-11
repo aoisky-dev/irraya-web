@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SizeGuideContent } from "@/components/SizeGuideContent";
-import { IconMail, IconPhone, IconWhatsApp } from "@/components/Icons";
+import Image from "next/image";
+import { IconMail, IconWhatsApp } from "@/components/Icons";
 import { config } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Size Guide & Measurements | Irraya Fashion",
-  description: "View detailed sizing charts and body measurement guides for Irraya handcrafted women's kurtis, crop tops, pants, and skirts.",
+  description: "View sizing charts and body measurement guides for Irraya women's tops and bottoms.",
 };
 
 export default function SizeGuidePage() {
@@ -24,20 +24,85 @@ export default function SizeGuidePage() {
           Size Guide &amp; Measurement Chart
         </h1>
         <p style={{ color: "var(--text-secondary)", fontSize: "1rem", maxWidth: "60ch", lineHeight: 1.6 }}>
-          Find your perfect fit across all Irraya collections. Compare your body measurements against our garment sizing chart below.
+          Find your perfect fit across all Irraya collections. Refer to the size chart and measurement guide below.
         </p>
       </div>
 
       <div
         style={{
-          background: "var(--bg-primary, #ffffff)",
-          border: "1px solid var(--border, #eaeaea)",
-          borderRadius: "16px",
-          padding: "clamp(16px, 3vw, 28px)",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.04)"
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: "24px",
+          alignItems: "start"
         }}
       >
-        <SizeGuideContent />
+        {/* Size Chart Image */}
+        <div
+          style={{
+            background: "#ffffff",
+            border: "1px solid var(--border, #eaeaea)",
+            borderRadius: "16px",
+            padding: "20px",
+            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.04)"
+          }}
+        >
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "12px", textAlign: "center" }}>
+            Size Chart
+          </h2>
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              aspectRatio: "678 / 1241",
+              background: "#ffffff",
+              borderRadius: "8px",
+              overflow: "hidden"
+            }}
+          >
+            <Image
+              src="/images/size-guide/size-chart.jpg"
+              alt="Irraya Women's Size Chart"
+              fill
+              style={{ objectFit: "contain" }}
+              sizes="(max-width: 768px) 100vw, 460px"
+              priority
+            />
+          </div>
+        </div>
+
+        {/* Size Measurement Image */}
+        <div
+          style={{
+            background: "#ffffff",
+            border: "1px solid var(--border, #eaeaea)",
+            borderRadius: "16px",
+            padding: "20px",
+            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.04)"
+          }}
+        >
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "12px", textAlign: "center" }}>
+            How to Measure
+          </h2>
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              aspectRatio: "960 / 1600",
+              background: "#ffffff",
+              borderRadius: "8px",
+              overflow: "hidden"
+            }}
+          >
+            <Image
+              src="/images/size-guide/size-measurement.jpg"
+              alt="Irraya Size Measurement Guide"
+              fill
+              style={{ objectFit: "contain" }}
+              sizes="(max-width: 768px) 100vw, 460px"
+              priority
+            />
+          </div>
+        </div>
       </div>
 
       {/* Custom Tailoring Assistance */}
@@ -58,7 +123,7 @@ export default function SizeGuidePage() {
         <div>
           <h3 style={{ margin: "0 0 6px 0", fontSize: "1.1rem", fontWeight: 600 }}>Need Custom Sizing or Tailoring?</h3>
           <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.88rem", maxWidth: "48ch" }}>
-            We craft made-to-measure pieces upon request. Send us your custom specifications and our artisans will tailor it to fit you.
+            We craft made-to-measure pieces upon request. Send us your custom specifications and our team will assist you.
           </p>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
