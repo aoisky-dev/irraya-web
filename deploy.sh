@@ -26,6 +26,7 @@ rsync -avz \
     --exclude 'tsconfig.tsbuildinfo' \
     --exclude '/images' \
     --exclude '/optimized_images' \
+    --exclude 'YELLOW' \
     ./ $SERVER:$REMOTE_DIR
 
 # 2. Rebuild and restart the Docker containers on the server
