@@ -77,15 +77,25 @@ export function orderPlacedUserTemplate(opts: {
   orderId: string
   orderRef?: string
   displayId?: number
-  items: Array<{ title: string; quantity: number; unitPriceInPaise: number }>
+  items: Array<{ title: string; quantity: number; unitPriceInPaise: number; compareAtUnitPriceInPaise?: number }>
   totalInPaise: number
+  discountInPaise?: number
 }) {
   const ref = opts.orderRef || (opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase())
-  const rows = opts.items.map(i => `
+  const rows = opts.items.map(i => {
+    const lineTotal = inr(i.unitPriceInPaise * i.quantity)
+    const strikethrough = i.compareAtUnitPriceInPaise && i.compareAtUnitPriceInPaise > i.unitPriceInPaise
+      ? ` <span style="text-decoration:line-through;color:#999;font-size:12px;">${inr(i.compareAtUnitPriceInPaise * i.quantity)}</span>`
+      : ""
+    return `
     <tr>
       <td>${i.title} × ${i.quantity}</td>
-      <td>${inr(i.unitPriceInPaise * i.quantity)}</td>
-    </tr>`).join("")
+      <td>${lineTotal}${strikethrough}</td>
+    </tr>`
+  }).join("")
+  const discountRow = opts.discountInPaise && opts.discountInPaise > 0
+    ? `<tr><td style="color:#e11d48;">Discount</td><td style="color:#e11d48;">−${inr(opts.discountInPaise)}</td></tr>`
+    : ""
 
   const html = base(`Order ${ref} confirmed — Irraya`, `
     <h1>Order confirmed!</h1>
@@ -95,6 +105,7 @@ export function orderPlacedUserTemplate(opts: {
     <hr class="divider"/>
     <table class="table">
       ${rows}
+      ${discountRow}
       <tr style="font-size:15px;font-weight:700;">
         <td>Total</td>
         <td>${inr(opts.totalInPaise)}</td>
@@ -120,15 +131,25 @@ export function orderPlacedAdminTemplate(opts: {
   displayId?: number
   customerName?: string
   customerEmail?: string
-  items: Array<{ title: string; quantity: number; unitPriceInPaise: number }>
+  items: Array<{ title: string; quantity: number; unitPriceInPaise: number; compareAtUnitPriceInPaise?: number }>
   totalInPaise: number
+  discountInPaise?: number
 }) {
   const ref = opts.orderRef || (opts.displayId ? `#${opts.displayId}` : opts.orderId.slice(-8).toUpperCase())
-  const rows = opts.items.map(i => `
+  const rows = opts.items.map(i => {
+    const lineTotal = inr(i.unitPriceInPaise * i.quantity)
+    const strikethrough = i.compareAtUnitPriceInPaise && i.compareAtUnitPriceInPaise > i.unitPriceInPaise
+      ? ` <span style="text-decoration:line-through;color:#999;font-size:12px;">${inr(i.compareAtUnitPriceInPaise * i.quantity)}</span>`
+      : ""
+    return `
     <tr>
       <td>${i.title} × ${i.quantity}</td>
-      <td>${inr(i.unitPriceInPaise * i.quantity)}</td>
-    </tr>`).join("")
+      <td>${lineTotal}${strikethrough}</td>
+    </tr>`
+  }).join("")
+  const discountRow = opts.discountInPaise && opts.discountInPaise > 0
+    ? `<tr><td style="color:#e11d48;">Discount</td><td style="color:#e11d48;">−${inr(opts.discountInPaise)}</td></tr>`
+    : ""
 
   const html = base(`New order ${ref} — Irraya Admin`, `
     <h1>New order received</h1>
@@ -140,6 +161,7 @@ export function orderPlacedAdminTemplate(opts: {
     <hr class="divider"/>
     <table class="table">
       ${rows}
+      ${discountRow}
       <tr style="font-size:15px;font-weight:700;">
         <td>Total</td>
         <td>${inr(opts.totalInPaise)}</td>

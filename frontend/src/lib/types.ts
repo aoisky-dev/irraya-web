@@ -98,6 +98,8 @@ export interface OrderItem {
   variantId: string;
   quantity: number;
   unitPriceInCents: number;
+  /** Original price before sale/discount. Present when a sale discount was applied. */
+  compareAtUnitPriceInCents?: number;
   title?: string;
   image?: string;
   size?: string;
@@ -165,6 +167,10 @@ export interface Order {
   currencyCode: "usd" | "inr";
   items: OrderItem[];
   subtotalInCents?: number;
+  /** Coupon/promotion discounts applied at order level (not sale line-item discounts). */
+  discountInCents?: number;
+  /** Shipping charge (0 = free). */
+  shippingInCents?: number;
   totalInCents: number;
   shippingAddress?: ShippingAddress;
   payment?: Payment;

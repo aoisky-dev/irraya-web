@@ -9,8 +9,11 @@ function extractItems(order: any) {
   return (order.items || []).map((i: any) => ({
     title: i.product_title || i.title || "Item",
     quantity: i.quantity || 1,
-    // unit_price from Medusa order items is already in paise (smallest currency unit)
-    unitPriceInPaise: Math.round(Number(i.unit_price || 0)),
+    // unit_price is in rupees; multiply by 100 to match totalInPaise convention
+    unitPriceInPaise: Math.round(Number(i.unit_price || 0) * 100),
+    compareAtUnitPriceInPaise: i.compare_at_unit_price
+      ? Math.round(Number(i.compare_at_unit_price) * 100)
+      : undefined,
   }))
 }
 
@@ -39,7 +42,7 @@ export default async function orderPlacedHandler({
   const query = container.resolve(ContainerRegistrationKeys.QUERY)
   const { data: orders } = await query.graph({
     entity: "order",
-    fields: ["id", "display_id", "email", "total", "created_at", "metadata", "items.*", "customer.*"],
+    fields: ["id", "display_id", "email", "total", "discount_total", "created_at", "metadata", "items.*", "customer.*"],
     filters: { id: data.id },
   })
   const order = orders?.[0]
@@ -68,6 +71,7 @@ export default async function orderPlacedHandler({
 
   const items = extractItems(order)
   const totalInPaise = Math.round(Number(order.total || 0) * 100)
+  const discountInPaise = order.discount_total ? Math.round(Number(order.discount_total) * 100) : undefined
 
   const userTpl = orderPlacedUserTemplate({
     name: customerName,
@@ -76,6 +80,7 @@ export default async function orderPlacedHandler({
     orderRef,
     items,
     totalInPaise,
+    discountInPaise,
   })
 
   const adminTpl = orderPlacedAdminTemplate({
@@ -85,6 +90,7 @@ export default async function orderPlacedHandler({
     customerEmail: email,
     items,
     totalInPaise,
+    discountInPaise,
   })
 
   await Promise.allSettled([

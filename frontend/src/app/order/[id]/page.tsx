@@ -442,7 +442,19 @@ function OrderConfirmationContent() {
                             {item.color ? ` · ${item.color}` : ""}
                           </p>
                           <p className="order-item-unit-price" style={{ fontSize: "0.76rem", color: "var(--text-muted)", marginTop: "2px" }}>
-                            {formatMoney(item.unitPriceInCents, order.currencyCode)} each
+                            {item.compareAtUnitPriceInCents && item.compareAtUnitPriceInCents > item.unitPriceInCents ? (
+                              <>
+                                <span style={{ color: "var(--accent-warm, #e11d48)", fontWeight: 600 }}>
+                                  {formatMoney(item.unitPriceInCents, order.currencyCode)}
+                                </span>
+                                <span style={{ textDecoration: "line-through", marginLeft: 5 }}>
+                                  {formatMoney(item.compareAtUnitPriceInCents, order.currencyCode)}
+                                </span>
+                                {" "}each
+                              </>
+                            ) : (
+                              <>{formatMoney(item.unitPriceInCents, order.currencyCode)} each</>
+                            )}
                           </p>
                           {productUrl && (
                             <Link href={productUrl} style={{ fontSize: "0.78rem", color: "var(--accent)", textDecoration: "none", marginTop: "4px", display: "inline-block" }}>
@@ -450,9 +462,14 @@ function OrderConfirmationContent() {
                             </Link>
                           )}
                         </div>
-                        <span className="order-item-price">
-                          {formatMoney(item.unitPriceInCents * item.quantity, order.currencyCode)}
-                        </span>
+                        <div className="order-item-price" style={{ textAlign: "right" }}>
+                          <div>{formatMoney(item.unitPriceInCents * item.quantity, order.currencyCode)}</div>
+                          {item.compareAtUnitPriceInCents && item.compareAtUnitPriceInCents > item.unitPriceInCents && (
+                            <div style={{ textDecoration: "line-through", color: "var(--text-muted)", fontSize: "0.82em" }}>
+                              {formatMoney(item.compareAtUnitPriceInCents * item.quantity, order.currencyCode)}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -463,9 +480,19 @@ function OrderConfirmationContent() {
                     <span>Subtotal ({order.items.length} {order.items.length === 1 ? "item" : "items"})</span>
                     <span>{formatMoney(order.subtotalInCents ?? order.totalInCents, order.currencyCode)}</span>
                   </div>
+                  {order.discountInCents && order.discountInCents > 0 ? (
+                    <div className="order-summary-row" style={{ color: "var(--accent-warm, #e11d48)" }}>
+                      <span>Discount</span>
+                      <span>−{formatMoney(order.discountInCents, order.currencyCode)}</span>
+                    </div>
+                  ) : null}
                   <div className="order-summary-row">
                     <span>Shipping</span>
-                    <span style={{ color: "var(--success)", fontWeight: 600 }}>Free</span>
+                    <span style={{ color: "var(--success)", fontWeight: 600 }}>
+                      {order.shippingInCents && order.shippingInCents > 0
+                        ? formatMoney(order.shippingInCents, order.currencyCode)
+                        : "Free"}
+                    </span>
                   </div>
                   <div className="order-summary-row" style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
                     <span>GST (included in price)</span>

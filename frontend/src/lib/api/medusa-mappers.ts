@@ -120,6 +120,9 @@ const mapOrderItem = (raw: any): OrderItem => {
     variantId: String(raw?.variant_id ?? raw?.variant?.id ?? ""),
     quantity: Math.max(0, Math.round(toNumber(raw?.quantity, 0))),
     unitPriceInCents: Math.max(0, Math.round(toNumber(raw?.unit_price ?? raw?.subtotal, 0))) * 100,
+    compareAtUnitPriceInCents: raw?.compare_at_unit_price
+      ? Math.max(0, Math.round(toNumber(raw.compare_at_unit_price, 0))) * 100
+      : undefined,
     title: normalizeText(raw?.title ?? raw?.product_title ?? raw?.product?.title, "Product"),
     image: normalizeText(raw?.thumbnail ?? raw?.product?.thumbnail ?? raw?.variant?.product?.thumbnail, "") || undefined,
     size: optionValue("size"),
@@ -212,6 +215,8 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
     currencyCode: String(raw?.currency_code ?? "inr").toLowerCase() === "usd" ? "usd" : "inr",
     items: Array.isArray(raw?.items) ? raw.items.map(mapOrderItem) : [],
     subtotalInCents: Math.max(0, Math.round(toNumber(raw?.subtotal, 0))) * 100 || undefined,
+    discountInCents: raw?.discount_total ? Math.max(0, Math.round(toNumber(raw.discount_total, 0))) * 100 : undefined,
+    shippingInCents: raw?.shipping_total ? Math.max(0, Math.round(toNumber(raw.shipping_total, 0))) * 100 : undefined,
     totalInCents: Math.max(0, Math.round(toNumber(raw?.total, 0))) * 100,
     shippingAddress,
     payment: razorpay?.order_id || razorpay?.payment_id ? {
