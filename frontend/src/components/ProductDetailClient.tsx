@@ -363,22 +363,20 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
           {/* Size Selection */}
           {sizes.filter(s => s !== "Default").length > 0 && (
             <div className="pdp-variants">
-              <h3>Size</h3>
-              <div className="size-selector-layout">
-                <div className="variant-options" style={{ marginBottom: 0, width: "100%" }}>
-                  {sizes.filter(s => s !== "Default").map((size) => (
-                    <button
-                      key={size}
-                      className={`variant-chip ${selectedVariant?.size === size ? "active" : ""}`}
-                      onClick={() => handleSizeSelect(size)}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-                <div style={{ flexShrink: 0, whiteSpace: "nowrap" }}>
-                  <SizeChartModal />
-                </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                <h3 style={{ margin: 0 }}>Size</h3>
+                <SizeChartModal selectedSize={selectedVariant?.size} />
+              </div>
+              <div className="variant-options" style={{ marginBottom: 0 }}>
+                {sizes.filter(s => s !== "Default").map((size) => (
+                  <button
+                    key={size}
+                    className={`variant-chip ${selectedVariant?.size === size ? "active" : ""}`}
+                    onClick={() => handleSizeSelect(size)}
+                  >
+                    {size}
+                  </button>
+                ))}
               </div>
             </div>
           )}
