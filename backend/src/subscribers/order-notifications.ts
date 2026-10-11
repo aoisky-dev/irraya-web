@@ -1,4 +1,4 @@
-import { SubscriberArgs, type SubscriberConfig } from "@medusajs/framework"
+import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { sendMail, ADMIN_EMAIL } from "../lib/mailer"
 import { orderPlacedUserTemplate, orderPlacedAdminTemplate } from "../lib/email-templates"

@@ -85,6 +85,9 @@ const mapCartItem = (raw: any): CartItem => ({
     0,
     Math.round(toNumber(raw?.unit_price ?? (Number.isFinite(raw?.total) ? raw.total / Math.max(toNumber(raw?.quantity, 1), 1) : 0), 0)) * 100
   ),
+  compareAtUnitPriceInCents: raw?.compare_at_unit_price
+    ? Math.max(0, Math.round(toNumber(raw.compare_at_unit_price, 0))) * 100
+    : undefined,
   handle: normalizeText(raw?.product_handle ?? raw?.product?.handle ?? raw?.variant?.product?.handle, "") || undefined
 });
 

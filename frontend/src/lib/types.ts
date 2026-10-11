@@ -72,6 +72,7 @@ export interface CartItem {
   variantId: string;
   quantity: number;
   unitPriceInCents: number;
+  compareAtUnitPriceInCents?: number;
   title?: string;
   image?: string;
   size?: string;

@@ -713,9 +713,14 @@ function CheckoutContent() {
                         </p>
                       )}
                     </div>
-                    <span className="checkout-summary-item-price">
-                      {formatMoney(item.unitPriceInCents * item.quantity, cart.currencyCode)}
-                    </span>
+                    <div className="checkout-summary-item-price" style={{ textAlign: "right" }}>
+                      <div>{formatMoney(item.unitPriceInCents * item.quantity, cart.currencyCode)}</div>
+                      {item.compareAtUnitPriceInCents && item.compareAtUnitPriceInCents > item.unitPriceInCents && (
+                        <div style={{ textDecoration: "line-through", color: "var(--text-muted, #9ca3af)", fontSize: "0.85em" }}>
+                          {formatMoney(item.compareAtUnitPriceInCents * item.quantity, cart.currencyCode)}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}

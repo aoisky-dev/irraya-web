@@ -1,4 +1,4 @@
-import { SubscriberArgs, type SubscriberConfig } from "@medusajs/framework"
+import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { Modules } from "@medusajs/framework/utils"
 import { createRazorpayRefund } from "../lib/razorpay"
 import { upsertRazorpayPaymentReference } from "../lib/razorpay-payment-references"

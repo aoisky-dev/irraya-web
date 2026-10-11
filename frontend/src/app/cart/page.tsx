@@ -64,7 +64,19 @@ export default function CartPage() {
                       {meta?.color && `Color: ${meta.color}`}
                     </p>
                     <p className="cart-item-price">
-                      {formatMoney(item.unitPriceInCents, cart.currencyCode)} each
+                      {item.compareAtUnitPriceInCents && item.compareAtUnitPriceInCents > item.unitPriceInCents ? (
+                        <>
+                          <span style={{ color: "var(--accent-warm, #e11d48)", fontWeight: 600 }}>
+                            {formatMoney(item.unitPriceInCents, cart.currencyCode)}
+                          </span>
+                          <span style={{ textDecoration: "line-through", color: "var(--text-muted, #9ca3af)", marginLeft: 6, fontSize: "0.85em", fontWeight: 400 }}>
+                            {formatMoney(item.compareAtUnitPriceInCents, cart.currencyCode)}
+                          </span>
+                          {" "}each
+                        </>
+                      ) : (
+                        <>{formatMoney(item.unitPriceInCents, cart.currencyCode)} each</>
+                      )}
                     </p>
                   </div>
                 </Link>

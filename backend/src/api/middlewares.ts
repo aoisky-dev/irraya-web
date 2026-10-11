@@ -2,7 +2,6 @@ import { defineMiddlewares, authenticate } from "@medusajs/medusa"
 import { rateLimit } from "express-rate-limit"
 import fs from "fs"
 import path from "path"
-import { getSaleUnitPrice } from "../lib/sale-pricing"
 
 // ---------------------------------------------------------------------------
 // Rate limiters for auth/OTP endpoints
@@ -28,31 +27,6 @@ const otpVerifyLimiter = rateLimit({
 
 export default defineMiddlewares({
   routes: [
-    // ---------------------------------------------------------------------------
-    // Server-side sale price injection — securely computes and applies the
-    // discounted unit_price before Medusa processes the add-to-cart request.
-    // The client never sends a price; this middleware is the only price source.
-    // ---------------------------------------------------------------------------
-    {
-      matcher: "/store/carts/:cartId/line-items",
-      method: "POST",
-      middlewares: [
-        async (req: any, _res: any, next: () => void) => {
-          try {
-            const variantId = req.body?.variant_id
-            if (variantId) {
-              const salePrice = await getSaleUnitPrice(String(variantId), req.scope)
-              if (salePrice !== null) {
-                req.body.unit_price = salePrice
-              }
-            }
-          } catch {
-            // Never block the cart on sale-pricing errors
-          }
-          next()
-        },
-      ],
-    },
 
     // Preserve raw body for Razorpay webhook signature verification
     {
