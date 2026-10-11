@@ -68,13 +68,13 @@ export async function syncSalePriceListDb(client: pg.PoolClient, saleId: number)
         join price base_p on base_p.price_set_id = pvps.price_set_id and base_p.currency_code = 'inr' and base_p.price_list_id is null and base_p.deleted_at is null
         where cli.variant_id = pv.id
           and cli.deleted_at is null
-          and sp.sale_id = $1
+          and sp.sale_id = $1::integer
       `, [sale.id])
     } catch { /* ignore if cart table not yet created */ }
 
-    await client.query(`delete from price where price_list_id = $1`, [priceListId])
-    await client.query(`delete from price_list where id = $1`, [priceListId])
-    await client.query(`update sales set price_list_id = null, updated_at = now() where id = $1`, [sale.id])
+    await client.query(`delete from price where price_list_id = $1::text`, [priceListId])
+    await client.query(`delete from price_list where id = $1::text`, [priceListId])
+    await client.query(`update sales set price_list_id = null, updated_at = now() where id = $1::integer`, [sale.id])
     return null
   }
 
@@ -82,7 +82,7 @@ export async function syncSalePriceListDb(client: pg.PoolClient, saleId: number)
   const description = `${Number(sale.discount_pct)}% off`
   await client.query(`
     insert into price_list (id, status, title, description, type, rules_count, created_at, updated_at)
-    values ($1, 'active', $2, $3, 'sale', 0, now(), now())
+    values ($1::text, 'active', $2, $3, 'sale', 0, now(), now())
     on conflict (id) do update set
       status = 'active',
       title = excluded.title,
@@ -92,27 +92,27 @@ export async function syncSalePriceListDb(client: pg.PoolClient, saleId: number)
       deleted_at = null
   `, [priceListId, title, description])
 
-  await client.query(`update sales set price_list_id = $1, updated_at = now() where id = $2`, [priceListId, sale.id])
-  await client.query(`delete from price where price_list_id = $1`, [priceListId])
+  await client.query(`update sales set price_list_id = $1::text, updated_at = now() where id = $2::integer`, [priceListId, sale.id])
+  await client.query(`delete from price where price_list_id = $1::text`, [priceListId])
 
   const discountPct = Number(sale.discount_pct)
   await client.query(`
     insert into price (id, price_set_id, currency_code, amount, raw_amount, rules_count, price_list_id, created_at, updated_at)
     select
-      'price_sale_' || $1 || '_' || substr(md5(pvps.price_set_id), 1, 16),
+      'price_sale_' || $1::text || '_' || substr(md5(pvps.price_set_id), 1, 16),
       pvps.price_set_id,
       'inr',
       floor(base_p.amount * (1 - $2::numeric / 100.0)),
       jsonb_build_object('value', floor(base_p.amount * (1 - $2::numeric / 100.0))::text, 'precision', 20),
       0,
-      $3,
+      $3::text,
       now(),
       now()
     from sale_products sp
     join product_variant pv on pv.product_id = sp.product_id and pv.deleted_at is null
     join product_variant_price_set pvps on pvps.variant_id = pv.id and pvps.deleted_at is null
     join price base_p on base_p.price_set_id = pvps.price_set_id and base_p.currency_code = 'inr' and base_p.price_list_id is null and base_p.deleted_at is null
-    where sp.sale_id = $1
+    where sp.sale_id = $1::integer
     on conflict (id) do update set
       amount = excluded.amount,
       raw_amount = excluded.raw_amount,
@@ -132,10 +132,10 @@ export async function syncSalePriceListDb(client: pg.PoolClient, saleId: number)
       join product_variant pv on pv.product_id = sp.product_id and pv.deleted_at is null
       join product_variant_price_set pvps on pvps.variant_id = pv.id and pvps.deleted_at is null
       join price base_p on base_p.price_set_id = pvps.price_set_id and base_p.currency_code = 'inr' and base_p.price_list_id is null and base_p.deleted_at is null
-      join price p_sale on p_sale.price_set_id = pvps.price_set_id and p_sale.price_list_id = $1 and p_sale.currency_code = 'inr' and p_sale.deleted_at is null
+      join price p_sale on p_sale.price_set_id = pvps.price_set_id and p_sale.price_list_id = $1::text and p_sale.currency_code = 'inr' and p_sale.deleted_at is null
       where cli.variant_id = pv.id
         and cli.deleted_at is null
-        and sp.sale_id = $2
+        and sp.sale_id = $2::integer
     `, [priceListId, sale.id])
   } catch { /* ignore if cart table not yet created */ }
 
