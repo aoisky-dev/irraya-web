@@ -4,7 +4,9 @@ export function formatMoney(amountInCents: number, currencyCode: "usd" | "inr"):
 
   return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(amountInCents / 100);
 }
 

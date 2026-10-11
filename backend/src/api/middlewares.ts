@@ -91,11 +91,6 @@ export default defineMiddlewares({
       matcher: "/admin/payments/razorpay*",
       middlewares: [authenticate("user", ["session", "bearer"])],
     },
-    {
-      matcher: "/admin/store/sale*",
-      middlewares: [authenticate("user", ["session", "bearer"])],
-    },
-
     // ---------------------------------------------------------------------------
     // Serve uploaded files (with path traversal prevention)
     // ---------------------------------------------------------------------------

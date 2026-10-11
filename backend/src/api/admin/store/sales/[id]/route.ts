@@ -1,5 +1,7 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { getSaleById, updateSale, deleteSale } from "../../../../../lib/sales-config"
+import { Modules } from "@medusajs/framework/utils"
+import { getSaleById, updateSale, deleteSale, savePriceListId } from "../../../../../lib/sales-config"
+import { syncSalePriceList } from "../../../../../lib/price-list-sync"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void> {
   const id = Number(req.params.id)
@@ -18,7 +20,11 @@ export async function PUT(req: MedusaRequest<UpdateSaleBody>, res: MedusaRespons
   const body = (req.validatedBody ?? req.body ?? {}) as UpdateSaleBody
   const input: Parameters<typeof updateSale>[1] = {}
 
-  if (typeof body.name === "string") input.name = body.name.trim()
+  if (typeof body.name === "string") {
+    const trimmed = body.name.trim()
+    if (!trimmed) { res.status(400).json({ message: "name cannot be empty." }); return }
+    input.name = trimmed
+  }
   if (body.discountPct !== undefined) {
     const pct = typeof body.discountPct === "number" ? body.discountPct : parseFloat(String(body.discountPct))
     if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
@@ -32,7 +38,14 @@ export async function PUT(req: MedusaRequest<UpdateSaleBody>, res: MedusaRespons
   try {
     const sale = await updateSale(id, input)
     if (!sale) { res.status(404).json({ message: "Sale not found." }); return }
-    res.status(200).json({ sale })
+    let syncWarning: string | undefined
+    const priceListId = await syncSalePriceList(req.scope, sale).catch((err: unknown) => {
+      syncWarning = err instanceof Error ? err.message : "Price list sync failed"
+      console.error("[sale sync] update failed:", err)
+      return null
+    })
+    if (priceListId !== sale.priceListId) await savePriceListId(id, priceListId).catch(() => {})
+    res.status(200).json({ sale: { ...sale, priceListId: priceListId ?? undefined }, syncWarning })
   } catch (err: unknown) {
     res.status(500).json({ message: err instanceof Error ? err.message : "Failed to update sale." })
   }
@@ -41,6 +54,13 @@ export async function PUT(req: MedusaRequest<UpdateSaleBody>, res: MedusaRespons
 export async function DELETE(req: MedusaRequest, res: MedusaResponse): Promise<void> {
   const id = Number(req.params.id)
   if (!Number.isInteger(id)) { res.status(400).json({ message: "Invalid sale id." }); return }
+  const sale = await getSaleById(id)
+  if (!sale) { res.status(404).json({ message: "Sale not found." }); return }
+  // Clean up Medusa price list before deleting the record
+  if (sale.priceListId) {
+    const pricingModule = req.scope.resolve(Modules.PRICING)
+    await pricingModule.deletePriceLists([sale.priceListId]).catch(() => {})
+  }
   const deleted = await deleteSale(id)
   if (!deleted) { res.status(404).json({ message: "Sale not found." }); return }
   res.status(200).json({ deleted: true })

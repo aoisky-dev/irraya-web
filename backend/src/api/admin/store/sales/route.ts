@@ -1,5 +1,6 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { listSales, createSale } from "../../../../lib/sales-config"
+import { listSales, createSale, savePriceListId } from "../../../../lib/sales-config"
+import { syncSalePriceList } from "../../../../lib/price-list-sync"
 
 export async function GET(_req: MedusaRequest, res: MedusaResponse): Promise<void> {
   try {
@@ -31,7 +32,14 @@ export async function POST(req: MedusaRequest<CreateSaleBody>, res: MedusaRespon
       label: typeof body.label === "string" ? body.label.trim() || undefined : undefined,
       active: body.active === true || body.active === "true",
     })
-    res.status(201).json({ sale })
+    let syncWarning: string | undefined
+    const priceListId = await syncSalePriceList(req.scope, sale).catch((err: unknown) => {
+      syncWarning = err instanceof Error ? err.message : "Price list sync failed"
+      console.error("[sale sync] create failed:", err)
+      return null
+    })
+    if (priceListId !== null) await savePriceListId(sale.id, priceListId).catch(() => {})
+    res.status(201).json({ sale: { ...sale, priceListId: priceListId ?? undefined }, syncWarning })
   } catch (err: unknown) {
     res.status(500).json({ message: err instanceof Error ? err.message : "Failed to create sale." })
   }

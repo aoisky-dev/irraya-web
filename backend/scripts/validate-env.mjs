@@ -31,7 +31,8 @@ const required = [
   "ADMIN_CORS",
   "AUTH_CORS",
   "RAZORPAY_KEY_ID",
-  "RAZORPAY_KEY_SECRET"
+  "RAZORPAY_KEY_SECRET",
+  "MEDUSA_BACKEND_URL"
 ]
 
 const missing = required.filter((key) => !values[key])

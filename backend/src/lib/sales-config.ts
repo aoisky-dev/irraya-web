@@ -7,6 +7,7 @@ export type Sale = {
   active: boolean
   discountPct: number
   label?: string
+  priceListId?: string
   createdAt?: string
   updatedAt?: string
   productIds?: string[]
@@ -20,6 +21,7 @@ async function ensureSchema(client: pg.PoolClient): Promise<void> {
       active boolean not null default false,
       discount_pct numeric(5,2) not null default 0,
       label text,
+      price_list_id text,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     );
@@ -28,6 +30,7 @@ async function ensureSchema(client: pg.PoolClient): Promise<void> {
       sale_id integer not null references sales(id) on delete cascade,
       assigned_at timestamptz not null default now()
     );
+    alter table sales add column if not exists price_list_id text;
   `)
 }
 
@@ -38,6 +41,7 @@ function rowToSale(row: any, productIds?: string[]): Sale {
     active: row.active,
     discountPct: Number(row.discount_pct),
     label: row.label || undefined,
+    priceListId: row.price_list_id || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     productIds,
@@ -148,6 +152,16 @@ export async function removeProducts(saleId: number, productIds: string[]): Prom
     await client.query(
       `delete from sale_products where sale_id = $1 and product_id = any($2)`,
       [saleId, productIds]
+    )
+  })
+}
+
+/** Persist the Medusa price list ID on a sale record after sync. */
+export async function savePriceListId(saleId: number, priceListId: string | null): Promise<void> {
+  return withPooledClient("sales_schema", ensureSchema, async (client) => {
+    await client.query(
+      `update sales set price_list_id = $1, updated_at = now() where id = $2`,
+      [priceListId ?? null, saleId]
     )
   })
 }

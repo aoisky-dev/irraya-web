@@ -62,8 +62,8 @@ export async function downloadPDFInvoice(order: Order, logoUrl: string = "/logo.
   const tableData = order.items.map(item => [
     item.title || "Product",
     item.quantity.toString(),
-    `${(item.unitPriceInCents / 100).toFixed(2)} ${order.currencyCode.toUpperCase()}`,
-    `${((item.unitPriceInCents * item.quantity) / 100).toFixed(2)} ${order.currencyCode.toUpperCase()}`
+    `${Math.floor(item.unitPriceInCents / 100)} ${order.currencyCode.toUpperCase()}`,
+    `${Math.floor((item.unitPriceInCents * item.quantity) / 100)} ${order.currencyCode.toUpperCase()}`
   ]);
 
   autoTable(doc, {
@@ -87,7 +87,7 @@ export async function downloadPDFInvoice(order: Order, logoUrl: string = "/logo.
   const leftCol = pageWidth - 60;
   
   doc.text("Subtotal:", leftCol, currentY);
-  doc.text(`${(order.totalInCents / 100).toFixed(2)} ${order.currencyCode.toUpperCase()}`, rightCol, currentY, { align: "right" });
+  doc.text(`${Math.floor(order.totalInCents / 100)} ${order.currencyCode.toUpperCase()}`, rightCol, currentY, { align: "right" });
   
   if (order.payment?.providerPaymentId) {
     currentY += 15;

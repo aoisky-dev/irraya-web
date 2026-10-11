@@ -125,11 +125,11 @@ export async function adminSetSaleConfig(
   })
 }
 
-/** Compute sale price in paise. Returns undefined if no active sale for this product. */
+/** Compute sale price in paise (floored to nearest whole number). Returns undefined if no active sale for this product. */
 export function applySaleDiscount(
   priceInCents: number,
   sale: SaleConfig | null | undefined
 ): number | undefined {
   if (!sale || !sale.active || sale.discountPct <= 0) return undefined;
-  return Math.round(priceInCents * (1 - sale.discountPct / 100));
+  return Math.floor(priceInCents * (1 - sale.discountPct / 100));
 }

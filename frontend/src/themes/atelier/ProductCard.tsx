@@ -50,7 +50,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <span className="card-badge badge-low-stock">Only {totalStock} left</span>
         )}
         {salePrice !== undefined && totalStock > 0 && (
-          <span className="card-badge" style={{ background: "var(--accent-warm, #e11d48)", color: "#fff", top: "auto", bottom: 10 }}>
+          <span className="card-badge" style={{ background: "var(--accent-warm, #e11d48)", color: "#fff" }}>
             {sale?.label || `${sale?.discountPct}% OFF`}
           </span>
         )}
