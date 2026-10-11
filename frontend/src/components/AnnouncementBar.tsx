@@ -43,22 +43,36 @@ export function AnnouncementBar() {
       `${label} · No code needed`,
       `🛍️ ${name} · Prices already reduced`,
     ];
-    const track = [...messages, ...messages].join("  ·  ");
+    const trackContent = [...messages, ...messages].join("   ✦   ");
 
     return (
       <div className="announcement-bar announcement-bar--sale">
         <div className="announcement-ticker">
-          <span className="announcement-track">{track}</span>
+          <div className="announcement-track">
+            <span>{trackContent}</span>
+            <span aria-hidden="true" style={{ padding: "0 1.5rem" }}>✦</span>
+          </div>
+          <div className="announcement-track" aria-hidden="true">
+            <span>{trackContent}</span>
+            <span aria-hidden="true" style={{ padding: "0 1.5rem" }}>✦</span>
+          </div>
         </div>
       </div>
     );
   }
 
-  const track = [...DEFAULT_MESSAGES, ...DEFAULT_MESSAGES].join("  ·  ");
+  const trackContent = [...DEFAULT_MESSAGES, ...DEFAULT_MESSAGES].join("   ✦   ");
   return (
     <div className="announcement-bar">
       <div className="announcement-ticker">
-        <span className="announcement-track">{track}</span>
+        <div className="announcement-track">
+          <span>{trackContent}</span>
+          <span aria-hidden="true" style={{ padding: "0 1.5rem" }}>✦</span>
+        </div>
+        <div className="announcement-track" aria-hidden="true">
+          <span>{trackContent}</span>
+          <span aria-hidden="true" style={{ padding: "0 1.5rem" }}>✦</span>
+        </div>
       </div>
     </div>
   );

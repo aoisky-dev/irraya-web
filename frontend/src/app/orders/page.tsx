@@ -93,19 +93,60 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 
 function matchesFilter(order: Order, filter: FilterStatus): boolean {
   const ds = getDisplayStatus(order);
+  const isCancelled =
+    order.status === "cancelled" ||
+    ["cancelled", "cancel_approved", "cancel_completed"].includes(ds) ||
+    Boolean(order.latestRequest?.type === "cancel" && ["approved", "completed", "refunded"].includes(order.latestRequest.status));
+
+  const isDelivered =
+    ds === "delivered" ||
+    ds === "fulfilled" ||
+    order.tracking?.status === "delivered";
+
   if (filter === "all") return true;
-  if (filter === "delivered") return ds === "delivered";
-  if (filter === "cancelled") return ["cancelled", "cancel_approved"].includes(ds);
-  // active = everything else
-  return !["delivered", "cancelled", "cancel_approved"].includes(ds);
+  if (filter === "delivered") return isDelivered && !isCancelled;
+  if (filter === "cancelled") return isCancelled;
+  // active = everything else (not delivered, not cancelled)
+  return !isCancelled && !isDelivered;
 }
 
 function matchesSearch(order: Order, q: string): boolean {
   if (!q) return true;
-  const lower = q.toLowerCase();
-  const ref = (order.orderRef || order.displayId || order.id).toLowerCase();
-  if (ref.includes(lower)) return true;
-  return order.items.some(item => (item.title || "").toLowerCase().includes(lower));
+  const lower = q.toLowerCase().trim();
+  if (!lower) return true;
+
+  // Search by order references (orderRef, displayId, #displayId, order ID)
+  const orderRef = String(order.orderRef || "").toLowerCase();
+  const displayId = String(order.displayId || "").toLowerCase();
+  const displayIdHash = `#${displayId}`;
+  const id = String(order.id || "").toLowerCase();
+  if (orderRef.includes(lower) || displayId.includes(lower) || displayIdHash.includes(lower) || id.includes(lower)) {
+    return true;
+  }
+
+  // Search by tracking details
+  if (order.tracking) {
+    const trNumber = String(order.tracking.trackingNumber || "").toLowerCase();
+    const carrier = String(order.tracking.carrier || "").toLowerCase();
+    if (trNumber.includes(lower) || carrier.includes(lower)) return true;
+  }
+
+  // Search by order & payment status keywords
+  const status = String(order.status || "").toLowerCase();
+  const displayStatus = getDisplayStatus(order).toLowerCase().replace(/_/g, " ");
+  const paymentStatus = String(order.payment?.status || "").toLowerCase().replace(/_/g, " ");
+  const trackingStatus = String(order.tracking?.status || "").toLowerCase().replace(/_/g, " ");
+  if (status.includes(lower) || displayStatus.includes(lower) || paymentStatus.includes(lower) || trackingStatus.includes(lower)) {
+    return true;
+  }
+
+  // Search by item titles, size, or color
+  return (order.items || []).some(item => {
+    const title = String(item.title || "").toLowerCase();
+    const size = String(item.size || "").toLowerCase();
+    const color = String(item.color || "").toLowerCase();
+    return title.includes(lower) || size.includes(lower) || color.includes(lower);
+  });
 }
 
 function applySort(orders: Order[], sort: SortKey): Order[] {
@@ -257,7 +298,7 @@ export default function OrdersPage() {
                   onChange={e => setSearch(e.target.value)}
                   style={{
                     width: "100%",
-                    padding: "10px 14px 10px 38px",
+                    padding: "10px 34px 10px 38px",
                     borderRadius: "8px",
                     border: "1px solid var(--border)",
                     background: "var(--bg-primary)",
@@ -269,6 +310,27 @@ export default function OrdersPage() {
                   onFocus={(e) => e.target.style.borderColor = "var(--text-primary)"}
                   onBlur={(e) => e.target.style.borderColor = "var(--border)"}
                 />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    aria-label="Clear search"
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "transparent",
+                      border: "none",
+                      color: "var(--text-muted)",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      padding: "2px 4px"
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
               </div>
               <div style={{ position: "relative" }}>
                 <select

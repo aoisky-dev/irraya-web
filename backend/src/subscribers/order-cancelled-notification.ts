@@ -10,7 +10,16 @@ export default async function orderCancelledNotificationHandler({
   const query = container.resolve(ContainerRegistrationKeys.QUERY)
   const { data: orders } = await query.graph({
     entity: "order",
-    fields: ["id", "display_id", "email", "total", "metadata", "customer.*"],
+    fields: [
+      "id",
+      "display_id",
+      "email",
+      "total",
+      "metadata",
+      "customer.*",
+      "items.*",
+      "summary.*"
+    ],
     filters: { id: data.id },
   })
   const order = orders?.[0]
@@ -28,13 +37,31 @@ export default async function orderCancelledNotificationHandler({
   const requestedByUser = metadata?.latest_customer_request?.type === "cancel"
   const orderRef = typeof metadata?.order_ref === "string" ? metadata.order_ref : undefined
 
+  // Medusa v2 zeroes order.total on cancellation.
+  // Retrieve the true paid amount from razorpay metadata, summary, items, or raw total.
+  const razorpayAmount = metadata?.razorpay?.amount ? Number(metadata.razorpay.amount) : undefined
+  const summaryPaid = (order as any).summary?.paid_total ?? (order as any).summary?.original_order_total
+  const summaryAmount = summaryPaid != null ? Math.round(Number(summaryPaid) * 100) : undefined
+  const itemsTotal = Array.isArray(order.items)
+    ? order.items.reduce((sum: number, it: any) => sum + Math.round(Number(it.unit_price || 0) * Number(it.quantity || 1) * 100), 0)
+    : undefined
+  const rawTotal = Math.round(Number(order.total || 0) * 100)
+
+  const totalInPaise = razorpayAmount && razorpayAmount > 0
+    ? razorpayAmount
+    : summaryAmount && summaryAmount > 0
+      ? summaryAmount
+      : rawTotal > 0
+        ? rawTotal
+        : (itemsTotal ?? 0)
+
   const tpl = orderCancelledTemplate({
     name: customerName,
     email,
     orderId: order.id,
     orderRef,
     displayId: order.display_id,
-    totalInPaise: Math.round(Number(order.total || 0) * 100),
+    totalInPaise,
     refundInitiated: true, // always mention refund on cancellation
     requestedByUser,
   })

@@ -58,7 +58,15 @@ function SearchContent() {
     <div className="container" style={{ padding: "var(--space-2xl) 0" }}>
       <div style={{ marginBottom: "var(--space-xl)" }}>
         <h1 className="section-title" style={{ marginBottom: "var(--space-md)", fontSize: "2.5rem" }}>Search Results</h1>
-        <form action="/search" method="GET" style={{ display: "flex", gap: "var(--space-sm)", marginBottom: "var(--space-lg)", maxWidth: 720 }}>
+        <form
+          action="/search"
+          method="GET"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setDebouncedQuery(query);
+          }}
+          style={{ display: "flex", gap: "var(--space-sm)", marginBottom: "var(--space-lg)", maxWidth: 720 }}
+        >
           <input
             type="search"
             name="q"

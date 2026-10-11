@@ -9,6 +9,7 @@ export type CatalogFilters = {
   minPrice?: number;
   maxPrice?: number;
   inStockOnly?: boolean;
+  search?: string;
 };
 
 export type CatalogFacets = {
@@ -21,12 +22,12 @@ export type CatalogFacets = {
 const RECENTLY_VIEWED_KEY = "irraya_recently_viewed";
 
 export function getPrimaryPrice(product: Product): number {
-  const prices = product.variants.map((variant) => variant.priceInCents).filter((price) => price > 0);
+  const prices = (product.variants || []).map((variant) => variant.priceInCents).filter((price) => price > 0);
   return prices.length ? Math.min(...prices) : 0;
 }
 
 export function getTotalStock(product: Product): number {
-  return product.variants.reduce((sum, variant) => sum + Math.max(variant.stock, 0), 0);
+  return (product.variants || []).reduce((sum, variant) => sum + Math.max(variant.stock || 0, 0), 0);
 }
 
 export function getStockLabel(product: Product): { label: string; tone: "success" | "warning" | "error" } {
@@ -36,8 +37,9 @@ export function getStockLabel(product: Product): { label: string; tone: "success
   return { label: "In stock", tone: "success" };
 }
 
-function increment(map: Map<string, number>, value: string): void {
-  const normalized = value.trim();
+function increment(map: Map<string, number>, value?: string): void {
+  if (!value) return;
+  const normalized = String(value).trim();
   if (!normalized) return;
   map.set(normalized, (map.get(normalized) ?? 0) + 1);
 }
@@ -56,10 +58,10 @@ export function buildCatalogFacets(products: Product[]): CatalogFacets {
 
   for (const product of products) {
     increment(categories, product.category);
-    for (const variant of product.variants) {
+    for (const variant of (product.variants || [])) {
       increment(colors, variant.color);
       increment(sizes, variant.size);
-      if (variant.priceInCents > 0) prices.push(variant.priceInCents);
+      if (variant.priceInCents && variant.priceInCents > 0) prices.push(variant.priceInCents);
     }
   }
 
@@ -76,19 +78,44 @@ export function buildCatalogFacets(products: Product[]): CatalogFacets {
 
 export function filterProducts(products: Product[], filters: CatalogFilters): Product[] {
   return products.filter((product) => {
-    const categoryMatch = !filters.category || filters.category === "all" || product.category.toLowerCase() === filters.category.toLowerCase();
-    const colorMatch = !filters.color || product.variants.some((variant) => variant.color.toLowerCase() === filters.color?.toLowerCase());
-    const sizeMatch = !filters.size || product.variants.some((variant) => variant.size.toLowerCase() === filters.size?.toLowerCase());
-    const minPriceInCents = typeof filters.minPrice === "number" ? filters.minPrice * 100 : null;
-    const maxPriceInCents = typeof filters.maxPrice === "number" ? filters.maxPrice * 100 : null;
-    const priceMatch = product.variants.some((variant) => {
-      if (minPriceInCents !== null && variant.priceInCents < minPriceInCents) return false;
-      if (maxPriceInCents !== null && variant.priceInCents > maxPriceInCents) return false;
+    // 1. Category match
+    const categoryMatch =
+      !filters.category ||
+      filters.category === "all" ||
+      (product.category || "").toLowerCase().trim() === filters.category.toLowerCase().trim();
+
+    // 2. Color match
+    const colorMatch =
+      !filters.color ||
+      (product.variants || []).some(
+        (variant) => (variant.color || "").toLowerCase().trim() === filters.color?.toLowerCase().trim()
+      );
+
+    // 3. Size match
+    const sizeMatch =
+      !filters.size ||
+      (product.variants || []).some(
+        (variant) => (variant.size || "").toLowerCase().trim() === filters.size?.toLowerCase().trim()
+      );
+
+    // 4. Price match
+    const minPriceInCents = typeof filters.minPrice === "number" && !isNaN(filters.minPrice) ? filters.minPrice * 100 : null;
+    const maxPriceInCents = typeof filters.maxPrice === "number" && !isNaN(filters.maxPrice) ? filters.maxPrice * 100 : null;
+    const priceMatch = (product.variants || []).some((variant) => {
+      const price = variant.priceInCents || 0;
+      if (price <= 0) return false;
+      if (minPriceInCents !== null && price < minPriceInCents) return false;
+      if (maxPriceInCents !== null && price > maxPriceInCents) return false;
       return true;
     });
+
+    // 5. Stock match
     const stockMatch = !filters.inStockOnly || getTotalStock(product) > 0;
 
-    return categoryMatch && colorMatch && sizeMatch && priceMatch && stockMatch;
+    // 6. Search query match
+    const searchMatch = !filters.search || scoreProductSearch(product, filters.search) > 0;
+
+    return categoryMatch && colorMatch && sizeMatch && priceMatch && stockMatch && searchMatch;
   });
 }
 
@@ -110,23 +137,26 @@ export function sortProducts(products: Product[], sortBy: CatalogSortOption): Pr
 }
 
 export function tokenizeSearchQuery(query: string): string[] {
-  return query.toLowerCase().split(/[^a-z0-9]+/i).map((part) => part.trim()).filter(Boolean);
+  return (query || "").toLowerCase().split(/[^a-z0-9]+/i).map((part) => part.trim()).filter(Boolean);
 }
 
 export function scoreProductSearch(product: Product, query: string): number {
   const tokens = tokenizeSearchQuery(query);
   if (tokens.length === 0) return 1;
 
-  const title = product.title.toLowerCase();
-  const category = product.category.toLowerCase();
-  const description = product.description.toLowerCase();
-  const metadata = Object.values(product.metadata ?? {}).join(" ").toLowerCase();
-  const variants = product.variants.map((variant) => `${variant.color} ${variant.size} ${variant.sku}`).join(" ").toLowerCase();
+  const title = String(product.title || "").toLowerCase();
+  const category = String(product.category || "").toLowerCase();
+  const description = String(product.description || "").toLowerCase();
+  const metadata = Object.values(product.metadata ?? {}).filter(Boolean).map(String).join(" ").toLowerCase();
+  const variants = (product.variants || [])
+    .map((variant) => `${variant.color || ""} ${variant.size || ""} ${variant.sku || ""}`)
+    .join(" ")
+    .toLowerCase();
   let score = 0;
 
   for (const token of tokens) {
     if (title === token) score += 20;
-    if (title.includes(token)) score += 10;
+    else if (title.includes(token)) score += 10;
     if (category.includes(token)) score += 6;
     if (variants.includes(token)) score += 4;
     if (description.includes(token)) score += 3;
@@ -137,7 +167,7 @@ export function scoreProductSearch(product: Product, query: string): number {
 }
 
 export function searchProducts(products: Product[], query: string): Product[] {
-  if (!query.trim()) return products;
+  if (!query || !query.trim()) return products;
   return products
     .map((product) => ({ product, score: scoreProductSearch(product, query) }))
     .filter((entry) => entry.score > 0)
@@ -150,11 +180,11 @@ export function getSearchSuggestions(products: Product[], query: string, limit =
   const suggestions = new Set<string>();
   for (const product of products) {
     if (!query || scoreProductSearch(product, query) > 0) {
-      suggestions.add(product.title);
-      suggestions.add(product.category);
-      for (const variant of product.variants) {
-        suggestions.add(variant.color);
-        suggestions.add(variant.size);
+      if (product.title) suggestions.add(product.title);
+      if (product.category) suggestions.add(product.category);
+      for (const variant of (product.variants || [])) {
+        if (variant.color) suggestions.add(variant.color);
+        if (variant.size) suggestions.add(variant.size);
       }
     }
   }
@@ -169,7 +199,7 @@ export function getRelatedProducts(product: Product, products: Product[], limit 
     .filter((candidate) => candidate.id !== product.id)
     .map((candidate) => {
       let score = 0;
-      if (candidate.category === product.category) score += 8;
+      if (candidate.category && product.category && candidate.category.toLowerCase() === product.category.toLowerCase()) score += 8;
       if (candidate.metadata?.material && candidate.metadata.material === product.metadata?.material) score += 3;
       score += Math.min(candidate.rating ?? 0, 5);
       return { candidate, score };

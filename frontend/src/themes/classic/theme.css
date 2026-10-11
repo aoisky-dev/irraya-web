@@ -446,8 +446,8 @@ h1, h2, h3, h4, h5 {
 .footer {
   background: var(--bg-secondary);
   border-top: 1px solid var(--border);
-  padding: var(--space-3xl) 0 var(--space-xl);
-  margin-top: var(--space-5xl);
+  padding: var(--space-2xl) 0 var(--space-xl);
+  margin-top: var(--space-2xl);
 }
 
 .footer-grid {
@@ -982,10 +982,11 @@ h1, h2, h3, h4, h5 {
 /* ─── BRAND STORY SECTION ───────────────────────────────── */
 .brand-story-section {
   margin-top: var(--space-4xl);
+  margin-bottom: 0;
   background: var(--bg-hero);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  padding: var(--space-4xl) var(--space-2xl);
+  padding: var(--space-3xl) var(--space-2xl) var(--space-md);
   text-align: center;
 }
 
@@ -2500,4 +2501,47 @@ textarea.input {
   color: var(--text-muted);
   font-style: italic;
 }
+
+/* ─── ANNOUNCEMENT BAR TICKER ────────────────────────────── */
+.announcement-bar {
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  padding: 8px 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 500;
+  overflow: hidden;
+}
+
+.announcement-bar--sale {
+  background: var(--accent, #e11d48);
+  color: #fff;
+  font-weight: 600;
+}
+
+.announcement-ticker {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  user-select: none;
+}
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-100%); }
+}
+
+.announcement-track {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+  animation: ticker-scroll 32s linear infinite;
+}
+
+.announcement-bar:hover .announcement-track {
+  animation-play-state: paused;
+}
+
 

@@ -15,6 +15,7 @@ export function ProductCatalogClient({ initialProducts = [] }: { initialProducts
   const router = useRouter();
 
   // Filter states
+  const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [activeColor, setActiveColor] = useState("");
   const [activeSize, setActiveSize] = useState("");
@@ -54,6 +55,8 @@ export function ProductCatalogClient({ initialProducts = [] }: { initialProducts
   }, []);
 
   useEffect(() => {
+    const q = searchParams.get("q") ?? searchParams.get("search") ?? "";
+    setSearchQuery(q);
     const categoryFromQuery = searchParams.get("category")?.trim().toLowerCase();
     setActiveCategory(categoryFromQuery || "all");
     setActiveColor(searchParams.get("color") ?? "");
@@ -82,9 +85,10 @@ export function ProductCatalogClient({ initialProducts = [] }: { initialProducts
       size: activeSize,
       minPrice: typeof minPrice === "number" ? minPrice : undefined,
       maxPrice: typeof maxPrice === "number" ? maxPrice : undefined,
-      inStockOnly
+      inStockOnly,
+      search: searchQuery.trim() || undefined,
     });
-  }, [products, activeCategory, activeColor, activeSize, minPrice, maxPrice, inStockOnly]);
+  }, [products, activeCategory, activeColor, activeSize, minPrice, maxPrice, inStockOnly, searchQuery]);
 
   const sortedProducts = useMemo(() => sortProducts(filteredProducts, sortBy), [filteredProducts, sortBy]);
   const recommendedProducts = useMemo(() => sortProducts(products, "popular").slice(0, 4), [products]);
@@ -179,22 +183,137 @@ export function ProductCatalogClient({ initialProducts = [] }: { initialProducts
               <span>{isLoading ? "Loading..." : `${sortedProducts.length} ${sortedProducts.length === 1 ? "product" : "products"}`}</span>
             </div>
             
-            <div className="filter-sort">
-              <label htmlFor="sort-select" className="sr-only">Sort by</label>
-              <select
-                id="sort-select"
-                className="sort-select"
-                value={sortBy}
-                onChange={(e) => updateQuery({ sort: e.target.value })}
-              >
-                <option value="newest">Newest</option>
-                <option value="popular">Most Popular</option>
-                <option value="rating">Top Rated</option>
-                <option value="price-asc">Price: Low → High</option>
-                <option value="price-desc">Price: High → Low</option>
-              </select>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", flex: "1 1 auto", justifyContent: "flex-end" }}>
+              <div style={{ position: "relative", minWidth: "180px", maxWidth: "260px", flex: "1 1 auto" }}>
+                <input
+                  type="search"
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSearchQuery(val);
+                    updateQuery({ q: val || null });
+                  }}
+                  className="input"
+                  style={{
+                    width: "100%",
+                    padding: "6px 28px 6px 12px",
+                    fontSize: "0.85rem",
+                    borderRadius: "var(--radius-sm)",
+                    height: "36px"
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      updateQuery({ q: null });
+                    }}
+                    aria-label="Clear search"
+                    style={{
+                      position: "absolute",
+                      right: "8px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "transparent",
+                      border: "none",
+                      color: "var(--text-muted)",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      padding: "2px"
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+
+              <div className="filter-sort">
+                <label htmlFor="sort-select" className="sr-only">Sort by</label>
+                <select
+                  id="sort-select"
+                  className="sort-select"
+                  value={sortBy}
+                  onChange={(e) => updateQuery({ sort: e.target.value })}
+                  style={{ height: "36px" }}
+                >
+                  <option value="newest">Newest</option>
+                  <option value="popular">Most Popular</option>
+                  <option value="rating">Top Rated</option>
+                  <option value="price-asc">Price: Low → High</option>
+                  <option value="price-desc">Price: High → Low</option>
+                </select>
+              </div>
             </div>
           </div>
+
+          {/* Active filter badges */}
+          {(activeCategory !== "all" || activeColor || activeSize || minPrice !== "" || maxPrice !== "" || inStockOnly || searchQuery) && (
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginBottom: "var(--space-md)", marginTop: "var(--space-xs)" }}>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Active:</span>
+              {searchQuery && (
+                <span className="badge" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  Search: "{searchQuery}"
+                  <button type="button" onClick={() => { setSearchQuery(""); updateQuery({ q: null }); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "inherit", padding: "0 2px" }}>×</button>
+                </span>
+              )}
+              {activeCategory !== "all" && (
+                <span className="badge" style={{ display: "inline-flex", alignItems: "center", gap: "4px", textTransform: "capitalize" }}>
+                  {activeCategory}
+                  <button type="button" onClick={() => updateQuery({ category: null })} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "inherit", padding: "0 2px" }}>×</button>
+                </span>
+              )}
+              {activeColor && (
+                <span className="badge" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  Color: {activeColor}
+                  <button type="button" onClick={() => updateQuery({ color: null })} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "inherit", padding: "0 2px" }}>×</button>
+                </span>
+              )}
+              {activeSize && (
+                <span className="badge" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  Size: {activeSize}
+                  <button type="button" onClick={() => updateQuery({ size: null })} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "inherit", padding: "0 2px" }}>×</button>
+                </span>
+              )}
+              {typeof minPrice === "number" && (
+                <span className="badge" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  Min ₹{minPrice}
+                  <button type="button" onClick={() => updateQuery({ minPrice: null })} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "inherit", padding: "0 2px" }}>×</button>
+                </span>
+              )}
+              {typeof maxPrice === "number" && (
+                <span className="badge" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  Max ₹{maxPrice}
+                  <button type="button" onClick={() => updateQuery({ maxPrice: null })} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "inherit", padding: "0 2px" }}>×</button>
+                </span>
+              )}
+              {inStockOnly && (
+                <span className="badge" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  In stock only
+                  <button type="button" onClick={() => updateQuery({ stock: null })} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "inherit", padding: "0 2px" }}>×</button>
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  router.replace("/products", { scroll: false });
+                }}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--accent-warm, var(--text-primary))",
+                  fontSize: "0.8rem",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  padding: "2px 6px"
+                }}
+              >
+                Clear all
+              </button>
+            </div>
+          )}
 
           {isLoading ? (
             <div className="loading" style={{ height: "400px" }}>
