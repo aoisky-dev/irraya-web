@@ -22,11 +22,12 @@ export function AnnouncementBar() {
 
   if (activeSale) {
     const label = activeSale.label || `${activeSale.discountPct}% OFF`;
+    const name = activeSale.name;
     const messages = [
-      `🔥 SALE — ${label} on selected styles`,
-      `Limited time offer · Shop now`,
-      `${activeSale.discountPct}% off — no code needed`,
-      `🛍️ ${label} · Prices already reduced`,
+      `🔥 ${name} — ${label}`,
+      `Limited time · Shop now`,
+      `${label} · No code needed`,
+      `🛍️ ${name} · Prices already reduced`,
     ];
     const track = [...messages, ...messages].join("  ·  ");
 
