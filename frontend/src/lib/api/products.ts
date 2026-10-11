@@ -12,14 +12,11 @@ import { mapMedusaProduct } from "./medusa-mappers";
 // of replacing them.
 // +*variants.calculated_price requests the pricing-context-aware price from Medusa
 // (reflects active price lists). *variants.prices kept as fallback for the mapper.
-const defaultProductFields = "+material,*metadata,*categories,*tags,*images,*variants.prices,*variants.calculated_price,*variants.options";
-
-const pricingContext = { currency_code: "inr" };
+const defaultProductFields = "+material,*metadata,*categories,*tags,*images,*variants.prices,*variants.options";
 
 export async function getProducts(params?: Record<string, string | number>): Promise<Product[]> {
   const queryParams = new URLSearchParams({
     fields: defaultProductFields,
-    ...pricingContext,
     ...(params as Record<string, string>)
   });
   const qs = `?${queryParams.toString()}`;
@@ -31,7 +28,7 @@ export async function getProducts(params?: Record<string, string | number>): Pro
 
 export async function getProductByHandle(handle: string): Promise<Product | null> {
   const response = await medusaRequest<{ products?: unknown[] }>(
-    `/store/products?${new URLSearchParams({ handle, limit: "1", fields: defaultProductFields, ...pricingContext }).toString()}`,
+    `/store/products?${new URLSearchParams({ handle, limit: "1", fields: defaultProductFields }).toString()}`,
     { next: { revalidate: 60 } }
   );
   const raw = (response.products ?? [])[0];
@@ -40,7 +37,7 @@ export async function getProductByHandle(handle: string): Promise<Product | null
 
 export async function getProductById(id: string): Promise<Product | null> {
   const response = await medusaRequest<{ product?: unknown }>(
-    `/store/products/${id}?${new URLSearchParams({ fields: defaultProductFields, ...pricingContext }).toString()}`,
+    `/store/products/${id}?${new URLSearchParams({ fields: defaultProductFields }).toString()}`,
     { next: { revalidate: 60 } }
   ).catch(() => null);
   return response?.product ? mapMedusaProduct(response.product) : null;
