@@ -23,9 +23,23 @@ export function AnnouncementBar() {
   if (activeSale) {
     const label = activeSale.label || `${activeSale.discountPct}% OFF`;
     const name = activeSale.name;
+
+    // Build urgency / end-date message
+    let endMsg = "Limited time · Shop now";
+    if (activeSale.endsAt) {
+      const end = new Date(activeSale.endsAt);
+      const hoursLeft = (end.getTime() - Date.now()) / 3_600_000;
+      if (hoursLeft < 24) {
+        const h = Math.ceil(hoursLeft);
+        endMsg = `⏰ Ends in ${h} hour${h !== 1 ? "s" : ""}! Grab it now`;
+      } else {
+        endMsg = `⏰ Sale ends ${end.toLocaleDateString("en-IN", { day: "numeric", month: "short" })} — don't miss out`;
+      }
+    }
+
     const messages = [
       `🔥 ${name} — ${label}`,
-      `Limited time · Shop now`,
+      endMsg,
       `${label} · No code needed`,
       `🛍️ ${name} · Prices already reduced`,
     ];

@@ -9,7 +9,21 @@ type Sale = {
   active: boolean
   discountPct: number
   label?: string
+  startsAt?: string
+  endsAt?: string
   productIds: string[]
+}
+
+function fmtDate(iso: string | undefined): string {
+  if (!iso) return ""
+  return new Date(iso).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+}
+
+function toLocalDatetime(iso: string | undefined): string {
+  if (!iso) return ""
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 type MedusaProduct = {
@@ -129,6 +143,8 @@ function SaleCard({
   const [name, setName] = useState(sale.name)
   const [discountPct, setDiscountPct] = useState(sale.discountPct)
   const [label, setLabel] = useState(sale.label ?? "")
+  const [startsAt, setStartsAt] = useState(toLocalDatetime(sale.startsAt))
+  const [endsAt, setEndsAt] = useState(toLocalDatetime(sale.endsAt))
   const [saving, setSaving] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
   const [products, setProducts] = useState<MedusaProduct[]>([])
@@ -148,7 +164,11 @@ function SaleCard({
       const res = await fetch(`/admin/store/sales/${sale.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, discountPct, label: label || undefined }),
+        body: JSON.stringify({
+          name, discountPct, label: label || undefined,
+          startsAt: startsAt || null,
+          endsAt: endsAt || null,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message)
@@ -238,6 +258,14 @@ function SaleCard({
                 {sale.active ? "Active" : "Inactive"}
               </Badge>
               <Badge color="grey">{sale.productIds.length} product{sale.productIds.length !== 1 ? "s" : ""}</Badge>
+              {sale.startsAt && new Date(sale.startsAt) > new Date() && (
+                <Badge color="blue">Starts {fmtDate(sale.startsAt)}</Badge>
+              )}
+              {sale.endsAt && (
+                <Badge color={new Date(sale.endsAt) < new Date() ? "red" : "orange"}>
+                  {new Date(sale.endsAt) < new Date() ? "Expired" : `Ends ${fmtDate(sale.endsAt)}`}
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Switch checked={sale.active} onCheckedChange={toggleActive} />
@@ -276,6 +304,29 @@ function SaleCard({
                   />
                 </div>
               </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div style={{ flex: 1 }}>
+                  <Label htmlFor={`start-${sale.id}`}>Start date &amp; time (optional)</Label>
+                  <input
+                    id={`start-${sale.id}`}
+                    type="datetime-local"
+                    value={startsAt}
+                    onChange={e => setStartsAt(e.target.value)}
+                    style={{ marginTop: 4, padding: "6px 10px", borderRadius: 6, border: "1px solid var(--color-border-strong)", fontSize: 13, width: "100%", background: "var(--color-bg-base)" }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <Label htmlFor={`end-${sale.id}`}>End date &amp; time (optional)</Label>
+                  <input
+                    id={`end-${sale.id}`}
+                    type="datetime-local"
+                    value={endsAt}
+                    onChange={e => setEndsAt(e.target.value)}
+                    style={{ marginTop: 4, padding: "6px 10px", borderRadius: 6, border: "1px solid var(--color-border-strong)", fontSize: 13, width: "100%", background: "var(--color-bg-base)" }}
+                  />
+                </div>
+              </div>
+              {endsAt && <Text size="xsmall" className="text-ui-fg-subtle">Sale will automatically stop applying at the end time.</Text>}
               {discountPct > 0 && exampleSale && (
                 <div className="flex items-center gap-2">
                   <Text size="small" weight="plus">Preview:</Text>
@@ -345,6 +396,8 @@ export default function SalePage() {
   const [newName, setNewName] = useState("")
   const [newPct, setNewPct] = useState(10)
   const [newLabel, setNewLabel] = useState("")
+  const [newStartsAt, setNewStartsAt] = useState("")
+  const [newEndsAt, setNewEndsAt] = useState("")
   const [saving, setSaving] = useState(false)
 
   const fetchSales = async () => {
@@ -368,13 +421,13 @@ export default function SalePage() {
       const res = await fetch("/admin/store/sales", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName.trim(), discountPct: newPct, label: newLabel || undefined }),
+        body: JSON.stringify({ name: newName.trim(), discountPct: newPct, label: newLabel || undefined, startsAt: newStartsAt || null, endsAt: newEndsAt || null }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message)
       setSales(prev => [data.sale, ...prev])
       setCreating(false)
-      setNewName(""); setNewPct(10); setNewLabel("")
+      setNewName(""); setNewPct(10); setNewLabel(""); setNewStartsAt(""); setNewEndsAt("")
       toast.success("Sale created")
     } catch (err: any) {
       toast.error(err?.message || "Failed to create")
@@ -444,6 +497,18 @@ export default function SalePage() {
               <div style={{ flex: 1 }}>
                 <Label htmlFor="new-label">Label (optional)</Label>
                 <Input id="new-label" placeholder={`${newPct}% OFF`} value={newLabel} onChange={e => setNewLabel(e.target.value)} className="mt-1" />
+              </div>
+            </div>
+            <div className="flex gap-4 flex-wrap">
+              <div style={{ flex: 1 }}>
+                <Label htmlFor="new-starts">Start date &amp; time (optional)</Label>
+                <input id="new-starts" type="datetime-local" value={newStartsAt} onChange={e => setNewStartsAt(e.target.value)}
+                  style={{ marginTop: 4, padding: "6px 10px", borderRadius: 6, border: "1px solid var(--color-border-strong)", fontSize: 13, width: "100%", background: "var(--color-bg-base)" }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <Label htmlFor="new-ends">End date &amp; time (optional)</Label>
+                <input id="new-ends" type="datetime-local" value={newEndsAt} onChange={e => setNewEndsAt(e.target.value)}
+                  style={{ marginTop: 4, padding: "6px 10px", borderRadius: 6, border: "1px solid var(--color-border-strong)", fontSize: 13, width: "100%", background: "var(--color-bg-base)" }} />
               </div>
             </div>
             <div className="flex gap-2 justify-end">

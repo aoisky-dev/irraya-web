@@ -6,6 +6,8 @@ export type SaleConfig = {
   active: boolean;
   discountPct: number;
   label?: string;
+  startsAt?: string;
+  endsAt?: string;
   productIds: string[];
 };
 

@@ -11,7 +11,13 @@ export async function GET(_req: MedusaRequest, res: MedusaResponse): Promise<voi
   }
 }
 
-type CreateSaleBody = { name?: unknown; discountPct?: unknown; label?: unknown; active?: unknown }
+type CreateSaleBody = { name?: unknown; discountPct?: unknown; label?: unknown; active?: unknown; startsAt?: unknown; endsAt?: unknown }
+
+function parseDate(val: unknown): string | undefined {
+  if (typeof val !== "string" || !val.trim()) return undefined
+  const d = new Date(val)
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString()
+}
 
 export async function POST(req: MedusaRequest<CreateSaleBody>, res: MedusaResponse): Promise<void> {
   const body = (req.validatedBody ?? req.body ?? {}) as CreateSaleBody
@@ -31,6 +37,8 @@ export async function POST(req: MedusaRequest<CreateSaleBody>, res: MedusaRespon
       discountPct,
       label: typeof body.label === "string" ? body.label.trim() || undefined : undefined,
       active: body.active === true || body.active === "true",
+      startsAt: parseDate(body.startsAt),
+      endsAt: parseDate(body.endsAt),
     })
     let syncWarning: string | undefined
     const priceListId = await syncSalePriceList(req.scope, sale).catch((err: unknown) => {

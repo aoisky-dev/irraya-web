@@ -11,7 +11,14 @@ export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void
   res.status(200).json({ sale })
 }
 
-type UpdateSaleBody = { name?: unknown; discountPct?: unknown; label?: unknown; active?: unknown }
+type UpdateSaleBody = { name?: unknown; discountPct?: unknown; label?: unknown; active?: unknown; startsAt?: unknown; endsAt?: unknown }
+
+function parseDate(val: unknown): string | null | undefined {
+  if (val === null || val === "") return null  // explicit clear
+  if (typeof val !== "string") return undefined  // not provided — skip
+  const d = new Date(val)
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString()
+}
 
 export async function PUT(req: MedusaRequest<UpdateSaleBody>, res: MedusaResponse): Promise<void> {
   const id = Number(req.params.id)
@@ -34,6 +41,8 @@ export async function PUT(req: MedusaRequest<UpdateSaleBody>, res: MedusaRespons
   }
   if (body.label !== undefined) input.label = typeof body.label === "string" ? body.label.trim() : ""
   if (body.active !== undefined) input.active = body.active === true || body.active === "true"
+  if ("startsAt" in body) { const v = parseDate(body.startsAt); if (v !== undefined) input.startsAt = v }
+  if ("endsAt" in body) { const v = parseDate(body.endsAt); if (v !== undefined) input.endsAt = v }
 
   try {
     const sale = await updateSale(id, input)

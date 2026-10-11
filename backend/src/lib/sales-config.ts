@@ -7,6 +7,8 @@ export type Sale = {
   active: boolean
   discountPct: number
   label?: string
+  startsAt?: string
+  endsAt?: string
   priceListId?: string
   createdAt?: string
   updatedAt?: string
@@ -31,6 +33,8 @@ async function ensureSchema(client: pg.PoolClient): Promise<void> {
       assigned_at timestamptz not null default now()
     );
     alter table sales add column if not exists price_list_id text;
+    alter table sales add column if not exists starts_at timestamptz;
+    alter table sales add column if not exists ends_at timestamptz;
   `)
 }
 
@@ -69,16 +73,18 @@ export async function syncSalePriceListDb(client: pg.PoolClient, saleId: number)
   const title = sale.label || sale.name
   const description = `${Number(sale.discount_pct)}% off`
   await client.query(`
-    insert into price_list (id, status, title, description, type, rules_count, created_at, updated_at)
-    values ($1::text, 'active', $2, $3, 'sale', 0, now(), now())
+    insert into price_list (id, status, title, description, type, rules_count, starts_at, ends_at, created_at, updated_at)
+    values ($1::text, 'active', $2, $3, 'sale', 0, $4::timestamptz, $5::timestamptz, now(), now())
     on conflict (id) do update set
       status = 'active',
       title = excluded.title,
       description = excluded.description,
+      starts_at = excluded.starts_at,
+      ends_at = excluded.ends_at,
       type = 'sale',
       updated_at = now(),
       deleted_at = null
-  `, [priceListId, title, description])
+  `, [priceListId, title, description, sale.starts_at ?? null, sale.ends_at ?? null])
 
   await client.query(`update sales set price_list_id = $1::text, updated_at = now() where id = $2::integer`, [priceListId, sale.id])
   await client.query(`delete from price where price_list_id = $1::text`, [priceListId])
@@ -137,6 +143,8 @@ function rowToSale(row: any, productIds?: string[]): Sale {
     active: row.active,
     discountPct: Number(row.discount_pct),
     label: row.label || undefined,
+    startsAt: row.starts_at ? new Date(row.starts_at).toISOString() : undefined,
+    endsAt: row.ends_at ? new Date(row.ends_at).toISOString() : undefined,
     priceListId: row.price_list_id || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -169,18 +177,18 @@ export async function getSaleById(id: number): Promise<Sale | null> {
   })
 }
 
-export async function createSale(input: { name: string; discountPct: number; label?: string; active?: boolean }): Promise<Sale> {
+export async function createSale(input: { name: string; discountPct: number; label?: string; active?: boolean; startsAt?: string; endsAt?: string }): Promise<Sale> {
   return withPooledClient("sales_schema", ensureSchema, async (client) => {
     const res = await client.query(
-      `insert into sales (name, discount_pct, label, active) values ($1, $2, $3, $4) returning *`,
-      [input.name, Math.max(0, Math.min(100, input.discountPct)), input.label || null, input.active ?? false]
+      `insert into sales (name, discount_pct, label, active, starts_at, ends_at) values ($1, $2, $3, $4, $5, $6) returning *`,
+      [input.name, Math.max(0, Math.min(100, input.discountPct)), input.label || null, input.active ?? false, input.startsAt ?? null, input.endsAt ?? null]
     )
     await syncSalePriceListDb(client, res.rows[0].id)
     return rowToSale(res.rows[0], [])
   })
 }
 
-export async function updateSale(id: number, input: { name?: string; discountPct?: number; label?: string; active?: boolean }): Promise<Sale | null> {
+export async function updateSale(id: number, input: { name?: string; discountPct?: number; label?: string; active?: boolean; startsAt?: string | null; endsAt?: string | null }): Promise<Sale | null> {
   return withPooledClient("sales_schema", ensureSchema, async (client) => {
     const fields: string[] = []
     const values: unknown[] = []
@@ -190,6 +198,8 @@ export async function updateSale(id: number, input: { name?: string; discountPct
     if (input.discountPct !== undefined) { fields.push(`discount_pct = $${i++}`); values.push(Math.max(0, Math.min(100, input.discountPct))) }
     if (input.label !== undefined) { fields.push(`label = $${i++}`); values.push(input.label || null) }
     if (input.active !== undefined) { fields.push(`active = $${i++}`); values.push(input.active) }
+    if ("startsAt" in input) { fields.push(`starts_at = $${i++}`); values.push(input.startsAt ?? null) }
+    if ("endsAt" in input) { fields.push(`ends_at = $${i++}`); values.push(input.endsAt ?? null) }
 
     if (fields.length > 0) {
       fields.push(`updated_at = now()`)
@@ -277,7 +287,12 @@ export async function savePriceListId(saleId: number, priceListId: string | null
 /** For the store API: returns only active sales with their product IDs */
 export async function getActiveSales(): Promise<Sale[]> {
   return withPooledClient("sales_schema", ensureSchema, async (client) => {
-    const salesRes = await client.query(`select * from sales where active = true`)
+    const salesRes = await client.query(`
+      select * from sales
+      where active = true
+        and (starts_at is null or starts_at <= now())
+        and (ends_at is null or ends_at > now())
+    `)
     if (salesRes.rows.length === 0) return []
 
     const saleIds = salesRes.rows.map((r: any) => r.id)
