@@ -32,18 +32,6 @@ async function ensureSchema(client: pg.PoolClient): Promise<void> {
     );
     alter table sales add column if not exists price_list_id text;
   `)
-
-  // Auto-sync any active sale that doesn't have an active price_list synced
-  try {
-    const activeSales = await client.query(
-      `select s.id from sales s where s.active = true and s.discount_pct > 0`
-    )
-    for (const row of activeSales.rows) {
-      await syncSalePriceListDb(client, row.id)
-    }
-  } catch (err) {
-    console.error("[ensureSchema] sale auto-sync warning:", err)
-  }
 }
 
 export async function syncSalePriceListDb(client: pg.PoolClient, saleId: number): Promise<string | null> {
