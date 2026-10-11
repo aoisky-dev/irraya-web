@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/components/CartProvider";
 import { useAuth } from "@/components/AuthProvider";
+import { AnnouncementBar } from "@/components/AnnouncementBar";
 
 export function Header() {
   const { cart } = useCart();
@@ -23,10 +24,7 @@ export function Header() {
 
   return (
     <header className={`header${scrolled ? " header--scrolled" : ""}`}>
-      {/* Announcement bar */}
-      <div className="header-topbar">
-        <span>Free shipping on all orders &nbsp;·&nbsp; New collection now live</span>
-      </div>
+      <AnnouncementBar />
 
       <div className="container">
         <div className="nav-row">

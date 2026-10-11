@@ -42,6 +42,7 @@ function StatusBadge({ status }: { status: string }) {
     approved:     { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Approved" },
     rejected:     { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Rejected" },
     refunded:     { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Refunded" },
+    refund_pending: { color: "#d97706", bg: "rgba(217,119,6,0.1)", label: "Refund Pending" },
     completed:    { color: "#059669", bg: "rgba(5,150,105,0.1)", label: "Completed" },
     // Composite request statuses
     cancel_requested:    { color: "#d97706", bg: "rgba(217,119,6,0.1)", label: "Cancel Requested" },
@@ -166,6 +167,9 @@ function OrderConfirmationContent() {
     }
   };
 
+  const isRefunded = order?.payment?.status === "refunded" || order?.latestRequest?.status === "refunded";
+  const isRefundPending = order?.payment?.status === "refund_pending";
+
   // Derive effective display status from the order + latestRequest
   const effectiveStatus = (() => {
     if (!order) return "pending";
@@ -174,7 +178,9 @@ function OrderConfirmationContent() {
     // Check latestRequest for cancel approved/completed/refunded
     if (order.latestRequest) {
       const { type, status } = order.latestRequest;
-      if (type === "cancel" && ["approved", "completed", "refunded"].includes(status)) return "cancelled";
+      if (type === "cancel") {
+        if (["approved", "completed", "refunded"].includes(status)) return "cancelled";
+      }
     }
     return order.status;
   })();
@@ -208,11 +214,17 @@ function OrderConfirmationContent() {
     { key: "exchange_completed", label: "Exchange Completed",      icon: <IconPackage size={16} />,   active: order?.latestRequest?.status === "completed" },
   ];
 
-  const timelineSteps = effectiveStatus === "cancelled"
+  const isCancelled = effectiveStatus === "cancelled";
+
+  const timelineSteps = isCancelled
     ? [
         { key: "ordered",   label: "Order Placed",  icon: <IconClipboard size={16} />, active: true },
         { key: "cancelled", label: "Cancelled",     icon: <IconX size={16} />,         active: true },
-        ...(order?.payment ? [{ key: "refunded",  label: "Refunded",      icon: <IconCheckCircle size={16} />, active: order?.payment?.status === "refunded" || order?.latestRequest?.status === "refunded" || order?.latestRequest?.status === "completed" }] : [])
+        ...(order?.payment ? [
+          isRefunded
+            ? { key: "refunded", label: "Refunded", icon: <IconCheckCircle size={16} />, active: true }
+            : { key: "refund_pending", label: "Refund Initiated", icon: <IconClock size={16} />, active: isRefundPending || order?.latestRequest?.status === "completed" }
+        ] : [])
       ]
     : isCancelRequested
       ? [
@@ -235,7 +247,6 @@ function OrderConfirmationContent() {
 
   if (notFound) return <OrderNotFound />;
 
-  const isCancelled = effectiveStatus === "cancelled";
   const orderDate = order?.createdAt ? new Date(order.createdAt).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : null;
   const addr = order?.shippingAddress;
   const addrLine = addr ? [addr.address1, addr.city, addr.province, addr.postalCode].filter(Boolean).join(", ") : null;
@@ -251,7 +262,11 @@ function OrderConfirmationContent() {
           <h1>{isCancelled ? "Order Cancelled" : isCancelRequested ? "Cancel Requested" : isExchangeInProgress ? "Exchange In Progress" : "Order Confirmed!"}</h1>
           <p className="order-hero-sub">
             {isCancelled
-              ? "Your order has been cancelled. Any payment will be refunded within 5–7 business days."
+              ? (isRefunded
+                  ? "Your order has been cancelled and the refund has been processed to your original payment method."
+                  : isRefundPending
+                    ? "Your order has been cancelled and your refund has been initiated. It will reflect in your account within 5–7 business days."
+                    : "Your order has been cancelled.")
               : isCancelRequested
                 ? `Your cancellation request for order ${order?.orderRef || (order?.displayId ? `#${order.displayId}` : `#${params.id}`)} is being reviewed.`
                 : isExchangeInProgress
@@ -480,9 +495,21 @@ function OrderConfirmationContent() {
                     <span>Subtotal ({order.items.length} {order.items.length === 1 ? "item" : "items"})</span>
                     <span>{formatMoney(order.subtotalInCents ?? order.totalInCents, order.currencyCode)}</span>
                   </div>
+                  {(() => {
+                    const saleSavings = order.items.reduce((sum, item) =>
+                      item.compareAtUnitPriceInCents && item.compareAtUnitPriceInCents > item.unitPriceInCents
+                        ? sum + (item.compareAtUnitPriceInCents - item.unitPriceInCents) * item.quantity
+                        : sum, 0);
+                    return saleSavings > 0 ? (
+                      <div className="order-summary-row" style={{ color: "var(--accent-warm, #e11d48)" }}>
+                        <span>Sale discount</span>
+                        <span>−{formatMoney(saleSavings, order.currencyCode)}</span>
+                      </div>
+                    ) : null;
+                  })()}
                   {order.discountInCents && order.discountInCents > 0 ? (
                     <div className="order-summary-row" style={{ color: "var(--accent-warm, #e11d48)" }}>
-                      <span>Discount</span>
+                      <span>Coupon discount</span>
                       <span>−{formatMoney(order.discountInCents, order.currencyCode)}</span>
                     </div>
                   ) : null}
@@ -500,9 +527,21 @@ function OrderConfirmationContent() {
                   </div>
                   <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "10px 0" }} />
                   <div className="order-summary-row order-summary-total">
-                    <span>Total Paid</span>
+                    <span>{isCancelled ? "Original Amount Paid" : "Total Paid"}</span>
                     <span>{formatMoney(order.totalInCents, order.currencyCode)}</span>
                   </div>
+                  {isRefunded && (
+                    <div className="order-summary-row" style={{ color: "var(--success, #059669)", fontWeight: 600, marginTop: "6px" }}>
+                      <span>Amount Refunded</span>
+                      <span>−{formatMoney(order.totalInCents, order.currencyCode)}</span>
+                    </div>
+                  )}
+                  {isRefundPending && (
+                    <div className="order-summary-row" style={{ color: "var(--accent-warm, #d97706)", fontWeight: 500, fontSize: "0.85rem", marginTop: "6px" }}>
+                      <span>Refund Status</span>
+                      <span>Initiated (Processing)</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

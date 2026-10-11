@@ -119,6 +119,24 @@ export default function CartPage() {
             <span className="text-secondary">Subtotal</span>
             <span>{formatMoney(cart.subtotalInCents, cart.currencyCode)}</span>
           </div>
+          {(() => {
+            const saleSavings = cart.items.reduce((sum, item) =>
+              item.compareAtUnitPriceInCents && item.compareAtUnitPriceInCents > item.unitPriceInCents
+                ? sum + (item.compareAtUnitPriceInCents - item.unitPriceInCents) * item.quantity
+                : sum, 0);
+            return saleSavings > 0 ? (
+              <div className="summary-row" style={{ color: "var(--accent-warm, #e11d48)" }}>
+                <span>Sale discount</span>
+                <span>−{formatMoney(saleSavings, cart.currencyCode)}</span>
+              </div>
+            ) : null;
+          })()}
+          {cart.discountInCents && cart.discountInCents > 0 ? (
+            <div className="summary-row" style={{ color: "var(--accent-warm, #e11d48)" }}>
+              <span>Coupon{cart.promoCode ? ` (${cart.promoCode})` : ""}</span>
+              <span>−{formatMoney(cart.discountInCents, cart.currencyCode)}</span>
+            </div>
+          ) : null}
           <div className="summary-row">
             <span className="text-secondary">Shipping</span>
             <span className="text-accent">Free</span>

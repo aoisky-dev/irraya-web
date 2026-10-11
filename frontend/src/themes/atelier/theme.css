@@ -159,6 +159,52 @@ h1, h2, h3, h4, h5 {
 }
 
 /* ─── ANNOUNCEMENT BAR ──────────────────────────────────── */
+/* Announcement bar — base */
+.announcement-bar {
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  padding: 9px 0;
+  font-family: var(--font-body);
+  font-size: 0.67rem;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+
+/* Sale mode: warm accent background */
+.announcement-bar--sale {
+  background: var(--accent-warm, #e11d48);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Scrolling ticker */
+.announcement-ticker {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+}
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.announcement-track {
+  display: inline-block;
+  white-space: nowrap;
+  /* duplicate content fills 200% width so loop is seamless */
+  animation: ticker-scroll 28s linear infinite;
+  padding-right: 3rem;
+}
+
+/* Pause on hover so users can read it */
+.announcement-bar:hover .announcement-track {
+  animation-play-state: paused;
+}
+
+/* Compatibility alias so any leftover .header-topbar refs still work */
 .header-topbar {
   background: var(--text-primary);
   color: var(--text-inverse);
