@@ -327,13 +327,19 @@
 
 ### 2.4 Authentication Flow
 **Issues:**
-- No guest checkout — high cart abandonment cause *(Resolved: Guest checkout implemented end-to-end)*
+- No guest checkout — high cart abandonment cause *(Resolved: Guest checkout implemented end-to-end in branch `feat/guest-checkout`)*
 - Login and register are separate pages — no unified auth modal
 - No password strength indicator in UI
-- JWT stored in localStorage — XSS vulnerable *(Resolved: migrated to HttpOnly cookie)*
+- JWT stored in localStorage — XSS vulnerable *(Resolved: migrated to HttpOnly cookie in branch `feat/guest-checkout`)*
 
-**Recommended Changes:**
-1. **Guest checkout** — *(Implemented)* allow proceeding without account, prefill registration form post-order.
+**Recommended Changes & Implementation Status:**
+1. **Guest checkout** — *(Implemented in branch `feat/guest-checkout`, commit `94be951`)*:
+   - Guests can proceed through `/checkout` without an account or login barrier.
+   - Address forms are editable directly; saved address pickers are reserved for logged-in accounts.
+   - Razorpay orders are generated with guest customer contact info.
+   - Medusa v2 orders complete without requiring a customer authentication token.
+   - Post-order confirmation page (`/order/[id]`) prompts guests to create an account with a single click, pre-filling their email on `/register`.
+   - **Branch reference:** `feat/guest-checkout` (test locally via `git checkout feat/guest-checkout && npm run dev`).
 2. **Unified auth modal** — "Sign In" opens modal overlay. User stays on current page after auth.
 3. **Password strength meter** — 3-level indicator (weak / medium / strong) on register form.
 
@@ -647,7 +653,7 @@
 | 7 | Checkout step flow (§1.8) | 🟠 High | High | Conversion |
 | 8 | CSP headers (§3.2) | 🟠 High | Medium | Security |
 | 9 | Product card swatches + quick add (§1.4) | 🟠 High | Medium | Conversion |
-| 10 | Guest checkout (§2.4) | ✅ Done | Medium | Conversion |
+| 10 | Guest checkout (§2.4) | 📦 Ready (`feat/guest-checkout`) | Medium | Conversion |
 | 11 | Sticky mobile ATC on PDP (§1.6) | 🟠 High | Low | Conversion |
 | 12 | Admin route guard frontend (§4.3) | 🟠 High | Low | Security |
 | 13 | CORS config audit (§4.2) | 🟠 High | Minimal | Security |
