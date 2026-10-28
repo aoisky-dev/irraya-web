@@ -108,6 +108,7 @@ function openRazorpayCheckout(input: {
   cartId: string;
   customerName: string;
   customerEmail: string;
+  customerPhone?: string;
 }): Promise<RazorpayCheckoutResponse> {
   if (!window.Razorpay) return Promise.reject(new Error("Razorpay not available."));
   const Razorpay = window.Razorpay;
@@ -120,7 +121,11 @@ function openRazorpayCheckout(input: {
       name: config.storeName,
       description: "Irraya order payment",
       order_id: input.paymentOrder.razorpayOrderId,
-      prefill: { name: input.customerName, email: input.customerEmail },
+      prefill: {
+        name: input.customerName,
+        email: input.customerEmail,
+        ...(input.customerPhone ? { contact: input.customerPhone } : {})
+      },
       notes: { cart_id: input.cartId },
       theme: { color: "#712119" }, // Brand burgundy
       modal: {
@@ -596,7 +601,8 @@ function CheckoutContent() {
         paymentOrder,
         cartId: cart!.id,
         customerName: `${form.firstName} ${form.lastName}`.trim(),
-        customerEmail: form.email.trim()
+        customerEmail: form.email.trim(),
+        customerPhone: normalizeIndianPhone(form.phone)
       });
 
       setFailureReference({
@@ -790,11 +796,13 @@ function CheckoutContent() {
     <div className="checkout-page">
       {/* Header */}
       <header className="checkout-header">
-        <Link href="/" className="checkout-logo">{config.storeName}</Link>
-        <CheckoutSteps currentStep={step} onStepClick={(s) => setStep(s)} />
-        <div className="checkout-secure">
-          <IconLock size={14} />
-          <span>Secure Checkout</span>
+        <div className="checkout-header-inner">
+          <Link href="/" className="checkout-logo">{config.storeName}</Link>
+          <CheckoutSteps currentStep={step} onStepClick={(s) => setStep(s)} />
+          <div className="checkout-secure">
+            <IconLock size={14} />
+            <span>Secure Checkout</span>
+          </div>
         </div>
       </header>
 
@@ -1288,14 +1296,6 @@ function CheckoutContent() {
                 {renderSummaryItems()}
               </div>
 
-              {/* Promo Code Form */}
-              <div className="checkout-card">
-                <h3 style={{ fontSize: "0.92rem", fontWeight: 600, marginBottom: "12px" }}>
-                  Have a Promo Code or Gift Card?
-                </h3>
-                {renderPromoForm()}
-              </div>
-
               {/* Navigation buttons */}
               <button
                 type="button"
@@ -1456,56 +1456,6 @@ function CheckoutContent() {
 
             {/* Totals Breakdown */}
             {renderTotals()}
-
-            {validationError && (
-              <div className="checkout-alert checkout-alert-error" style={{ margin: "12px 0", padding: "10px 14px" }}>
-                <div className="checkout-alert-icon" style={{ fontSize: "1rem" }}><IconAlertTriangle size={16} /></div>
-                <div className="checkout-alert-body">
-                  <p className="checkout-alert-message" style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--error)" }}>
-                    {validationError}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Action button based on current step */}
-            {step === 1 && (
-              <button
-                type="button"
-                className="btn btn-full btn-lg checkout-continue-btn"
-                onClick={handleProceedToReview}
-              >
-                Continue to Review →
-              </button>
-            )}
-
-            {step === 2 && (
-              <button
-                type="button"
-                className="btn btn-full btn-lg checkout-continue-btn"
-                onClick={handleProceedToPayment}
-              >
-                Proceed to Payment →
-              </button>
-            )}
-
-            {step === 3 && (
-              <button
-                className="btn btn-full btn-lg checkout-pay-btn"
-                onClick={handlePlaceOrder}
-                disabled={isSubmitting}
-                id="summary-pay-btn"
-              >
-                {isSubmitting ? (
-                  <span className="checkout-pay-loading">
-                    <span className="spinner-sm" />
-                    Processing…
-                  </span>
-                ) : (
-                  <span>Pay {formatMoney(cart.totalInCents, "inr")}</span>
-                )}
-              </button>
-            )}
 
             <div className="checkout-trust-badges">
               <span><IconLock size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />SSL Secured</span>

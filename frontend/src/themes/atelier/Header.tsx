@@ -7,7 +7,6 @@ import { usePathname } from "next/navigation";
 import { useCart } from "@/components/CartProvider";
 import { useWishlist } from "@/components/WishlistProvider";
 import { useAuth } from "@/components/AuthProvider";
-import { useSale } from "@/components/SaleProvider";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { SearchTypeaheadModal } from "@/components/SearchTypeaheadModal";
 
@@ -40,7 +39,6 @@ export function Header() {
   const { cart } = useCart();
   const { wishlist } = useWishlist();
   const { user } = useAuth();
-  const { hasActiveSale } = useSale();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -88,10 +86,9 @@ export function Header() {
   };
 
   // Route active checkers
-  const isShopActive = pathname === "/products" && !pathname.includes("sort=sale");
+  const isShopActive = pathname === "/products";
   const isCollectionsActive = pathname.startsWith("/collections");
   const isAboutActive = pathname.startsWith("/about");
-  const isSaleActive = pathname.includes("sort=sale");
 
   return (
     <>
@@ -175,18 +172,6 @@ export function Header() {
               >
                 Story
               </Link>
-
-              {/* Dynamic Sale nav link */}
-              {hasActiveSale && (
-                <Link
-                  href="/products?sort=sale"
-                  className={`nav-sale-link ${isSaleActive ? "nav-link--active" : ""}`}
-                  aria-current={isSaleActive ? "page" : undefined}
-                >
-                  <span className="sale-pulse-dot" />
-                  Sale
-                </Link>
-              )}
             </nav>
 
             {/* Centre brand */}
@@ -307,14 +292,6 @@ export function Header() {
                   </div>
                 )}
               </div>
-              {hasActiveSale && (
-                <Link
-                  href="/products?sort=sale"
-                  style={{ color: "var(--accent-warm, #712119)", fontWeight: 700 }}
-                >
-                  Sale 🔥
-                </Link>
-              )}
               <Link
                 href="/about"
                 className={isAboutActive ? "mobile-nav-link--active" : ""}
