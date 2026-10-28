@@ -233,7 +233,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* Social Proof Strip */}
+      {/* Social Proof Strip — "Styled by You" (temporarily commented out, will enable later)
       <section className="social-proof-section">
         <div className="section-header">
           <div>
@@ -277,6 +277,7 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+      */}
 
       {/* Re-enabled Newsletter Section */}
       <section className="newsletter-section">
