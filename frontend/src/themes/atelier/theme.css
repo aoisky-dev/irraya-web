@@ -1699,31 +1699,30 @@ h1, h2, h3, h4, h5 {
   display: block;
 }
 
-/* ─── EDITORIAL STORY BANNER ────────────────────────────── */
+/* ─── EDITORIAL STORY BANNER (FULL WIDTH BRAND ETHOS) ───── */
 .editorial-story-banner {
-  display: grid;
-  grid-template-columns: 1.05fr 1fr;
-  align-items: stretch;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  margin: var(--space-4xl) 0;
-}
-
-.editorial-story-image {
-  position: relative;
-  min-height: 520px;
-  width: 100%;
-  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  margin: var(--space-4xl) calc(-1 * var(--container-gutter, 24px));
+  padding: var(--space-4xl) var(--space-2xl);
+  text-align: center;
 }
 
 .editorial-story-copy {
-  padding: var(--space-3xl);
+  max-width: 680px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  align-items: center;
   gap: var(--space-md);
+  text-align: center;
 }
 
 .editorial-story-eyebrow {
@@ -1739,9 +1738,9 @@ h1, h2, h3, h4, h5 {
 
 .editorial-story-title {
   font-family: var(--font-display);
-  font-size: clamp(1.8rem, 2.6vw, 2.6rem);
+  font-size: clamp(1.9rem, 3.2vw, 2.7rem);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
   letter-spacing: -0.02em;
   color: var(--text-primary);
   margin: 0;
@@ -1749,10 +1748,11 @@ h1, h2, h3, h4, h5 {
 
 .editorial-story-text {
   font-family: var(--font-body);
-  font-size: 0.95rem;
-  line-height: 1.75;
+  font-size: 1rem;
+  line-height: 1.85;
   color: var(--text-secondary);
   margin: 0;
+  max-width: 620px;
 }
 
 .editorial-story-actions {
@@ -1760,7 +1760,9 @@ h1, h2, h3, h4, h5 {
   gap: var(--space-md);
   margin-top: var(--space-sm);
   flex-wrap: wrap;
+  justify-content: center;
 }
+
 
 /* ─── SOCIAL PROOF STRIP ─────────────────────────────────── */
 .social-proof-section {
@@ -2723,9 +2725,10 @@ label {
   .scroll-row-item { flex: 0 0 50%; }
   .scroll-row-item-collection { flex: 0 0 78%; }
   .collections-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
-  .editorial-story-banner { grid-template-columns: 1fr; margin: var(--space-3xl) 0; }
-  .editorial-story-image { min-height: 360px; aspect-ratio: 4 / 5; }
-  .editorial-story-copy { padding: var(--space-xl) var(--space-lg); }
+  .editorial-story-banner { margin: var(--space-3xl) -20px; padding: var(--space-3xl) var(--space-md); }
+  .editorial-story-copy { padding: 0; }
+
+
   .social-proof-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .filter-bar { flex-direction: column; align-items: flex-start; }
 }

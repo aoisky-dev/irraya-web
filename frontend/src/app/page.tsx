@@ -180,17 +180,8 @@ export default async function HomePage() {
         <ScrollableCollectionRow collections={collections} />
       </section>
 
-      {/* Editorial Story Banner */}
+      {/* Editorial Story Section — Full Width Brand Ethos */}
       <section className="editorial-story-banner">
-        <div className="editorial-story-image">
-          <Image
-            src="/images/story-banner.jpg"
-            alt="The Irraya Ethos — Mindful Slow Fashion"
-            fill
-            sizes="(max-width: 768px) 100vw, 50vw"
-            style={{ objectFit: "cover", objectPosition: "center 20%" }}
-          />
-        </div>
         <div className="editorial-story-copy">
           <span className="editorial-story-eyebrow">The Irraya Ethos</span>
           <h2 className="editorial-story-title">
@@ -198,7 +189,7 @@ export default async function HomePage() {
           </h2>
           <p className="editorial-story-text">
             We reject the fleeting churn of seasonal fast fashion. Each Irraya silhouette is
-            thoughtfully cut from breathable, premium textiles — celebrating understated elegance,
+            thoughtfully tailored from breathable, premium textiles — celebrating understated elegance,
             conscious craftsmanship, and enduring comfort that outlasts trends.
           </p>
           <div className="editorial-story-actions">
@@ -246,11 +237,11 @@ export default async function HomePage() {
       <section className="social-proof-section">
         <div className="section-header">
           <div>
-            <span className="hero-tag" style={{ marginBottom: "var(--space-xs)" }}>@irraya.fashion</span>
+            <span className="hero-tag" style={{ marginBottom: "var(--space-xs)" }}>@irraya.co</span>
             <h2 className="section-title">Styled by You</h2>
           </div>
           <a
-            href="https://www.instagram.com/irraya.fashion"
+            href="https://www.instagram.com/irraya.co"
             target="_blank"
             rel="noopener noreferrer"
             className="section-link"
@@ -265,11 +256,11 @@ export default async function HomePage() {
           {socialLooks.map((look) => (
             <a
               key={look.id}
-              href="https://www.instagram.com/irraya.fashion"
+              href="https://www.instagram.com/irraya.co"
               target="_blank"
               rel="noopener noreferrer"
               className="social-proof-item"
-              aria-label="View Irraya on Instagram"
+              aria-label="View @irraya.co on Instagram"
             >
               <Image
                 src={look.image}
@@ -280,7 +271,7 @@ export default async function HomePage() {
               />
               <div className="social-proof-overlay">
                 <IconInstagram size={22} />
-                <span>@irraya.fashion</span>
+                <span>@irraya.co</span>
               </div>
             </a>
           ))}
