@@ -63,24 +63,7 @@
 ---
 
 ### 1.2 Navigation / Header
-**Current state:** 3-column grid nav (left links | center logo | right icons), sticky with blur backdrop.
-
-**Issues:**
-- No active/current page indicator on nav links
-- `header-right` explicitly hides Account icon on mobile — user can't login easily
-- No search typeahead — search is a link to `/search` page, adding friction
-- Missing Wishlist count badge (cart has one, wishlist does not)
-- Mobile hamburger menu has no current-page indicator
-
-**Recommended Changes:**
-1. **Active route indicator** — add `aria-current="page"` and a CSS underline for the active nav link.
-2. **Mobile bottom navigation bar** — replace hamburger overlay with a fixed bottom tab bar (Home, Shop, Search, Wishlist, Account). Dominant pattern on all successful Indian D2C mobile web apps.
-3. **Search inline typeahead** — on desktop, clicking search expands an inline input with debounced top-5 suggestions. No full-page navigation needed.
-4. **Wishlist badge** — show item count badge (same style as cart badge).
-5. **"Sale" nav link** — when sale is active (SaleProvider), dynamically inject a "Sale" link in header with accent-warm color.
-6. **Category dropdown on hover** (desktop) — hovering "Collections" shows a 2-column mega panel with category images.
-
-**Priority: High | Effort: Medium–High**
+*(✅ Completed — see [Completed Improvements](#completed-improvements) at the bottom of this document)*
 
 ---
 
@@ -649,7 +632,7 @@
 | 3 | Webhook signature verify (§4.5) | 🟢 Verified | Low | Security |
 | 4 | Side drawer cart (§1.7) | 🟠 High | Medium | UX/Conversion |
 | 5 | Hero carousel (§1.1) | 🟠 High | Medium | First impression |
-| 6 | Mobile bottom nav bar (§1.2) | 🟠 High | Medium | Mobile UX |
+| 6 | Mobile bottom nav bar (§1.2) | 🟢 Resolved | Medium | Mobile UX |
 | 7 | Checkout step flow (§1.8) | 🟠 High | High | Conversion |
 | 8 | CSP headers (§3.2) | 🟠 High | Medium | Security |
 | 9 | Product card swatches + quick add (§1.4) | 🟠 High | Medium | Conversion |
@@ -687,3 +670,32 @@ New additions (hero carousel, mini cart drawer, bottom nav) should use existing 
 ---
 
 *Prepared: October 2026 | Repo audit: irraya-web (Next.js/Atelier + Medusa.js) | References: shopkshm.com, terractive.in*
+
+---
+
+## Completed Improvements
+
+### ✅ 1.2 Navigation / Header
+**Status:** Implemented & Verified in `aoisky-dev`
+
+**Implemented Items:**
+1. **Active route indicator:**
+   - Nav links (`Shop`, `Collections`, `Story`, `Sale`) detect the current route using `usePathname()`.
+   - Active routes receive `aria-current="page"` and a persistent burgundy (`#712119`) underline with 700 font weight.
+2. **Mobile bottom navigation bar:**
+   - `<MobileBottomNav />` provides a fixed bottom navigation bar on mobile (`<= 768px`) with 5 core tabs: **Home**, **Shop**, **Search** (triggers typeahead), **Wishlist** (with live count badge), and **Account** (Sign In / Account).
+   - Safe-area bottom inset support (`env(safe-area-inset-bottom)`) and mobile body padding added to prevent overlap.
+3. **Search inline typeahead modal:**
+   - Clicking Search (desktop or mobile) opens `<SearchTypeaheadModal />` with instant autofocus and backdrop blur.
+   - Debounced product search with instant live previews (image, title, formatted price, category).
+   - Trending search pills ("Dresses", "Co-ords", "Tops", "Outerwear", "Sale") and local search history.
+   - Keyboard accessible (`Escape` to close, `Enter` to view full search results).
+4. **Wishlist count badge:**
+   - Integrated `useWishlist()` hook in the header.
+   - Shows live item count badge matching the cart badge style.
+5. **Dynamic "Sale" nav link:**
+   - Integrated `useSale()` in the header.
+   - Dynamically injects a `"Sale"` nav link with an animated pulsing indicator dot whenever an active sale campaign exists.
+6. **Category dropdown on hover (desktop):**
+   - Hovering "Collections" displays a floating mega dropdown panel with top categories (Dresses, Co-ords, Tops & Shirts, Trousers & Pants, Outerwear, Knitwear) and direct links.
+
