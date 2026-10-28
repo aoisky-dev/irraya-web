@@ -16,7 +16,8 @@
     "seed:catalog": "node ./scripts/seed-catalog.mjs",
     "seed:catalog:dry-run": "node ./scripts/seed-catalog.mjs --dry-run",
     "bootstrap": "node ./scripts/bootstrap.mjs",
-    "bootstrap:no-dev": "node ./scripts/bootstrap.mjs --no-dev"
+    "bootstrap:no-dev": "node ./scripts/bootstrap.mjs --no-dev",
+    "test:security": "npx tsx scripts/verify-webhook-security.ts"
   },
   "dependencies": {
     "@medusajs/admin-sdk": "^2.17.1",

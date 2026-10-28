@@ -199,10 +199,11 @@ function CheckoutContent() {
         setSelectedAddressIndex("new");
         setShowAddressForm(true);
       }
-    } else if (!isAuthLoading) {
-      router.push("/login?next=/checkout&reason=checkout");
+    } else {
+      setSelectedAddressIndex("new");
+      setShowAddressForm(true);
     }
-  }, [user, isAuthLoading, router]);
+  }, [user]);
 
   const selectSavedAddress = (index: number) => {
     const addr = user?.addresses?.[index];
@@ -243,7 +244,7 @@ function CheckoutContent() {
   const updateField = (field: string, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
-  if (isCartLoading || isAuthLoading || !user) {
+  if (isCartLoading || isAuthLoading) {
     return (
       <div className="checkout-loading">
         <div className="checkout-loading-inner">
@@ -357,7 +358,7 @@ function CheckoutContent() {
     try {
       await prepareCartForCheckout(cart.id, { ...form, state: form.state }, token ?? undefined);
 
-      if (saveAddress && token) {
+      if (saveAddress && token && user) {
         try {
           const isDuplicate = user.addresses?.some(
             (a) => a.address_1 === form.address && a.city === form.city && a.postal_code === form.zipCode
@@ -453,6 +454,17 @@ function CheckoutContent() {
             <div className="checkout-card-header">
               <span className="checkout-card-icon"><IconUser size={18} /></span>
               <h2>Contact Information</h2>
+              {!user && (
+                <div style={{ marginLeft: "auto", fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                  Already have an account?{" "}
+                  <Link
+                    href="/login?next=%2Fcheckout"
+                    style={{ color: "var(--accent-warm, #712119)", fontWeight: 600, textDecoration: "underline" }}
+                  >
+                    Log in
+                  </Link>
+                </div>
+              )}
             </div>
             <div className="form-grid">
               <div className="form-group">
@@ -479,7 +491,7 @@ function CheckoutContent() {
             <div className="checkout-card-header">
               <span className="checkout-card-icon"><IconMapPin size={18} /></span>
               <h2>Shipping Address</h2>
-              {user.addresses && user.addresses.length > 0 && (
+              {user?.addresses && user.addresses.length > 0 && (
                 <div style={{ display: "flex", gap: "8px", marginLeft: "auto" }}>
                   {selectedAddressIndex === "new" ? (
                     <button
@@ -553,7 +565,7 @@ function CheckoutContent() {
             </div>
 
             {/* Show selected saved address summary */}
-            {user.addresses && user.addresses.length > 0 && selectedAddressIndex !== "new" && (() => {
+            {user?.addresses && user.addresses.length > 0 && selectedAddressIndex !== "new" && (() => {
               const addr = user.addresses![selectedAddressIndex as number];
               if (!addr) return null;
               return (
@@ -623,12 +635,14 @@ function CheckoutContent() {
                   <input id="country" className="form-input" type="text" value={form.country} readOnly
                     style={{ opacity: 0.7, cursor: "not-allowed" }} />
                 </div>
-                <div className="form-group full">
-                  <label className="checkout-save-label">
-                    <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />
-                    <span>Save address</span>
-                  </label>
-                </div>
+                {user && (
+                  <div className="form-group full">
+                    <label className="checkout-save-label">
+                      <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />
+                      <span>Save address</span>
+                    </label>
+                  </div>
+                )}
               </div>
             )}
           </div>

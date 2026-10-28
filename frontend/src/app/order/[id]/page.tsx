@@ -85,7 +85,7 @@ function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const openParam = searchParams.get("open");   // "exchange" | "manage" | null
   const viewStatus = searchParams.get("view") === "status";
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [requests, setRequests] = useState<OrderRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -394,6 +394,25 @@ function OrderConfirmationContent() {
                   <p>{addrLine}</p>
                   {addr?.countryCode && <p style={{ textTransform: "uppercase", color: "var(--text-muted)", fontSize: "0.78rem" }}>{addr.countryCode}</p>}
                 </div>
+              </div>
+            )}
+
+            {/* Guest account creation prompt */}
+            {!user && order?.email && (
+              <div className="order-card" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", marginBottom: "16px" }}>
+                <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "6px" }}>
+                  Track your shipment & manage orders
+                </h3>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.5, marginBottom: "14px" }}>
+                  Create an account with <strong>{order.email}</strong> to easily view order status, request exchanges, and speed up future checkouts.
+                </p>
+                <Link
+                  href={`/register?email=${encodeURIComponent(order.email)}`}
+                  className="btn btn-outline"
+                  style={{ display: "inline-block", fontSize: "0.82rem", padding: "8px 16px" }}
+                >
+                  Create Account
+                </Link>
               </div>
             )}
 

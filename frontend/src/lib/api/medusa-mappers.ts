@@ -234,6 +234,7 @@ export const mapMedusaOrder = (raw: any, cartIdFallback?: string): Order => {
       displayId: raw?.display_id ? String(raw.display_id) : undefined,
       cartId: String(raw?.cart_id ?? cartIdFallback ?? ""),
       customerId: raw?.customer_id ? String(raw.customer_id) : undefined,
+      email: raw?.email ? String(raw.email) : (raw?.customer?.email ? String(raw.customer.email) : undefined),
       status,
       currencyCode: String(raw?.currency_code ?? "inr").toLowerCase() === "usd" ? "usd" : "inr",
       items,

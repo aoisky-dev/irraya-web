@@ -26,27 +26,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const savedToken = localStorage.getItem(TOKEN_KEY);
-    if (savedToken) {
-      setToken(savedToken);
-      getMe(savedToken)
-        .then(setUser)
-        .catch(() => {
-          // Token invalid or expired
+    let isMounted = true;
+
+    async function initSession() {
+      try {
+        // 1. Check HttpOnly cookie session via server route
+        const res = await fetch("/api/auth/session");
+        const data = res.ok ? await res.json() : null;
+        let activeToken = data?.authenticated && typeof data.token === "string" ? data.token : null;
+
+        // 2. Migration fallback: check legacy localStorage token and migrate it to HttpOnly cookie
+        if (!activeToken) {
+          const legacyToken = localStorage.getItem(TOKEN_KEY);
+          if (legacyToken) {
+            activeToken = legacyToken;
+            await fetch("/api/auth/session", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: legacyToken }),
+            }).catch(() => {});
+            localStorage.removeItem(TOKEN_KEY);
+          }
+        } else {
+          // Clear any legacy localStorage token
+          localStorage.removeItem(TOKEN_KEY);
+        }
+
+        if (activeToken && isMounted) {
+          setToken(activeToken);
+          const userData = await getMe(activeToken);
+          if (isMounted) {
+            setUser(userData);
+          }
+        }
+      } catch {
+        // Token invalid or expired
+        fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
+        try {
           localStorage.removeItem(TOKEN_KEY);
           localStorage.removeItem("irraya_cart_id");
           localStorage.removeItem("irraya_cart_meta");
+        } catch {}
+        if (isMounted) {
           setToken(null);
           setUser(null);
-        })
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
     }
+
+    initSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const login = useCallback((newToken: string, newUser: User) => {
-    localStorage.setItem(TOKEN_KEY, newToken);
+    fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: newToken }),
+    }).catch((err) => {
+      console.error("Failed to establish session cookie", err);
+    });
+
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+    } catch {}
+
     setToken(newToken);
     setUser(newUser);
   }, []);
@@ -55,26 +106,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // automatically clears the session instead of silently failing.
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      localStorage.removeItem(TOKEN_KEY);
+      fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
+      try {
+        localStorage.removeItem(TOKEN_KEY);
+      } catch {}
       setToken(null);
       setUser(null);
     });
   }, []);
 
   const logout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem("irraya_cart_id");
-    localStorage.removeItem("irraya_cart_meta");
+    fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem("irraya_cart_id");
+      localStorage.removeItem("irraya_cart_meta");
+    } catch {}
     setToken(null);
     setUser(null);
     router.push("/login");
   };
 
   const refreshUser = async () => {
-    const t = token ?? localStorage.getItem(TOKEN_KEY);
-    if (!t) return;
+    if (!token) return;
     try {
-      const updated = await getMe(t);
+      const updated = await getMe(token);
       setUser(updated);
     } catch {
       // silent — stale user state is acceptable

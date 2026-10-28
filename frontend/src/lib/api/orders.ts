@@ -5,7 +5,7 @@ import { mapMedusaOrder } from "./medusa-mappers";
 export async function getOrderById(orderId: string): Promise<Order | null> {
   try {
     const response = await medusaRequest<{ order?: unknown }>(
-      `/store/orders/${orderId}?fields=*items,*shipping_address,*payment_collections,*payment_collections.payment_sessions,+metadata`
+      `/store/orders/${orderId}?fields=*items,*shipping_address,*payment_collections,*payment_collections.payment_sessions,+metadata,+email`
     );
     if (!response.order) return null;
     return mapMedusaOrder(response.order);

@@ -163,6 +163,7 @@ export interface Order {
   displayId?: string;
   cartId: string;
   customerId?: string;
+  email?: string;
   status: "pending" | "confirmed" | "fulfilled" | "cancelled";
   currencyCode: "usd" | "inr";
   items: OrderItem[];
