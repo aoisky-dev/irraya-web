@@ -414,6 +414,58 @@ h1, h2, h3, h4, h5 {
   text-decoration: underline;
 }
 
+.mega-dropdown-item-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mega-dropdown-thumbnail {
+  position: relative;
+  width: 50px;
+  height: 64px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-secondary, #F9F8F6);
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.mega-dropdown-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mobile-nav-collection-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-nav-sublinks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 14px;
+  margin: 6px 0 12px;
+  border-left: 2px solid var(--accent, #712119);
+}
+
+.mobile-nav-sublink {
+  font-size: 0.88rem !important;
+  color: var(--text-secondary) !important;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500 !important;
+}
+
+.mobile-nav-sublink-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
 /* Search Typeahead Modal */
 .search-modal-backdrop {
   position: fixed;

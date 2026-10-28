@@ -47,3 +47,88 @@ export async function getCatalogFacetsSource(): Promise<Product[]> {
   return getProducts({ limit: 200 });
 }
 
+export type StoreCollectionItem = {
+  id: string;
+  name: string;
+  handle: string;
+  href: string;
+  count: number;
+  image?: string;
+  desc?: string;
+};
+
+let _cachedCollections: StoreCollectionItem[] | null = null;
+
+export async function getStoreCollections(): Promise<StoreCollectionItem[]> {
+  if (_cachedCollections && _cachedCollections.length > 0) {
+    return _cachedCollections;
+  }
+  try {
+    const colRes = await medusaRequest<{ collections?: Array<{ id: string; title: string; handle: string }> }>(
+      "/store/collections?limit=50",
+      { next: { revalidate: 60 } }
+    ).catch(() => ({ collections: [] }));
+    const storeCols = colRes.collections ?? [];
+
+    const products = await getProducts({ limit: 100 }).catch(() => []);
+
+    const grouped = new Map<string, { count: number; image?: string; material?: string }>();
+    for (const p of products) {
+      const colName = p.category?.trim();
+      if (!colName) continue;
+      const key = colName.toLowerCase();
+      const existing = grouped.get(key);
+      if (existing) {
+        existing.count += 1;
+        if (!existing.image && p.image) existing.image = p.image;
+        if (!existing.material && p.material) existing.material = p.material.trim();
+      } else {
+        grouped.set(key, {
+          count: 1,
+          image: p.image,
+          material: p.material ? p.material.trim() : undefined
+        });
+      }
+    }
+
+    if (storeCols.length > 0) {
+      const items = storeCols.map((col) => {
+        const meta = grouped.get(col.title.toLowerCase()) || grouped.get(col.handle.toLowerCase());
+        const count = meta?.count ?? 0;
+        return {
+          id: col.id,
+          name: col.title,
+          handle: col.handle,
+          href: `/products?category=${encodeURIComponent(col.title)}`,
+          count,
+          image: meta?.image,
+          desc: meta?.material ? `${meta.material} · ${count} pieces` : `${count} pieces in this collection`
+        };
+      });
+      _cachedCollections = items;
+      return items;
+    }
+
+    // Fallback if /store/collections returns empty
+    const fallbackCols: StoreCollectionItem[] = [];
+    grouped.forEach((meta, name) => {
+      fallbackCols.push({
+        id: name,
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        handle: name,
+        href: `/products?category=${encodeURIComponent(name)}`,
+        count: meta.count,
+        image: meta.image,
+        desc: meta.material ? `${meta.material} · ${meta.count} pieces` : `${meta.count} pieces`
+      });
+    });
+    if (fallbackCols.length > 0) {
+      _cachedCollections = fallbackCols;
+    }
+    return fallbackCols;
+  } catch (error) {
+    console.error("Failed to fetch store collections:", error);
+    return [];
+  }
+}
+

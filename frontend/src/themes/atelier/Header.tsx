@@ -12,13 +12,27 @@ import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { SearchTypeaheadModal } from "@/components/SearchTypeaheadModal";
 
 
-const COLLECTION_CATEGORIES = [
-  { name: "Dresses", href: "/products?category=dresses", desc: "Effortless silhouettes & flowing cuts" },
-  { name: "Co-ords", href: "/products?category=co-ords", desc: "Curated matching sets for effortless styling" },
-  { name: "Tops & Shirts", href: "/products?category=tops", desc: "Tailored cottons, linens & daily staples" },
-  { name: "Trousers & Pants", href: "/products?category=trousers", desc: "Relaxed silhouettes & tailored trousers" },
-  { name: "Outerwear", href: "/products?category=outerwear", desc: "Structured layers & transitional jackets" },
-  { name: "Knitwear", href: "/products?category=knitwear", desc: "Soft breathable knits for every season" },
+import { getStoreCollections, type StoreCollectionItem } from "@/lib/api/products";
+
+const INITIAL_COLLECTIONS: StoreCollectionItem[] = [
+  {
+    id: "pcol_01M2FSW1RWTMXQCS0JAJJQSQXP",
+    name: "Alpana",
+    handle: "alpana",
+    href: "/products?category=Alpana",
+    count: 7,
+    image: "https://api.irraya.com/uploads/1791706445464-IMG_4890.jpeg",
+    desc: "Mul Chanderi Collection · 7 pieces"
+  },
+  {
+    id: "pcol_01M2F3EC9WNA6KMHQVGRAW4ZB3",
+    name: "Kiran",
+    handle: "Kiran",
+    href: "/products?category=Kiran",
+    count: 7,
+    image: "https://api.irraya.com/uploads/1790092783985-IMG_4549.jpeg",
+    desc: "Modal cotton Collection · 7 pieces"
+  }
 ];
 
 export function Header() {
@@ -32,7 +46,19 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [collectionsDropdownOpen, setCollectionsDropdownOpen] = useState(false);
+  const [collections, setCollections] = useState<StoreCollectionItem[]>(INITIAL_COLLECTIONS);
   const dropdownTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch collections dynamically from Medusa store API
+  useEffect(() => {
+    getStoreCollections()
+      .then((cols) => {
+        if (cols && cols.length > 0) {
+          setCollections(cols);
+        }
+      })
+      .catch((err) => console.error("Error loading nav collections:", err));
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -100,21 +126,36 @@ export function Header() {
 
                 <div className={`nav-mega-dropdown ${collectionsDropdownOpen ? "is-open" : ""}`} role="menu">
                   <div className="mega-dropdown-grid">
-                    {COLLECTION_CATEGORIES.map((cat) => (
+                    {collections.map((col) => (
                       <Link
-                        key={cat.name}
-                        href={cat.href}
+                        key={col.id}
+                        href={col.href}
                         className="mega-dropdown-item"
                         onClick={() => setCollectionsDropdownOpen(false)}
                       >
-                        <span className="mega-dropdown-title">{cat.name}</span>
-                        <span className="mega-dropdown-desc">{cat.desc}</span>
+                        <div className="mega-dropdown-item-content">
+                          {col.image && (
+                            <div className="mega-dropdown-thumbnail">
+                              <Image
+                                src={col.image}
+                                alt={col.name}
+                                fill
+                                sizes="50px"
+                                style={{ objectFit: "cover", objectPosition: "center top" }}
+                              />
+                            </div>
+                          )}
+                          <div className="mega-dropdown-text">
+                            <span className="mega-dropdown-title">{col.name}</span>
+                            <span className="mega-dropdown-desc">{col.desc}</span>
+                          </div>
+                        </div>
                       </Link>
                     ))}
                   </div>
                   <div className="mega-dropdown-footer">
                     <span style={{ fontSize: "0.74rem", color: "var(--text-muted)" }}>
-                      Crafted with natural fabrics &amp; timeless cuts
+                      Consciously crafted with natural fabrics &amp; artisanal detailing
                     </span>
                     <Link
                       href="/collections"
@@ -244,12 +285,28 @@ export function Header() {
               >
                 Shop All
               </Link>
-              <Link
-                href="/collections"
-                className={isCollectionsActive ? "mobile-nav-link--active" : ""}
-              >
-                Collections
-              </Link>
+              <div className="mobile-nav-collection-group">
+                <Link
+                  href="/collections"
+                  className={isCollectionsActive ? "mobile-nav-link--active" : ""}
+                >
+                  Collections
+                </Link>
+                {collections.length > 0 && (
+                  <div className="mobile-nav-sublinks">
+                    {collections.map((col) => (
+                      <Link
+                        key={col.id}
+                        href={col.href}
+                        className="mobile-nav-sublink"
+                      >
+                        <span>{col.name}</span>
+                        <span className="mobile-nav-sublink-count">({col.count})</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
               {hasActiveSale && (
                 <Link
                   href="/products?sort=sale"
