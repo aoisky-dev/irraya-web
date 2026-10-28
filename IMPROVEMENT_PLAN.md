@@ -156,28 +156,6 @@
 
 ---
 
-### 1.8 Checkout Page
-**Current state:** 2-column (form left, summary right), address + shipping + Razorpay modal payment. 866 lines, single page.
-
-**Issues:**
-- No step progression indicator
-- No inline validation feedback
-- Razorpay SDK loaded on-demand — 1–2s delay at payment time
-- On mobile, order summary is below form — user can't see total while filling address
-- No "Edit Cart" link from summary
-- No `autocomplete` attributes on form fields
-
-**Recommended Changes:**
-1. **Step progress indicator** — 3-step: `Address → Review → Payment`. Each step is a discrete view.
-2. **Inline form validation** — email format, phone (10 digits), pincode (6 digits) on blur. Green checkmark on valid.
-3. **Mobile: summary at top** — collapsed accordion at top of form, expanded by default.
-4. **Razorpay preload** — use `next/script strategy="beforeInteractive"` or `<link rel="preload">` in head.
-5. **"Edit Cart" link** in checkout order summary.
-6. **Form autocomplete** — `given-name`, `family-name`, `email`, `tel`, `street-address`, `postal-code`, etc.
-
-**Priority: High | Effort: High**
-
----
 
 ### 1.9 Footer
 **Current state:** Dark footer, ghost "Irraya" text, 4-column links, text-only social links.
@@ -614,7 +592,7 @@
 | 4 | Side drawer cart (§1.7) | 🟠 High | Medium | UX/Conversion |
 | 5 | Hero carousel (§1.1) | 🟠 High | Medium | First impression |
 | 6 | Mobile clean header (removed redundant bottom bar) (§1.2) | 🟢 Resolved | Low | Mobile UX |
-| 7 | Checkout step flow (§1.8) | 🟠 High | High | Conversion |
+| 7 | Checkout step flow (§1.8) | 🟢 Resolved | High | Conversion |
 | 8 | CSP headers (§3.2) | 🟠 High | Medium | Security |
 | 9 | Product card swatches + quick add (§1.4) | 🟠 High | Medium | Conversion |
 | 10 | Guest checkout (§2.4) | 📦 Ready (`feat/guest-checkout`) | Medium | Conversion |
@@ -711,5 +689,30 @@ New additions (hero carousel, mini cart drawer, bottom nav) should use existing 
    - Re-enabled full-bleed dark newsletter section with subtle ambient brand burgundy glow.
    - Enticing 10% welcome discount incentive ("The Irraya Circle &mdash; 10% off your first order").
    - Inline instant promo code reveal (`FIRST10`) upon submission with feedback toast.
+
+### ✅ 1.8 Checkout Page
+**Status:** Implemented & Verified in `aoisky-dev`
+
+**Implemented Items:**
+1. **Progressive 3-Step Wizard Flow:**
+   - Discrete steps: `Step 1: Shipping & Address → Step 2: Review Order & Delivery → Step 3: Payment`.
+   - Interactive step breadcrumb header with checkmarks on completed steps and backward navigation support.
+   - Step 1: Contact info & shipping address entry with saved address quick-picker.
+   - Step 2: Shipping address review card (with "Edit Address" CTA), delivery speed card (complimentary express delivery), item list with variant & pricing details, and promo code entry.
+   - Step 3: Order snapshot card, payment options breakdown (UPI, Credit/Debit cards, Net Banking, Wallets), Razorpay trust info, security badges, and "Pay ₹[Total]" button.
+2. **Inline Form Validation & Real-Time Feedback:**
+   - Real-time field validation on blur and input for email (`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`), Indian mobile number (10 digits starting with 6–9), and PIN code (6 digits).
+   - Real-time green checkmark badge (`.input-validation-icon.success`) on valid inputs.
+   - Helpful, accessible error labels below invalid inputs.
+3. **Preload Razorpay Checkout Script & Brand Theme:**
+   - Razorpay script preloaded on component mount (`loadRazorpayCheckout()`), eliminating the 1–2s delay when tapping "Pay Now".
+   - Updated modal theme color from `#7c3aed` to brand burgundy `#712119`.
+4. **Mobile Collapsible Order Summary Bar:**
+   - Added sticky collapsible accordion bar at top on mobile (`< 900px`) displaying item count, current grand total, and expand/collapse chevron.
+   - Expandable drawer displays full item breakdown, promo code form, and price breakdown without obscuring checkout inputs.
+   - Direct "Edit Bag ↗" link (`/cart`) in both mobile and desktop summaries.
+5. **Browser Autofill (`autoComplete`):**
+   - Configured standard autofill attributes across all fields: `given-name`, `family-name`, `email`, `street-address`, `address-line2`, `address-level2`, `address-level1`, `postal-code`, `tel`, and `country-name`.
+
 
 
