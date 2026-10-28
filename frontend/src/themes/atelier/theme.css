@@ -774,11 +774,15 @@ h1, h2, h3, h4, h5 {
   align-items: center;
   justify-content: center;
   color: #712119;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
   border-radius: var(--radius-sm);
-  border: 1px solid transparent;
   position: relative;
   transition: all var(--duration) var(--ease);
 }
+
 
 .icon-link::after {
   content: '';
