@@ -10,7 +10,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useSale } from "@/components/SaleProvider";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { SearchTypeaheadModal } from "@/components/SearchTypeaheadModal";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
+
 
 const COLLECTION_CATEGORIES = [
   { name: "Dresses", href: "/products?category=dresses", desc: "Effortless silhouettes & flowing cuts" },
@@ -284,11 +284,6 @@ export function Header() {
       <SearchTypeaheadModal
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
-      />
-
-      {/* Mobile Bottom Navigation Bar (Fixed for mobile screens) */}
-      <MobileBottomNav
-        onOpenSearch={() => setSearchOpen(true)}
       />
     </>
   );

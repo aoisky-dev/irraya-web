@@ -2,11 +2,21 @@
 
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { getProducts } from "@/lib/api/products";
 import { ProductCard } from "@/components/ProductCard";
-import Link from "next/link";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import { IconSearch, IconX, IconArrowRight } from "@/components/Icons";
 import type { Product } from "@/lib/types";
-import { buildCatalogFacets, filterProducts, getSearchSuggestions, searchProducts, sortProducts, type CatalogSortOption } from "@/lib/catalog";
+import {
+  buildCatalogFacets,
+  filterProducts,
+  searchProducts,
+  sortProducts,
+  type CatalogSortOption,
+} from "@/lib/catalog";
+
+const POPULAR_SEARCH_TERMS = ["Dresses", "Co-ords", "Tops", "Trousers", "Outerwear", "Sale"];
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -17,7 +27,9 @@ function SearchContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [category, setCategory] = useState(searchParams.get("category") ?? "");
-  const [sortBy, setSortBy] = useState<CatalogSortOption>((searchParams.get("sort") as CatalogSortOption) || "popular");
+  const [sortBy, setSortBy] = useState<CatalogSortOption>(
+    (searchParams.get("sort") as CatalogSortOption) || "popular"
+  );
 
   useEffect(() => {
     getProducts({ limit: 200 })
@@ -27,9 +39,17 @@ function SearchContent() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedQuery(query), 250);
+    const timer = window.setTimeout(() => setDebouncedQuery(query), 200);
     return () => window.clearTimeout(timer);
   }, [query]);
+
+  // Keep query in sync if URL changes externally
+  useEffect(() => {
+    if (queryFromUrl !== query) {
+      setQuery(queryFromUrl);
+      setDebouncedQuery(queryFromUrl);
+    }
+  }, [queryFromUrl]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -43,21 +63,67 @@ function SearchContent() {
 
     if (debouncedQuery.trim() && typeof window !== "undefined") {
       const history = JSON.parse(localStorage.getItem("irraya_search_history") ?? "[]") as string[];
-      localStorage.setItem("irraya_search_history", JSON.stringify([debouncedQuery.trim(), ...history.filter((item) => item !== debouncedQuery.trim())].slice(0, 10)));
+      localStorage.setItem(
+        "irraya_search_history",
+        JSON.stringify([debouncedQuery.trim(), ...history.filter((item) => item !== debouncedQuery.trim())].slice(0, 10))
+      );
     }
   }, [category, debouncedQuery, router, searchParams, sortBy]);
 
-  const facets = useMemo(() => buildCatalogFacets(products), [products]);
   const searchedProducts = useMemo(() => searchProducts(products, debouncedQuery), [products, debouncedQuery]);
+  const facets = useMemo(() => buildCatalogFacets(searchedProducts), [searchedProducts]);
   const filteredProducts = useMemo(() => filterProducts(searchedProducts, { category }), [searchedProducts, category]);
   const results = useMemo(() => sortProducts(filteredProducts, sortBy), [filteredProducts, sortBy]);
-  const suggestions = useMemo(() => getSearchSuggestions(products, query, 6), [products, query]);
-  const emptyRecommendations = useMemo(() => sortProducts(products, "popular").slice(0, 4), [products]);
+  const emptyRecommendations = useMemo(() => sortProducts(products, "popular").slice(0, 8), [products]);
+
+  const handlePillClick = (term: string) => {
+    setQuery(term);
+    setDebouncedQuery(term);
+    setCategory("");
+  };
+
+  const handleClear = () => {
+    setQuery("");
+    setDebouncedQuery("");
+    setCategory("");
+  };
 
   return (
-    <div className="container" style={{ padding: "var(--space-2xl) 0" }}>
-      <div style={{ marginBottom: "var(--space-xl)" }}>
-        <h1 className="section-title" style={{ marginBottom: "var(--space-md)", fontSize: "2.5rem" }}>Search Results</h1>
+    <div style={{ padding: "var(--space-xl) 0 var(--space-4xl)" }}>
+      <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Search" }]} />
+
+      {/* Search Page Header */}
+      <div className="search-page-header">
+        <div style={{ marginBottom: "var(--space-md)" }}>
+          <span className="hero-tag" style={{ marginBottom: "var(--space-xs)" }}>
+            The Wardrobe Search
+          </span>
+          {debouncedQuery.trim() ? (
+            <h1
+              className="section-title"
+              style={{ fontSize: "clamp(1.8rem, 3.2vw, 2.6rem)", margin: "var(--space-xs) 0" }}
+            >
+              Results for{" "}
+              <span style={{ color: "var(--accent-burgundy, #712119)" }}>“{debouncedQuery}”</span>
+            </h1>
+          ) : (
+            <h1
+              className="section-title"
+              style={{ fontSize: "clamp(1.8rem, 3.2vw, 2.6rem)", margin: "var(--space-xs) 0" }}
+            >
+              Search Collection
+            </h1>
+          )}
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.92rem", margin: 0 }}>
+            {isLoading
+              ? "Loading collection..."
+              : debouncedQuery.trim()
+              ? `Showing ${results.length} ${results.length === 1 ? "piece" : "pieces"} matching your search`
+              : `Explore ${products.length} curated slow-fashion silhouettes`}
+          </p>
+        </div>
+
+        {/* Elevated Search Bar */}
         <form
           action="/search"
           method="GET"
@@ -65,60 +131,159 @@ function SearchContent() {
             event.preventDefault();
             setDebouncedQuery(query);
           }}
-          style={{ display: "flex", gap: "var(--space-sm)", marginBottom: "var(--space-lg)", maxWidth: 720 }}
+          className="search-page-bar"
         >
+          <IconSearch size={22} style={{ color: "var(--accent-burgundy, #712119)", flexShrink: 0 }} />
           <input
             type="search"
             name="q"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="input"
-            placeholder="Search products, categories, styles..."
+            className="search-page-input"
+            placeholder="Search by silhouette, style, fabric, or color..."
             aria-label="Search products"
+            autoComplete="off"
           />
-          <button type="submit" className="btn">Search</button>
+          {query && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="search-page-clear"
+              aria-label="Clear search input"
+            >
+              <IconX size={18} />
+            </button>
+          )}
+          <button
+            type="submit"
+            className="btn"
+            style={{ padding: "0.55rem 1.4rem", fontSize: "0.76rem" }}
+          >
+            Search
+          </button>
         </form>
-        {suggestions.length > 0 && (
-          <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap", marginBottom: "var(--space-md)" }}>
-            {suggestions.map((suggestion) => (
-              <button key={suggestion} className="btn btn-secondary" type="button" onClick={() => setQuery(suggestion)}>{suggestion}</button>
+
+        {/* Quick Trending Suggestions */}
+        <div className="search-pills-row">
+          <span className="search-pill-label">Popular:</span>
+          {POPULAR_SEARCH_TERMS.map((term) => (
+            <button
+              key={term}
+              type="button"
+              className={`search-pill ${debouncedQuery.toLowerCase() === term.toLowerCase() ? "active" : ""}`}
+              onClick={() => handlePillClick(term)}
+            >
+              {term}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Filter and Sort Bar */}
+      {!isLoading && searchedProducts.length > 0 && (
+        <div className="filter-bar">
+          <div className="filter-tabs">
+            <button
+              type="button"
+              className={`filter-tab ${!category ? "active" : ""}`}
+              onClick={() => setCategory("")}
+            >
+              All ({searchedProducts.length})
+            </button>
+            {facets.categories.map((facet) => (
+              <button
+                key={facet.value}
+                type="button"
+                className={`filter-tab ${category === facet.value ? "active" : ""}`}
+                onClick={() => setCategory(category === facet.value ? "" : facet.value)}
+              >
+                {facet.value} ({facet.count})
+              </button>
             ))}
           </div>
-        )}
-        {debouncedQuery ? (
-          <p style={{ color: "var(--text-secondary)" }}>Showing {results.length} results for "{debouncedQuery}"</p>
-        ) : (
-          <p style={{ color: "var(--text-secondary)" }}>Showing all products</p>
-        )}
-      </div>
 
-      <div className="filter-bar" style={{ marginBottom: "var(--space-lg)" }}>
-        <select className="sort-select" value={category} onChange={(event) => setCategory(event.target.value)}>
-          <option value="">All categories</option>
-          {facets.categories.map((facet) => <option key={facet.value} value={facet.value}>{facet.value} ({facet.count})</option>)}
-        </select>
-        <select className="sort-select" value={sortBy} onChange={(event) => setSortBy(event.target.value as CatalogSortOption)}>
-          <option value="popular">Most relevant/popular</option>
-          <option value="rating">Top rated</option>
-          <option value="price-asc">Price: Low → High</option>
-          <option value="price-desc">Price: High → Low</option>
-        </select>
-      </div>
-
-      {isLoading ? (
-        <div className="loading"><div className="spinner" />Searching...</div>
-      ) : results.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "var(--space-2xl) 0" }}>
-          <h2 className="section-title" style={{ marginBottom: "var(--space-md)" }}>No products found</h2>
-          <p style={{ marginBottom: "var(--space-xl)" }}>We couldn't find anything matching your search. Try a suggestion or browse our popular picks.</p>
-          <Link href="/products" className="btn btn-primary">
-            Browse All Products
-          </Link>
-          <div className="grid" style={{ marginTop: "var(--space-xl)", textAlign: "left" }}>
-            {emptyRecommendations.map((product) => <ProductCard key={product.id} product={product} />)}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: "0.74rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 500 }}>
+              Sort by:
+            </span>
+            <select
+              className="sort-select"
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value as CatalogSortOption)}
+              aria-label="Sort products"
+            >
+              <option value="popular">Most Popular</option>
+              <option value="price-asc">Price: Low → High</option>
+              <option value="price-desc">Price: High → Low</option>
+              <option value="rating">Top Rated</option>
+            </select>
           </div>
         </div>
+      )}
+
+      {/* Content States */}
+      {isLoading ? (
+        <div style={{ textAlign: "center", padding: "var(--space-4xl) 0" }}>
+          <div className="spinner" style={{ margin: "0 auto var(--space-md)" }} />
+          <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Curating collection results...</p>
+        </div>
+      ) : results.length === 0 ? (
+        /* Elevated Empty State */
+        <div>
+          <div className="search-empty-box">
+            <div className="search-empty-icon">
+              <IconSearch size={26} />
+            </div>
+            <h2 className="section-title" style={{ fontSize: "1.5rem", marginBottom: "var(--space-sm)" }}>
+              No pieces found for “{debouncedQuery || "your selection"}”
+            </h2>
+            <p
+              style={{
+                color: "var(--text-secondary)",
+                maxWidth: 480,
+                margin: "0 auto var(--space-xl)",
+                fontSize: "0.92rem",
+                lineHeight: 1.6,
+              }}
+            >
+              We couldn’t find any pieces matching your search. Try checking your spelling, using broader terms, or explore our curated popular picks below.
+            </p>
+            <div style={{ display: "flex", gap: "var(--space-sm)", justifyContent: "center", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="btn"
+                onClick={handleClear}
+              >
+                Clear Search
+              </button>
+              <Link href="/products" className="btn btn-outline">
+                Browse All Products
+              </Link>
+            </div>
+          </div>
+
+          {/* Fallback Recommendations */}
+          {emptyRecommendations.length > 0 && (
+            <div>
+              <div className="section-header">
+                <div>
+                  <span className="hero-tag" style={{ marginBottom: "var(--space-xs)" }}>Handpicked</span>
+                  <h2 className="section-title">Popular Pieces You May Like</h2>
+                </div>
+                <Link href="/products" className="section-link">
+                  View full catalog →
+                </Link>
+              </div>
+              <div className="grid">
+                {emptyRecommendations.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
+        /* Results Grid */
         <div className="grid">
           {results.map((product) => (
             <ProductCard key={product.id} product={product} />
@@ -131,8 +296,16 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="container" style={{ padding: "var(--space-2xl) 0" }}><div className="loading"><div className="spinner" />Loading search...</div></div>}>
+    <Suspense
+      fallback={
+        <div style={{ padding: "var(--space-4xl) 0", textAlign: "center" }}>
+          <div className="spinner" style={{ margin: "0 auto var(--space-md)" }} />
+          <p style={{ color: "var(--text-muted)" }}>Loading search...</p>
+        </div>
+      }
+    >
       <SearchContent />
     </Suspense>
   );
 }
+

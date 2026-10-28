@@ -613,7 +613,7 @@
 | 3 | Webhook signature verify (§4.5) | 🟢 Verified | Low | Security |
 | 4 | Side drawer cart (§1.7) | 🟠 High | Medium | UX/Conversion |
 | 5 | Hero carousel (§1.1) | 🟠 High | Medium | First impression |
-| 6 | Mobile bottom nav bar (§1.2) | 🟢 Resolved | Medium | Mobile UX |
+| 6 | Mobile clean header (removed redundant bottom bar) (§1.2) | 🟢 Resolved | Low | Mobile UX |
 | 7 | Checkout step flow (§1.8) | 🟠 High | High | Conversion |
 | 8 | CSP headers (§3.2) | 🟠 High | Medium | Security |
 | 9 | Product card swatches + quick add (§1.4) | 🟠 High | Medium | Conversion |
@@ -663,9 +663,9 @@ New additions (hero carousel, mini cart drawer, bottom nav) should use existing 
 1. **Active route indicator:**
    - Nav links (`Shop`, `Collections`, `Story`, `Sale`) detect the current route using `usePathname()`.
    - Active routes receive `aria-current="page"` and a persistent burgundy (`#712119`) underline with 700 font weight.
-2. **Mobile bottom navigation bar:**
-   - `<MobileBottomNav />` provides a fixed bottom navigation bar on mobile (`<= 768px`) with 5 core tabs: **Home**, **Shop**, **Search** (triggers typeahead), **Wishlist** (with live count badge), and **Account** (Sign In / Account).
-   - Safe-area bottom inset support (`env(safe-area-inset-bottom)`) and mobile body padding added to prevent overlap.
+2. **Mobile clean header alignment (removed redundant bottom bar):**
+   - Removed the fixed bottom app-style navigation bar to eliminate redundant controls and maintain a clean, clutter-free luxury boutique mobile layout (aligned with *shopkshm.com*), keeping navigation, search, wishlist counter, and cart centralized in the elevated top header.
+
 3. **Search inline typeahead modal:**
    - Clicking Search (desktop or mobile) opens `<SearchTypeaheadModal />` with instant autofocus and backdrop blur.
    - Debounced product search with instant live previews (image, title, formatted price, category).
