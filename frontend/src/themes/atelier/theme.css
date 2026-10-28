@@ -4305,6 +4305,10 @@ label {
   color: var(--accent);
 }
 
+.checkout-mobile-action-btn {
+  display: none !important;
+}
+
 .checkout-edit-btn {
   font-size: 0.76rem;
   font-weight: 600;
@@ -4451,19 +4455,32 @@ label {
 
 /* Save address checkbox */
 .checkout-save-label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
+  font-weight: 500;
   color: var(--text-secondary);
-  padding: 10px 14px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  margin-top: 6px;
+  user-select: none;
+  transition: color var(--duration) var(--ease);
 }
 
-.checkout-save-label input { accent-color: var(--accent); }
+.checkout-save-label:hover {
+  color: var(--text-primary);
+}
+
+.checkout-save-label input {
+  accent-color: var(--accent-warm, #712119);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  margin: 0;
+}
 
 /* Shipping option card */
 .shipping-option-card {
@@ -4828,6 +4845,13 @@ label {
   .checkout-mobile-summary-wrapper { display: block; }
   .checkout-right { display: none; }
   .checkout-summary-card { position: static; }
+  .checkout-mobile-action-btn {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    width: 100%;
+  }
 }
 
 @media (max-width: 600px) {

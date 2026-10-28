@@ -1212,7 +1212,7 @@ function CheckoutContent() {
                           checked={saveAddress}
                           onChange={(e) => setSaveAddress(e.target.checked)}
                         />
-                        <span>Save this address to your account for faster checkout</span>
+                        <span>Save address to account</span>
                       </label>
                     </div>
                   </div>
@@ -1230,14 +1230,16 @@ function CheckoutContent() {
                 </div>
               )}
 
-              {/* Step 1 Continue CTA */}
-              <button
-                type="button"
-                className="checkout-continue-btn"
-                onClick={handleProceedToReview}
-              >
-                Continue to Review Order →
-              </button>
+              {/* Step 1 Mobile CTA (on desktop buttons are on right side) */}
+              <div className="checkout-mobile-action-btn">
+                <button
+                  type="button"
+                  className="checkout-continue-btn"
+                  onClick={handleProceedToReview}
+                >
+                  Continue to Review Order →
+                </button>
+              </div>
             </>
           )}
 
@@ -1296,21 +1298,23 @@ function CheckoutContent() {
                 {renderSummaryItems()}
               </div>
 
-              {/* Navigation buttons */}
-              <button
-                type="button"
-                className="checkout-continue-btn"
-                onClick={handleProceedToPayment}
-              >
-                Proceed to Payment →
-              </button>
-              <button
-                type="button"
-                className="checkout-back-btn"
-                onClick={() => { setStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-              >
-                ← Back to Shipping Details
-              </button>
+              {/* Step 2 Mobile Navigation buttons (on desktop buttons are on right side) */}
+              <div className="checkout-mobile-action-btn">
+                <button
+                  type="button"
+                  className="checkout-continue-btn"
+                  onClick={handleProceedToPayment}
+                >
+                  Proceed to Payment →
+                </button>
+                <button
+                  type="button"
+                  className="checkout-back-btn"
+                  onClick={() => { setStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                >
+                  ← Back to Shipping Details
+                </button>
+              </div>
             </>
           )}
 
@@ -1400,13 +1404,20 @@ function CheckoutContent() {
                   </div>
                 )}
 
-                {/* Primary Pay Button */}
+                <div className="checkout-trust-badges">
+                  <span><IconLock size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />SSL Secured</span>
+                  <span><IconCornerDownLeft size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />48-Hour Exchange</span>
+                  <span><IconShield size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />Razorpay Verified</span>
+                </div>
+              </div>
+
+              {/* Step 3 Mobile Pay & Back CTA (on desktop buttons are on right side) */}
+              <div className="checkout-mobile-action-btn">
                 <button
                   className="btn btn-full btn-lg checkout-pay-btn"
                   onClick={handlePlaceOrder}
                   disabled={isSubmitting}
-                  id="pay-now-btn"
-                  style={{ marginTop: "20px" }}
+                  id="mobile-pay-now-btn"
                 >
                   {isSubmitting ? (
                     <span className="checkout-pay-loading">
@@ -1417,21 +1428,14 @@ function CheckoutContent() {
                     <span>Pay {formatMoney(cart.totalInCents, "inr")}</span>
                   )}
                 </button>
-
-                <div className="checkout-trust-badges">
-                  <span><IconLock size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />SSL Secured</span>
-                  <span><IconCornerDownLeft size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />48-Hour Exchange</span>
-                  <span><IconShield size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />Razorpay Verified</span>
-                </div>
+                <button
+                  type="button"
+                  className="checkout-back-btn"
+                  onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                >
+                  ← Back to Order Review
+                </button>
               </div>
-
-              <button
-                type="button"
-                className="checkout-back-btn"
-                onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-              >
-                ← Back to Order Review
-              </button>
             </>
           )}
 
@@ -1457,7 +1461,83 @@ function CheckoutContent() {
             {/* Totals Breakdown */}
             {renderTotals()}
 
-            <div className="checkout-trust-badges">
+            {validationError && (
+              <div className="checkout-alert checkout-alert-error" style={{ margin: "14px 0 0", padding: "10px 14px" }}>
+                <p className="checkout-alert-message" style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--error)" }}>
+                  {validationError}
+                </p>
+              </div>
+            )}
+
+            {/* Action buttons on right side */}
+            <div className="checkout-summary-actions" style={{ marginTop: "18px" }}>
+              {step === 1 && (
+                <button
+                  type="button"
+                  className="btn btn-full btn-lg checkout-continue-btn"
+                  onClick={handleProceedToReview}
+                >
+                  Continue to Review Order →
+                </button>
+              )}
+
+              {step === 2 && (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-full btn-lg checkout-continue-btn"
+                    onClick={handleProceedToPayment}
+                  >
+                    Proceed to Payment →
+                  </button>
+                  <button
+                    type="button"
+                    className="checkout-back-btn"
+                    style={{ marginTop: "8px", width: "100%", justifyContent: "center" }}
+                    onClick={() => { setStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  >
+                    ← Back to Shipping Details
+                  </button>
+                </>
+              )}
+
+              {step === 3 && (
+                <>
+                  {error && (
+                    <div className="checkout-alert checkout-alert-error" style={{ marginBottom: "12px", padding: "10px 14px" }}>
+                      <p className="checkout-alert-message" style={{ fontSize: "0.82rem", color: "var(--error)" }}>
+                        {error}
+                      </p>
+                    </div>
+                  )}
+                  <button
+                    className="btn btn-full btn-lg checkout-pay-btn"
+                    onClick={handlePlaceOrder}
+                    disabled={isSubmitting}
+                    id="summary-pay-btn"
+                  >
+                    {isSubmitting ? (
+                      <span className="checkout-pay-loading">
+                        <span className="spinner-sm" />
+                        Processing Payment…
+                      </span>
+                    ) : (
+                      <span>Pay {formatMoney(cart.totalInCents, "inr")}</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="checkout-back-btn"
+                    style={{ marginTop: "8px", width: "100%", justifyContent: "center" }}
+                    onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  >
+                    ← Back to Order Review
+                  </button>
+                </>
+              )}
+            </div>
+
+            <div className="checkout-trust-badges" style={{ marginTop: "18px" }}>
               <span><IconLock size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />SSL Secured</span>
               <span><IconCornerDownLeft size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />48-Hour Exchange</span>
               <span><IconShield size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />Razorpay Verified</span>
