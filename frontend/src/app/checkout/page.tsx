@@ -150,6 +150,43 @@ const INDIAN_STATES = [
   "Delhi", "Jammu & Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
 ];
 
+function normalizeIndianPhone(raw: string): string {
+  if (!raw) return "";
+  let digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("91") && digits.length === 12) {
+    digits = digits.slice(2);
+  } else if (digits.startsWith("0") && digits.length === 11) {
+    digits = digits.slice(1);
+  }
+  return digits.slice(0, 10);
+}
+
+function matchState(inputState: string): string {
+  if (!inputState) return "";
+  const trimmed = inputState.trim();
+  const lower = trimmed.toLowerCase();
+
+  const abbrMap: Record<string, string> = {
+    tg: "Telangana",
+    ts: "Telangana",
+    ap: "Andhra Pradesh",
+    ka: "Karnataka",
+    mh: "Maharashtra",
+    dl: "Delhi",
+    tn: "Tamil Nadu",
+    kl: "Kerala",
+    wb: "West Bengal",
+    gj: "Gujarat",
+    up: "Uttar Pradesh",
+    mp: "Madhya Pradesh",
+    rj: "Rajasthan"
+  };
+  if (abbrMap[lower]) return abbrMap[lower];
+
+  const found = INDIAN_STATES.find((s) => s.toLowerCase() === lower);
+  return found || trimmed;
+}
+
 // Interactive 3-Step Progress Indicator
 function CheckoutSteps({
   currentStep,
@@ -263,13 +300,20 @@ function CheckoutContent() {
         address: prev.address || defaultAddress?.address_1 || "",
         address2: prev.address2 || defaultAddress?.address_2 || "",
         city: prev.city || defaultAddress?.city || "",
-        state: prev.state || defaultAddress?.province || "",
-        zipCode: prev.zipCode || defaultAddress?.postal_code || "",
-        phone: prev.phone || defaultAddress?.phone || ""
+        state: prev.state || matchState(defaultAddress?.province || ""),
+        zipCode: prev.zipCode || (defaultAddress?.postal_code || "").replace(/\D/g, "").slice(0, 6),
+        phone: prev.phone || normalizeIndianPhone(defaultAddress?.phone || (user as any).phone || "")
       }));
+
       if (addresses.length === 0) {
         setSelectedAddressIndex("new");
         setShowAddressForm(true);
+      } else {
+        // If default address is missing address_1, city, province, or postal_code, show form so user can complete it
+        const isMissing = !defaultAddress?.address_1?.trim() || !defaultAddress?.city?.trim() || !defaultAddress?.province?.trim() || !defaultAddress?.postal_code?.trim();
+        if (isMissing) {
+          setShowAddressForm(true);
+        }
       }
     } else if (!isAuthLoading) {
       router.push("/login?next=/checkout&reason=checkout");
@@ -280,18 +324,22 @@ function CheckoutContent() {
     const addr = user?.addresses?.[index];
     if (!addr) return;
     setSelectedAddressIndex(index);
-    setShowAddressForm(false);
     setAddressDropdownOpen(false);
+
+    // If the saved address is missing any key field, automatically reveal the form to complete it
+    const isMissingDetails = !addr.address_1?.trim() || !addr.city?.trim() || !addr.province?.trim() || !addr.postal_code?.trim();
+    setShowAddressForm(isMissingDetails);
+
     setForm((prev) => ({
       ...prev,
-      firstName: addr.first_name || user?.firstName || "",
-      lastName: addr.last_name || user?.lastName || "",
+      firstName: addr.first_name || user?.firstName || prev.firstName || "",
+      lastName: addr.last_name || user?.lastName || prev.lastName || "",
       address: addr.address_1 || "",
       address2: addr.address_2 || "",
       city: addr.city || "",
-      state: addr.province || "",
-      zipCode: addr.postal_code || "",
-      phone: addr.phone || ""
+      state: matchState(addr.province || prev.state || ""),
+      zipCode: (addr.postal_code || "").replace(/\D/g, "").slice(0, 6),
+      phone: normalizeIndianPhone(addr.phone || prev.phone || "")
     }));
   };
 
@@ -301,14 +349,11 @@ function CheckoutContent() {
     setAddressDropdownOpen(false);
     setForm((prev) => ({
       ...prev,
-      firstName: user?.firstName || "",
-      lastName: user?.lastName || "",
       address: "",
       address2: "",
       city: "",
       state: "",
-      zipCode: "",
-      phone: ""
+      zipCode: ""
     }));
   };
 
@@ -323,12 +368,22 @@ function CheckoutContent() {
         return value.trim() ? "" : "First name is required";
       case "lastName":
         return value.trim() ? "" : "Last name is required";
-      case "email":
-        if (!value.trim()) return "Email address is required";
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) {
+      case "email": {
+        const trimmed = value.trim();
+        if (!trimmed) return "Email address is required";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
           return "Please enter a valid email address (e.g. name@example.com)";
         }
         return "";
+      }
+      case "phone": {
+        const digits = normalizeIndianPhone(value);
+        if (!digits) return "Mobile number is required";
+        if (digits.length !== 10 || !/^[6-9]/.test(digits)) {
+          return "Enter a valid 10-digit Indian mobile number starting with 6–9";
+        }
+        return "";
+      }
       case "address":
         return value.trim() ? "" : "Street address is required";
       case "city":
@@ -336,17 +391,9 @@ function CheckoutContent() {
       case "state":
         return value.trim() ? "" : "Please select your state";
       case "zipCode": {
-        const cleaned = value.trim();
+        const cleaned = value.replace(/\D/g, "");
         if (!cleaned) return "PIN code is required";
-        if (!/^\d{6}$/.test(cleaned)) return "PIN code must be exactly 6 digits";
-        return "";
-      }
-      case "phone": {
-        const digits = value.replace(/\D/g, "");
-        if (!digits) return "Mobile number is required";
-        if (digits.length !== 10 || !/^[6-9]/.test(digits)) {
-          return "Enter a valid 10-digit mobile number starting with 6–9";
-        }
+        if (cleaned.length !== 6) return "PIN code must be exactly 6 digits";
         return "";
       }
       default:
@@ -359,22 +406,50 @@ function CheckoutContent() {
   };
 
   const validateAllStep1 = (): boolean => {
-    const requiredFields = ["firstName", "lastName", "email", "address", "city", "state", "zipCode", "phone"];
-    const newTouched: Record<string, boolean> = {};
-    let firstError = "";
+    const requiredFields = [
+      { key: "firstName", label: "First Name" },
+      { key: "lastName", label: "Last Name" },
+      { key: "email", label: "Email Address" },
+      { key: "phone", label: "Mobile Number" },
+      { key: "address", label: "Street Address" },
+      { key: "city", label: "City" },
+      { key: "state", label: "State" },
+      { key: "zipCode", label: "PIN Code" }
+    ];
 
-    for (const f of requiredFields) {
-      newTouched[f] = true;
-      const err = validateField(f, (form as any)[f]);
-      if (err && !firstError) {
-        firstError = err;
+    const newTouched: Record<string, boolean> = {};
+    const missing: string[] = [];
+    const invalid: string[] = [];
+
+    for (const { key, label } of requiredFields) {
+      newTouched[key] = true;
+      const rawVal = ((form as any)[key] || "").toString().trim();
+      const err = validateField(key, (form as any)[key]);
+      if (!rawVal) {
+        missing.push(label);
+      } else if (err) {
+        invalid.push(`${label} (${err})`);
       }
     }
 
     setTouched((prev) => ({ ...prev, ...newTouched }));
 
-    if (firstError) {
-      setValidationError("Please fill out all required fields with valid details.");
+    if (missing.length > 0) {
+      setValidationError(`Please fill in: ${missing.join(", ")}`);
+      // If any missing field is an address field and address form is hidden, expand it!
+      const addressLabels = ["Street Address", "City", "State", "PIN Code"];
+      if (missing.some((l) => addressLabels.includes(l))) {
+        setShowAddressForm(true);
+      }
+      return false;
+    }
+
+    if (invalid.length > 0) {
+      setValidationError(invalid[0]);
+      const addressLabels = ["Street Address", "City", "State", "PIN Code"];
+      if (invalid.some((inv) => addressLabels.some((l) => inv.startsWith(l)))) {
+        setShowAddressForm(true);
+      }
       return false;
     }
 
@@ -384,6 +459,7 @@ function CheckoutContent() {
 
   const handleProceedToReview = () => {
     if (!validateAllStep1()) return;
+    setValidationError("");
     setStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -393,6 +469,7 @@ function CheckoutContent() {
       setStep(1);
       return;
     }
+    setValidationError("");
     setStep(3);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -473,7 +550,11 @@ function CheckoutContent() {
     let verifiedPaymentForRecovery: RecoverablePayment | null = null;
 
     try {
-      await prepareCartForCheckout(cart!.id, { ...form, state: form.state }, token ?? undefined);
+      await prepareCartForCheckout(cart!.id, {
+        ...form,
+        phone: normalizeIndianPhone(form.phone),
+        state: form.state
+      }, token ?? undefined);
 
       if (saveAddress && token) {
         try {
@@ -490,7 +571,7 @@ function CheckoutContent() {
               province: form.state,
               country_code: "in",
               postal_code: form.zipCode,
-              phone: form.phone || undefined
+              phone: normalizeIndianPhone(form.phone) || undefined
             });
             await refreshUser();
           }
@@ -504,7 +585,10 @@ function CheckoutContent() {
         amountInCents: cart!.totalInCents,
         currencyCode: cart!.currencyCode,
         token: token ?? undefined,
-        customer: { name: `${form.firstName} ${form.lastName}`.trim(), email: form.email.trim() }
+        customer: {
+          name: `${form.firstName} ${form.lastName}`.trim(),
+          email: form.email.trim()
+        }
       });
 
       await loadRazorpayCheckout();
@@ -818,7 +902,7 @@ function CheckoutContent() {
                     )}
                   </div>
 
-                  <div className="form-group full">
+                  <div className="form-group">
                     <label className="form-label" htmlFor="email">Email Address <span className="required">*</span></label>
                     <div className="form-input-container">
                       <input
@@ -835,11 +919,48 @@ function CheckoutContent() {
                         <span className="input-validation-icon success" aria-label="Valid"><IconCheck size={16} /></span>
                       )}
                     </div>
-                    {touched.email && validateField("email", form.email) ? (
+                    {touched.email && validateField("email", form.email) && (
                       <p className="form-field-error">{validateField("email", form.email)}</p>
-                    ) : (
-                      <p className="form-hint">Order confirmation and tracking will be sent here.</p>
                     )}
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="phone">Mobile Number <span className="required">*</span></label>
+                    <div className="form-input-container">
+                      <input
+                        id="phone"
+                        className={`form-input ${touched.phone ? (validateField("phone", form.phone) ? "input-error" : "input-valid") : ""}`}
+                        type="tel"
+                        placeholder="10-digit mobile number"
+                        maxLength={16}
+                        autoComplete="tel"
+                        value={form.phone}
+                        onBlur={() => handleBlur("phone")}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const digits = val.replace(/\D/g, "");
+                          if (digits.startsWith("91") && digits.length > 10) {
+                            updateField("phone", digits.slice(2, 12));
+                          } else if (digits.startsWith("0") && digits.length > 10) {
+                            updateField("phone", digits.slice(1, 11));
+                          } else {
+                            updateField("phone", digits.slice(0, 10));
+                          }
+                        }}
+                      />
+                      {touched.phone && !validateField("phone", form.phone) && (
+                        <span className="input-validation-icon success" aria-label="Valid"><IconCheck size={16} /></span>
+                      )}
+                    </div>
+                    {touched.phone && validateField("phone", form.phone) && (
+                      <p className="form-field-error">{validateField("phone", form.phone)}</p>
+                    )}
+                  </div>
+
+                  <div className="form-group full">
+                    <p className="form-hint" style={{ marginTop: 0 }}>
+                      Order confirmation, receipt &amp; dispatch tracking will be sent to this email &amp; mobile.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -928,25 +1049,32 @@ function CheckoutContent() {
                 </div>
 
                 {/* Show selected saved address summary */}
-                {user.addresses && user.addresses.length > 0 && selectedAddressIndex !== "new" && (() => {
-                  const addr = user.addresses[selectedAddressIndex as number];
-                  if (!addr) return null;
-                  return (
-                    <div className="checkout-review-card-content" style={{ marginBottom: "16px" }}>
-                      <p className="checkout-review-recipient">
-                        {[addr.first_name, addr.last_name].filter(Boolean).join(" ")}
-                      </p>
-                      <p className="checkout-review-detail">{addr.address_1}</p>
-                      {addr.address_2 && <p className="checkout-review-detail">{addr.address_2}</p>}
-                      <p className="checkout-review-detail">
-                        {[addr.city, addr.province, addr.postal_code].filter(Boolean).join(", ")}
-                      </p>
-                      {addr.phone && <p className="checkout-review-detail">Ph: {addr.phone}</p>}
+                {user.addresses && user.addresses.length > 0 && selectedAddressIndex !== "new" && (
+                  <div className="checkout-review-card-content" style={{ marginBottom: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                      <div>
+                        <p className="checkout-review-recipient">
+                          {[form.firstName, form.lastName].filter(Boolean).join(" ")}
+                        </p>
+                        <p className="checkout-review-detail">{form.address || "Street address pending"}</p>
+                        {form.address2 && <p className="checkout-review-detail">{form.address2}</p>}
+                        <p className="checkout-review-detail">
+                          {[form.city, form.state, form.zipCode].filter(Boolean).join(", ")}
+                        </p>
+                        {form.phone && <p className="checkout-review-detail">Ph: +91 {normalizeIndianPhone(form.phone)}</p>}
+                      </div>
+                      <button
+                        type="button"
+                        className="checkout-edit-btn"
+                        onClick={() => setShowAddressForm(!showAddressForm)}
+                      >
+                        {showAddressForm ? "Hide Form" : "Edit Address"}
+                      </button>
                     </div>
-                  );
-                })()}
+                  </div>
+                )}
 
-                {/* Show form only for new address */}
+                {/* Show form when adding new address OR editing saved address */}
                 {(selectedAddressIndex === "new" || showAddressForm) && (
                   <div className="form-grid">
                     <div className="form-group full">
@@ -1041,11 +1169,11 @@ function CheckoutContent() {
                           className={`form-input ${touched.zipCode ? (validateField("zipCode", form.zipCode) ? "input-error" : "input-valid") : ""}`}
                           type="text"
                           placeholder="500001"
-                          maxLength={6}
+                          maxLength={8}
                           autoComplete="postal-code"
                           value={form.zipCode}
                           onBlur={() => handleBlur("zipCode")}
-                          onChange={(e) => updateField("zipCode", e.target.value.replace(/\D/g, ""))}
+                          onChange={(e) => updateField("zipCode", e.target.value.replace(/\D/g, "").slice(0, 6))}
                         />
                         {touched.zipCode && !validateField("zipCode", form.zipCode) && (
                           <span className="input-validation-icon success" aria-label="Valid"><IconCheck size={16} /></span>
@@ -1053,29 +1181,6 @@ function CheckoutContent() {
                       </div>
                       {touched.zipCode && validateField("zipCode", form.zipCode) && (
                         <p className="form-field-error">{validateField("zipCode", form.zipCode)}</p>
-                      )}
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="phone">Phone <span className="required">*</span></label>
-                      <div className="form-input-container">
-                        <input
-                          id="phone"
-                          className={`form-input ${touched.phone ? (validateField("phone", form.phone) ? "input-error" : "input-valid") : ""}`}
-                          type="tel"
-                          placeholder="10-digit mobile number"
-                          maxLength={10}
-                          autoComplete="tel"
-                          value={form.phone}
-                          onBlur={() => handleBlur("phone")}
-                          onChange={(e) => updateField("phone", e.target.value.replace(/\D/g, ""))}
-                        />
-                        {touched.phone && !validateField("phone", form.phone) && (
-                          <span className="input-validation-icon success" aria-label="Valid"><IconCheck size={16} /></span>
-                        )}
-                      </div>
-                      {touched.phone && validateField("phone", form.phone) && (
-                        <p className="form-field-error">{validateField("phone", form.phone)}</p>
                       )}
                     </div>
 
@@ -1107,9 +1212,14 @@ function CheckoutContent() {
               </div>
 
               {validationError && (
-                <p style={{ color: "var(--error)", fontSize: "0.85rem", textAlign: "center", margin: "8px 0" }}>
-                  {validationError}
-                </p>
+                <div className="checkout-alert checkout-alert-error" style={{ margin: "16px 0", padding: "12px 16px" }}>
+                  <div className="checkout-alert-icon" style={{ fontSize: "1rem" }}><IconAlertTriangle size={18} /></div>
+                  <div className="checkout-alert-body">
+                    <p className="checkout-alert-message" style={{ fontWeight: 600, color: "var(--error)" }}>
+                      {validationError}
+                    </p>
+                  </div>
+                </div>
               )}
 
               {/* Step 1 Continue CTA */}
@@ -1130,7 +1240,7 @@ function CheckoutContent() {
               <div className="checkout-card">
                 <div className="checkout-card-header">
                   <span className="checkout-card-icon"><IconMapPin size={18} /></span>
-                  <h2>Shipping & Contact Details</h2>
+                  <h2>Shipping &amp; Contact Details</h2>
                   <button
                     type="button"
                     className="checkout-edit-btn"
@@ -1141,7 +1251,7 @@ function CheckoutContent() {
                 </div>
                 <div className="checkout-review-card-content">
                   <p className="checkout-review-recipient">{form.firstName} {form.lastName}</p>
-                  <p className="checkout-review-detail">{form.email} · +91 {form.phone}</p>
+                  <p className="checkout-review-detail">{form.email} · +91 {normalizeIndianPhone(form.phone)}</p>
                   <p className="checkout-review-detail">
                     {form.address}{form.address2 ? `, ${form.address2}` : ""}, {form.city}, {form.state} &ndash; {form.zipCode}, {form.country}
                   </p>
@@ -1255,7 +1365,7 @@ function CheckoutContent() {
                       <path d="M20 0C8.954 0 0 8.954 0 20s8.954 20 20 20 20-8.954 20-20S31.046 0 20 0z" fill="#712119" />
                       <path d="M16 28l8-16-4 8h6l-10 8z" fill="#fff" />
                     </svg>
-                    <span>Powered by <strong>Razorpay</strong> &mdash; 100% Encrypted & Secure</span>
+                    <span>Powered by <strong>Razorpay</strong> &mdash; 100% Encrypted &amp; Secure</span>
                   </div>
                   <p>
                     Supports all Indian Credit/Debit cards, UPI, Google Pay, PhonePe, Paytm, and Net Banking.
@@ -1348,9 +1458,14 @@ function CheckoutContent() {
             {renderTotals()}
 
             {validationError && (
-              <p style={{ color: "var(--error)", fontSize: "0.85rem", textAlign: "center", marginBottom: "var(--space-sm)" }}>
-                {validationError}
-              </p>
+              <div className="checkout-alert checkout-alert-error" style={{ margin: "12px 0", padding: "10px 14px" }}>
+                <div className="checkout-alert-icon" style={{ fontSize: "1rem" }}><IconAlertTriangle size={16} /></div>
+                <div className="checkout-alert-body">
+                  <p className="checkout-alert-message" style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--error)" }}>
+                    {validationError}
+                  </p>
+                </div>
+              </div>
             )}
 
             {/* Action button based on current step */}
