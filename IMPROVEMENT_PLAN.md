@@ -106,27 +106,8 @@
 ---
 
 ### 1.5 Homepage Layout
-**Current state:** Hero → Features Row → Collections scroll row → Trending scroll row → Brand Story section.
+*Moved to [Completed Improvements](#-15-homepage-layout) at the bottom of this document.*
 
-**Issues:**
-- Features Row (icons) feels generic and filler
-- Collections and Trending use identical scroll component — page feels repetitive
-- "Featured Products" is commented out — no editorial section
-- Brand Story is a centered text block — underwhelming vs competitors
-- Newsletter is commented out entirely
-- No social proof
-- **Collection cards use `aspect-ratio: 16/9` (landscape) but the source images are portrait-oriented** — the landscape crop wastes image real-estate, forces awkward focal point cropping, and loses the editorial, fashion-editorial feel that a tall portrait card naturally conveys. Both KSHM and Terractive use portrait ratios for their category cards.
-
-**Recommended Changes:**
-1. **Editorial "Story" banner** — between Collections and Trending: full-bleed 2-column (brand photo + editorial copy + CTA). Like Terractive's category-split.
-2. **Trending → 5-column grid** on desktop instead of horizontal scroll. Scrolls are for discovery; trending deserves a browsable grid.
-3. **Social proof strip** — 4–6 square Instagram customer photos row, links to Instagram.
-4. **Features Row redesign** — 3 trust-signal icon cards with more breathing room, or move to footer top area.
-5. **Re-enable Newsletter section** — redesigned full-bleed dark section with compelling headline.
-6. **"New Arrivals" section** — filter products tagged `new-arrival` as a horizontal scroll under the hero.
-7. **Collection cards → portrait ratio** *(user-requested)* — change `.collection-card` from `aspect-ratio: 16/9` to `aspect-ratio: 3/4` (or `2/3` to match product card ratio). On the scroll row, change `scroll-row-item-collection` from `flex: 0 0 50%` to `flex: 0 0 40%` on desktop (showing ~2.5 cards at a time). On mobile, `flex: 0 0 80%` so one card peeks at the edge to encourage swipe. Update `objectPosition` on the collection images to `center top` to keep model/subject in frame on the taller crop. This change also applies to the `/collections` page grid if it uses `.collections-grid` with `aspect-ratio: 16/9`.
-
-**Priority: High | Effort: Low**
 
 ---
 
@@ -644,13 +625,13 @@
 | 15 | Product JSON-LD structured data (§6.1) | 🟡 Medium | Medium | SEO |
 | 16 | ISR for catalog pages (§5.2) | 🟡 Medium | Low | Performance |
 | 17 | Filter panel mobile bottom sheet (§2.1) | 🟡 Medium | Medium | UX |
-| 18 | Homepage editorial section (§1.5) | 🟡 Medium | Medium | Brand |
+| 18 | Homepage editorial section (§1.5) | 🟢 Resolved | Medium | Brand |
 | 19 | PDP image hover zoom (§1.6) | 🟡 Medium | Low | UX |
 | 20 | Wishlist account sync (§2.3) | 🟡 Medium | Medium | UX |
 | 21 | Free shipping progress bar (§1.7) | 🟡 Medium | Low | Conversion |
 | 22 | Footer dead links fix (§1.9) | 🟢 Low | Low | Trust |
 | 23 | Compare feature visibility (§2.6) | 🟢 Low | Low | UX |
-| 24 | Newsletter section re-enable (§1.5) | 🟢 Low | Low | Marketing |
+| 24 | Newsletter section re-enable (§1.5) | 🟢 Resolved | Low | Marketing |
 | 25 | Bundle size analysis (§5.3) | 🟢 Low | Low | Performance |
 
 ---
@@ -698,4 +679,37 @@ New additions (hero carousel, mini cart drawer, bottom nav) should use existing 
    - Dynamically injects a `"Sale"` nav link with an animated pulsing indicator dot whenever an active sale campaign exists.
 6. **Category dropdown on hover (desktop):**
    - Hovering "Collections" displays a floating mega dropdown panel with top categories (Dresses, Co-ords, Tops & Shirts, Trousers & Pants, Outerwear, Knitwear) and direct links.
+
+### ✅ 1.5 Homepage Layout
+**Status:** Implemented & Verified in `aoisky-dev`
+
+**Implemented Items:**
+1. **Editorial Story Banner:**
+   - 2-column luxury split layout between Collections and Trending (`.editorial-story-banner`).
+   - Left: High-resolution brand portrait lifestyle photography (`/images/story-banner.jpg`).
+   - Right: Brand narrative ("Slow fashion for everyday style", ethical slow fashion ethos) with dual CTAs ("Discover Our Story" &rarr; `/about` and "Shop The Wardrobe" &rarr; `/products`).
+2. **Trending Products Browsable Grid:**
+   - Converted from horizontal scroll row to a 5-column browsable grid on desktop (2-column on mobile) with `<ProductCard />` components and "Explore All Products &rarr;" CTA.
+3. **Collection Cards Portrait Ratio:**
+   - Updated `.collection-card` from `aspect-ratio: 16/9` (landscape) to `aspect-ratio: 3/4` (editorial lookbook portrait ratio).
+   - Desktop scroll row item width adjusted to `flex: 0 0 35%` (~2.8 visible cards).
+   - Mobile scroll row item width adjusted to `flex: 0 0 78%` (peeking next card).
+   - Set `objectPosition: "center top"` to anchor model face/silhouette.
+   - Updated `/collections` page grid from 2 columns to 3 columns on desktop.
+4. **Features / Trust Signals Row Redesign:**
+   - Redesigned into 4 trust pillars with circular burgundy tint badge icons, clean borders, and refined typography:
+     - Complimentary Shipping (Free express delivery across India)
+     - Artisanal Quality (Meticulously tailored from premium fabrics)
+     - 48-Hour Exchanges (Hassle-free doorstep size exchanges. No returns.)
+     - Slow Fashion (Consciously produced in limited, mindful batches)
+5. **New Arrivals Section:**
+   - Added a "New Arrivals" discovery section right below the features row, with horizontal scroll for latest pieces (`taggedNewArrivals` or recent additions).
+6. **Social Proof Strip:**
+   - Added `@irraya.fashion` community style lookbook row ("Styled by You").
+   - 6 square curated Instagram customer looks (`look-1.jpg` &ndash; `look-6.jpg`) with hover overlays and links to `@irraya.fashion`.
+7. **Re-enabled Newsletter Section:**
+   - Re-enabled full-bleed dark newsletter section with subtle ambient brand burgundy glow.
+   - Enticing 10% welcome discount incentive ("The Irraya Circle &mdash; 10% off your first order").
+   - Inline instant promo code reveal (`FIRST10`) upon submission with feedback toast.
+
 

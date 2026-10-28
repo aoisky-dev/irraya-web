@@ -83,7 +83,7 @@ export default async function CollectionsPage() {
                   src={collection.image}
                   alt={collection.name}
                   fill
-                  style={{ objectFit: "cover" }}
+                  style={{ objectFit: "cover", objectPosition: "center top" }}
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
               )}

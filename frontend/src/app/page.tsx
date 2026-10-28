@@ -1,11 +1,27 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ProductCard } from "@/components/ProductCard";
-// import { NewsletterForm } from "@/components/NewsletterForm";
+import { NewsletterForm } from "@/components/NewsletterForm";
 import { getProducts } from "@/lib/api/products";
 import { ScrollableProductRow } from "@/components/ScrollableProductRow";
 import { ScrollableCollectionRow } from "@/components/ScrollableCollectionRow";
-import { IconHeart, IconStar, IconDiamond, IconRefreshCw } from "@/components/Icons";
+import {
+  IconHeart,
+  IconStar,
+  IconRefreshCw,
+  IconTruck,
+  IconInstagram,
+  IconArrowRight,
+} from "@/components/Icons";
+
+const socialLooks = [
+  { id: 1, image: "/images/social/look-1.jpg", alt: "Irraya slow fashion look 1" },
+  { id: 2, image: "/images/social/look-2.jpg", alt: "Irraya slow fashion look 2" },
+  { id: 3, image: "/images/social/look-3.jpg", alt: "Irraya slow fashion look 3" },
+  { id: 4, image: "/images/social/look-4.jpg", alt: "Irraya slow fashion look 4" },
+  { id: 5, image: "/images/social/look-5.jpg", alt: "Irraya slow fashion look 5" },
+  { id: 6, image: "/images/social/look-6.jpg", alt: "Irraya slow fashion look 6" },
+];
 
 export default async function HomePage() {
   let products = [] as Awaited<ReturnType<typeof getProducts>>;
@@ -26,7 +42,13 @@ export default async function HomePage() {
     count: products.filter((p) => p.category === cat).length,
   }));
 
-  const featuredProducts = products.filter((p) => p.tags?.includes("featured"));
+  // New arrivals: tagged with new/latest or fallback to catalog head
+  const taggedNewArrivals = products.filter((p) =>
+    p.tags?.some((t) => ["new", "new-arrival", "new-arrivals", "latest"].includes(t.toLowerCase()))
+  );
+  const newArrivals = taggedNewArrivals.length >= 3 ? taggedNewArrivals : products.slice(0, 8);
+
+  // Trending products: top 10 items for 5-column browsable grid
   const trendingProducts = [...products]
     .sort(
       (a, b) =>
@@ -37,7 +59,17 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="hero" style={{ position: "relative", overflow: "hidden", color: "white", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
+      <section
+        className="hero"
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          color: "white",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-start",
+        }}
+      >
         <Image
           src="/images/banner.jpg"
           alt="Irraya Fashion Banner"
@@ -48,48 +80,94 @@ export default async function HomePage() {
         <div style={{ position: "absolute", inset: 0, background: "rgba(0, 0, 0, 0.35)", zIndex: 0 }} />
 
         {/* Tag pinned to top of banner */}
-        <span className="hero-tag" style={{ position: "relative", zIndex: 1, color: "white", borderColor: "rgba(255,255,255,0.4)", alignSelf: "center", marginTop: "var(--space-xl)" }}>New Collection 2026</span>
+        <span
+          className="hero-tag"
+          style={{
+            position: "relative",
+            zIndex: 1,
+            color: "white",
+            borderColor: "rgba(255,255,255,0.4)",
+            alignSelf: "center",
+            marginTop: "var(--space-xl)",
+          }}
+        >
+          New Collection 2026
+        </span>
 
         {/* Spacer — photo visible here */}
         <div style={{ flex: 1 }} />
 
         {/* H1 + button at bottom */}
-        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-          <h1 style={{ color: "white", textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>Slow fashion for everyday style</h1>
-          <Link href="/products" className="btn btn-lg" style={{ background: "white", color: "black", border: "none" }}>
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+          }}
+        >
+          <h1 style={{ color: "white", textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
+            Slow fashion for everyday style
+          </h1>
+          <Link
+            href="/products"
+            className="btn btn-lg"
+            style={{ background: "white", color: "black", border: "none" }}
+          >
             Explore Collection
           </Link>
         </div>
       </section>
 
-      {/* Features Row */}
+      {/* Features / Trust Signals Row */}
       <div className="features-row">
         <div className="feature-item">
-          <div className="feature-icon"><IconStar size={24} /></div>
-          <h4>Premium Quality</h4>
-          <p>Crafted from the finest materials</p>
+          <div className="feature-icon"><IconTruck size={20} /></div>
+          <h4>Complimentary Shipping</h4>
+          <p>Free express delivery across India on all orders</p>
         </div>
         <div className="feature-item">
-          <div className="feature-icon"><IconDiamond size={24} /></div>
-          <h4>Free Shipping</h4>
-          <p>On all orders</p>
+          <div className="feature-icon"><IconStar size={20} /></div>
+          <h4>Artisanal Quality</h4>
+          <p>Meticulously tailored from premium, durable fabrics</p>
         </div>
         <div className="feature-item">
-          <div className="feature-icon"><IconRefreshCw size={24} /></div>
-          <h4>Easy Exchanges</h4>
-          <p>48-hour exchange only. No returns.</p>
+          <div className="feature-icon"><IconRefreshCw size={20} /></div>
+          <h4>48-Hour Exchanges</h4>
+          <p>Hassle-free doorstep size exchanges. No returns.</p>
         </div>
         <div className="feature-item">
-          <div className="feature-icon"><IconHeart size={24} /></div>
-          <h4>Sustainable</h4>
-          <p>Ethically sourced fabrics</p>
+          <div className="feature-icon"><IconHeart size={20} /></div>
+          <h4>Slow Fashion</h4>
+          <p>Consciously produced in limited, mindful batches</p>
         </div>
       </div>
 
-      {/* Collections */}
-      <section id="collections">
+      {/* New Arrivals Section */}
+      {newArrivals.length > 0 && (
+        <section id="new-arrivals" style={{ marginTop: "var(--space-3xl)" }}>
+          <div className="section-header">
+            <div>
+              <span className="hero-tag" style={{ marginBottom: "var(--space-xs)" }}>Fresh Drops</span>
+              <h2 className="section-title">New Arrivals</h2>
+            </div>
+            <Link href="/products?sort=newest" className="section-link">
+              View all →
+            </Link>
+          </div>
+          <ScrollableProductRow products={newArrivals} />
+        </section>
+      )}
+
+      {/* Collections (Portrait 3:4 Cards) */}
+      <section id="collections" style={{ marginTop: "var(--space-3xl)" }}>
         <div className="section-header">
-          <h2 className="section-title">Shop by Collection</h2>
+          <div>
+            <span className="hero-tag" style={{ marginBottom: "var(--space-xs)" }}>Curated Capsules</span>
+            <h2 className="section-title">Shop by Collection</h2>
+          </div>
           <Link href="/collections" className="section-link">View all →</Link>
         </div>
         {catalogLoadFailed && (
@@ -102,32 +180,60 @@ export default async function HomePage() {
         <ScrollableCollectionRow collections={collections} />
       </section>
 
-      {/* Featured Products (Temporarily Disabled) */}
-      {/* 
-      <section style={{ marginTop: "var(--space-xl)" }}>
-        <div className="section-header">
-          <h2 className="section-title">Featured Products</h2>
-          <Link href="/products" className="section-link">View all →</Link>
+      {/* Editorial Story Banner */}
+      <section className="editorial-story-banner">
+        <div className="editorial-story-image">
+          <Image
+            src="/images/story-banner.jpg"
+            alt="The Irraya Ethos — Mindful Slow Fashion"
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            style={{ objectFit: "cover", objectPosition: "center 20%" }}
+          />
         </div>
-        {featuredProducts.length > 0 ? (
-          <ScrollableProductRow products={featuredProducts} />
-        ) : (
-          <div className="cart-empty" style={{ background: "transparent", border: "1px dashed var(--border)" }}>
-            <h2>No featured products found</h2>
-            <p>Add the "featured" tag to products in Medusa to show them here.</p>
+        <div className="editorial-story-copy">
+          <span className="editorial-story-eyebrow">The Irraya Ethos</span>
+          <h2 className="editorial-story-title">
+            Designed with intention, crafted for everyday rituals.
+          </h2>
+          <p className="editorial-story-text">
+            We reject the fleeting churn of seasonal fast fashion. Each Irraya silhouette is
+            thoughtfully cut from breathable, premium textiles — celebrating understated elegance,
+            conscious craftsmanship, and enduring comfort that outlasts trends.
+          </p>
+          <div className="editorial-story-actions">
+            <Link href="/about" className="btn">
+              Discover Our Story
+            </Link>
+            <Link href="/products" className="btn btn-outline">
+              Shop The Wardrobe
+            </Link>
           </div>
-        )}
+        </div>
       </section>
-      */}
 
-      {/* Trending Collection */}
-      <section style={{ marginTop: "var(--space-xl)" }}>
+      {/* Trending Collection — 5-Column Browsable Grid on Desktop */}
+      <section style={{ marginTop: "var(--space-3xl)" }}>
         <div className="section-header">
-          <h2 className="section-title">Trending Collection</h2>
-          <Link href="/products" className="section-link">View all →</Link>
+          <div>
+            <span className="hero-tag" style={{ marginBottom: "var(--space-xs)" }}>Popular Now</span>
+            <h2 className="section-title">Trending Styles</h2>
+          </div>
+          <Link href="/products" className="section-link">View all ({products.length}) →</Link>
         </div>
         {trendingProducts.length > 0 ? (
-          <ScrollableProductRow products={trendingProducts} />
+          <>
+            <div className="grid">
+              {trendingProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+            <div style={{ textAlign: "center", marginTop: "var(--space-2xl)" }}>
+              <Link href="/products" className="btn btn-outline" style={{ minWidth: 220 }}>
+                Explore All Products <IconArrowRight size={16} style={{ marginLeft: 6, display: "inline-block", verticalAlign: "middle" }} />
+              </Link>
+            </div>
+          </>
         ) : (
           <div className="cart-empty" style={{ background: "transparent", border: "1px dashed var(--border)" }}>
             <h2>No trending products yet</h2>
@@ -136,36 +242,92 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* Brand Story Preview */}
-      <section className="brand-story-section">
-        <div className="brand-story-content">
-          <span className="hero-tag" style={{ marginBottom: "var(--space-lg)" }}>Our Philosophy</span>
-          <h2 className="section-title" style={{ fontSize: "clamp(1.6rem, 3vw, 2.4rem)", marginBottom: "var(--space-lg)" }}>
-            Fashion with Intention
-          </h2>
-          <p style={{ color: "var(--text-secondary)", lineHeight: 1.85, fontSize: "1rem", maxWidth: 560, margin: "0 auto var(--space-xl)" }}>
-            Every piece in our collection is designed to last — both in style and
-            durability. We work with artisans who share our commitment to quality
-            and ethical production.
-          </p>
-          <Link href="/about" className="btn btn-outline">
-            Read Our Story
-          </Link>
+      {/* Social Proof Strip */}
+      <section className="social-proof-section">
+        <div className="section-header">
+          <div>
+            <span className="hero-tag" style={{ marginBottom: "var(--space-xs)" }}>@irraya.fashion</span>
+            <h2 className="section-title">Styled by You</h2>
+          </div>
+          <a
+            href="https://www.instagram.com/irraya.fashion"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="section-link"
+          >
+            Follow on Instagram →
+          </a>
+        </div>
+        <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", marginTop: "-8px", marginBottom: "var(--space-md)" }}>
+          Community looks &amp; everyday silhouettes. Tag <strong style={{ color: "var(--text-primary)" }}>#IrrayaStyle</strong> to be featured.
+        </p>
+        <div className="social-proof-grid">
+          {socialLooks.map((look) => (
+            <a
+              key={look.id}
+              href="https://www.instagram.com/irraya.fashion"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="social-proof-item"
+              aria-label="View Irraya on Instagram"
+            >
+              <Image
+                src={look.image}
+                alt={look.alt}
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+                style={{ objectFit: "cover" }}
+              />
+              <div className="social-proof-overlay">
+                <IconInstagram size={22} />
+                <span>@irraya.fashion</span>
+              </div>
+            </a>
+          ))}
         </div>
       </section>
 
-      {/* Newsletter */}
-      {/* 
+      {/* Re-enabled Newsletter Section */}
       <section className="newsletter-section">
         <div className="newsletter-content">
-          <h2 className="section-title" style={{ marginBottom: "var(--space-sm)" }}>Stay in the Loop</h2>
-          <p style={{ color: "var(--text-secondary)", marginBottom: "var(--space-xl)" }}>
-            Get early access to new collections, exclusive offers, and style inspiration.
+          <span
+            className="hero-tag"
+            style={{
+              borderColor: "rgba(255,255,255,0.25)",
+              color: "rgba(255,255,255,0.85)",
+              marginBottom: "var(--space-md)",
+            }}
+          >
+            The Irraya Circle
+          </span>
+          <h2 className="section-title" style={{ color: "#FFF", marginBottom: "var(--space-sm)" }}>
+            Enjoy 10% Off Your First Order
+          </h2>
+          <p
+            style={{
+              color: "rgba(255,255,255,0.7)",
+              marginBottom: "var(--space-xl)",
+              fontSize: "0.92rem",
+              lineHeight: 1.6,
+            }}
+          >
+            Join our private circle for early access to limited capsule releases, mindful styling notes, and an exclusive welcome gift.
           </p>
           <NewsletterForm />
+          <span
+            style={{
+              display: "block",
+              fontSize: "0.72rem",
+              color: "rgba(255,255,255,0.45)",
+              marginTop: "var(--space-md)",
+              letterSpacing: "0.02em",
+            }}
+          >
+            Zero spam. Unsubscribe at any time with a single click.
+          </span>
         </div>
       </section>
-      */}
     </>
   );
 }
+

@@ -63,7 +63,7 @@ export function ScrollableCollectionRow({ collections }: Props) {
                 src={item.image}
                 alt={item.category}
                 fill
-                style={{ objectFit: "cover" }}
+                style={{ objectFit: "cover", objectPosition: "center top" }}
                 sizes="50vw"
               />
             )}
