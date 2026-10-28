@@ -26,6 +26,7 @@ backend/.medusa/
 **/.DS_Store
 Thumbs.db
 *.pem
+YELLOW/
 .vercel/
 .netlify/
 .turbo/
