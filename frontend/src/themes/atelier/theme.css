@@ -4100,18 +4100,17 @@ label {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
-  padding: 16px 24px;
+  padding: 16px 40px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .checkout-header-inner {
-  max-width: 1100px;
-  margin: 0 auto;
+  width: 100%;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 20px;
-  width: 100%;
 }
 
 .checkout-header-inner .checkout-logo {
