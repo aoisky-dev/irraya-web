@@ -217,19 +217,12 @@
 ## Section 2 — UX & Logic Improvements
 
 ### 2.1 Product Catalog — Filters & Sorting
-**Issues:**
-- No active filter count badge on "Filter" button
-- Filter panel on mobile overlaps content (not a bottom sheet)
-- Price range uses two text inputs — no range slider
-- No "Clear all filters" single button
-- Loading state shows empty grid (no skeletons)
-
-**Recommended Changes:**
-1. **Active filter badge** — "Filters (3)" on the button when active.
-2. **Mobile bottom sheet filter** — slides up full-screen on mobile.
-3. **Price range slider** — dual-handle range slider.
-4. **"Clear all" button** — visible when any filter is active.
-5. **Skeleton loading** — 10 card placeholder skeletons while loading.
+**Status: ✅ Resolved**
+- **Active filter badge**: Shows active filter count pill ("Filters (3)") on the toggle button.
+- **Mobile bottom sheet filter**: Smooth slide-up bottom sheet (85vh) with blurred backdrop overlay, grabber bar, close button, and sticky footer with "Clear all" and "View X Results".
+- **Price range slider**: Dual-handle interactive range slider with dynamic highlighted fill track and live formatted Indian rupee display.
+- **"Clear all" button**: Easily accessible in the filter toolbar, in the active badges row, and in the bottom sheet footer.
+- **Skeleton loading**: 10 card placeholder skeletons with shimmering luxury animation while loading.
 
 **Priority: Medium | Effort: Medium**
 
@@ -271,7 +264,6 @@
 **Issues:**
 - No guest checkout — high cart abandonment cause *(Resolved: Guest checkout implemented end-to-end in branch `feat/guest-checkout`)*
 - Login and register are separate pages — no unified auth modal
-- No password strength indicator in UI
 - JWT stored in localStorage — XSS vulnerable *(Resolved: migrated to HttpOnly cookie in branch `feat/guest-checkout`)*
 
 **Recommended Changes & Implementation Status:**
