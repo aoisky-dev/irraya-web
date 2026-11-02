@@ -12,13 +12,24 @@ const DEFAULT_MESSAGES = [
 
 export function AnnouncementBar() {
   const [activeSale, setActiveSale] = useState<SaleConfig | null>(null);
+  // Tracks whether the sales API call has resolved.
+  // We wait before rendering so the bar doesn't flash from default → sale colours.
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     getSales().then((sales) => {
       const active = sales.find((s) => s.active && s.discountPct > 0) ?? null;
       setActiveSale(active);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => {
+      setLoaded(true);
+    });
   }, []);
+
+  // Invisible placeholder keeps header height stable while the API resolves.
+  // Without this the header shifts down when the bar suddenly appears.
+  if (!loaded) {
+    return <div className="announcement-bar" style={{ visibility: "hidden" }} aria-hidden="true" />;
+  }
 
   if (activeSale) {
     const label = activeSale.label || `${activeSale.discountPct}% OFF`;
@@ -43,7 +54,8 @@ export function AnnouncementBar() {
       `${label} · No code needed`,
       `🛍️ ${name} · Prices already reduced`,
     ];
-    const trackContent = [...messages, ...messages].join("   ✦   ");
+    // Single copy per track — the two-track CSS loop with translateX(-50%) provides the seamless repeat
+    const trackContent = messages.join("   ✦   ");
 
     return (
       <div className="announcement-bar announcement-bar--sale">
@@ -61,7 +73,8 @@ export function AnnouncementBar() {
     );
   }
 
-  const trackContent = [...DEFAULT_MESSAGES, ...DEFAULT_MESSAGES].join("   ✦   ");
+  // Single copy per track — the two-track CSS loop with translateX(-50%) provides the seamless repeat
+  const trackContent = DEFAULT_MESSAGES.join("   ✦   ");
   return (
     <div className="announcement-bar">
       <div className="announcement-ticker">

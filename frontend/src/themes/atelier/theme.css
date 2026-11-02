@@ -170,6 +170,10 @@ h1, h2, h3, h4, h5 {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   overflow: hidden;
+  /* GPU layer containment prevents Safari/mobile glitch where animated
+     children disappear when crossing overflow:hidden boundaries */
+  -webkit-transform: translate3d(0,0,0);
+  transform: translate3d(0,0,0);
 }
 
 /* Sale mode: warm accent background */
@@ -187,9 +191,11 @@ h1, h2, h3, h4, h5 {
   user-select: none;
 }
 
+/* -50% is correct: two identical tracks sit side-by-side (total width = 2×track).
+   Scrolling by -50% = exactly one track width → seamless loop with no gap. */
 @keyframes ticker-scroll {
   from { transform: translateX(0); }
-  to   { transform: translateX(-100%); }
+  to   { transform: translateX(-50%); }
 }
 
 .announcement-track {
@@ -197,12 +203,28 @@ h1, h2, h3, h4, h5 {
   align-items: center;
   flex-shrink: 0;
   white-space: nowrap;
+  /* Hardware acceleration stops paint-glitch / disappearing text on iOS */
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   animation: ticker-scroll 32s linear infinite;
 }
 
-/* Pause on hover so users can read it */
-.announcement-bar:hover .announcement-track {
-  animation-play-state: paused;
+/* Pause on hover so users can read it (desktop only) */
+@media (hover: hover) {
+  .announcement-bar:hover .announcement-track {
+    animation-play-state: paused;
+  }
+}
+
+/* Mobile: smaller, less padding */
+@media (max-width: 768px) {
+  .announcement-bar {
+    padding: 5px 0;
+    font-size: 0.60rem;
+    letter-spacing: 0.13em;
+    line-height: 1.2;
+  }
 }
 
 /* Compatibility alias so any leftover .header-topbar refs still work */
@@ -1314,6 +1336,22 @@ h1, h2, h3, h4, h5 {
 .card:hover .card-actions {
   opacity: 1;
   transform: translateX(0);
+}
+
+/* ── Touch / mobile product card fixes ────────────────────
+   On touch screens (hover: none):
+   1. Hide the "View Product" overlay — tapping the card navigates directly.
+   2. Always show the wishlist heart so it's accessible without hovering.
+   ────────────────────────────────────────────────────────── */
+@media (hover: none) {
+  .card-overlay {
+    display: none;
+  }
+
+  .card-actions {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .card-action-btn {

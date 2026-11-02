@@ -780,6 +780,13 @@ h1, h2, h3, h4, h5 {
   opacity: 1;
 }
 
+/* Touch: hide overlay so first tap navigates directly */
+@media (hover: none) {
+  .card-overlay {
+    display: none;
+  }
+}
+
 .card-overlay span {
   background: var(--bg-card);
   color: var(--text-primary);
@@ -2512,6 +2519,9 @@ textarea.input {
   text-transform: uppercase;
   font-weight: 500;
   overflow: hidden;
+  /* GPU containment fixes Safari mobile glitch */
+  -webkit-transform: translate3d(0,0,0);
+  transform: translate3d(0,0,0);
 }
 
 .announcement-bar--sale {
@@ -2529,7 +2539,7 @@ textarea.input {
 
 @keyframes ticker-scroll {
   from { transform: translateX(0); }
-  to   { transform: translateX(-100%); }
+  to   { transform: translateX(-50%); }
 }
 
 .announcement-track {
@@ -2537,11 +2547,24 @@ textarea.input {
   align-items: center;
   flex-shrink: 0;
   white-space: nowrap;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   animation: ticker-scroll 32s linear infinite;
 }
 
-.announcement-bar:hover .announcement-track {
-  animation-play-state: paused;
+@media (hover: hover) {
+  .announcement-bar:hover .announcement-track {
+    animation-play-state: paused;
+  }
+}
+
+@media (max-width: 768px) {
+  .announcement-bar {
+    padding: 5px 0;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+  }
 }
 
 
