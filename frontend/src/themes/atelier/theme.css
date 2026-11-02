@@ -789,9 +789,19 @@ h1, h2, h3, h4, h5 {
   text-decoration: none;
   justify-self: center;
   transition: opacity var(--duration) var(--ease);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.brand-logo:hover { opacity: 0.7; }
+.brand-logo:focus,
+.brand-logo:focus-visible {
+  outline: none;
+  opacity: 1;
+}
+
+.brand-logo:active {
+  opacity: 0.8;
+}
+
 .brand-arc { display: none; }
 
 .brand-name {
@@ -834,8 +844,8 @@ h1, h2, h3, h4, h5 {
   border-radius: var(--radius-sm);
   position: relative;
   transition: all var(--duration) var(--ease);
+  -webkit-tap-highlight-color: transparent;
 }
-
 
 .icon-link::after {
   content: '';
@@ -847,13 +857,20 @@ h1, h2, h3, h4, h5 {
   transition: width var(--duration) var(--ease-out);
 }
 
-.icon-link:hover {
-  color: var(--text-primary);
-  background: transparent;
-  border-color: transparent;
+/* Hover effects only for true pointer devices (prevents sticky hover on touch) */
+@media (hover: hover) and (pointer: fine) {
+  .brand-logo:hover { opacity: 0.7; }
+  .icon-link:hover {
+    color: var(--text-primary);
+    background: transparent;
+    border-color: transparent;
+  }
+  .icon-link:hover::after { width: 60%; }
 }
 
-.icon-link:hover::after { width: 60%; }
+.icon-link:active {
+  opacity: 0.7;
+}
 
 .nav-icon { width: 18px; height: 18px; }
 

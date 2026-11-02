@@ -263,9 +263,22 @@ h1, h2, h3, h4, h5 {
   text-decoration: none;
   gap: 2px;
   transition: opacity var(--duration) var(--ease);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.brand-logo:hover {
+@media (hover: hover) and (pointer: fine) {
+  .brand-logo:hover {
+    opacity: 0.8;
+  }
+}
+
+.brand-logo:focus,
+.brand-logo:focus-visible {
+  outline: none;
+  opacity: 1;
+}
+
+.brand-logo:active {
   opacity: 0.8;
 }
 
